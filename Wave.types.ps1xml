@@ -231,6 +231,22 @@ return $chunks
 
                     </GetScriptBlock>
       </ScriptProperty>
+      <ScriptProperty>
+        <Name>Data</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets Wave Data
+.DESCRIPTION
+    Gets the byte[] describing a wave.
+#&gt;
+[CmdletBinding()]
+param()
+# Use the comma operator to return a list containin the data, 
+# so that it unrolls to the data itself (rather than tries to stream the bytes)
+return ,$this.'#data'
+                    </GetScriptBlock>
+      </ScriptProperty>
     </Members>
   </Type>
 </Types>
