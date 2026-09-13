@@ -247,6 +247,25 @@ param()
 return ,$this.'#data'
                     </GetScriptBlock>
       </ScriptProperty>
+      <ScriptProperty>
+        <Name>Duration</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets Wave Duration        
+.DESCRIPTION
+    Gets the duration of a wave file.
+
+    This should be the length of it's PCM data, divided by bytes per second.
+#&gt;
+$bps = $this.BytesPerSecond
+if ($bps) {
+    [TimeSpan]::FromSeconds($this.'#data'.length / $bps)
+}
+
+
+                    </GetScriptBlock>
+      </ScriptProperty>
     </Members>
   </Type>
 </Types>
