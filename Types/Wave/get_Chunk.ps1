@@ -13,6 +13,10 @@
     * `$this.#fmt.start` will contain the `fmt ` chunk start
 
     Additional chunks are optional.
+.LINK
+    https://en.wikipedia.org/wiki/WAV#WAV_file_header
+.LINK
+    https://en.wikipedia.org/wiki/Resource_Interchange_File_Format
 #>
 # If this has chunks, return them
 if ($this.'#Chunk') { return $this.'#Chunk'}
