@@ -20,9 +20,9 @@ $noteFrequency = [Ordered]@{
     "A#0" = 29.13523509488062
     B0 = 30.867706328507754
     C1 = 32.70319566257483
-    "C#0" = 34.64782887210901
+    "C#1" = 34.64782887210901
     D1 = 36.70809598967595
-    "D#0" = 38.89087296526011
+    "D#1" = 38.89087296526011
     E1 = 41.20344461410874
     F1 = 43.65352892912549
     "F#1" = 46.2493028389543
@@ -48,8 +48,6 @@ for ($octave = 2; $octave -le $MaxOctave; $octave++) {
 
 # Add one more note for the final C
 $noteFrequency["C$($MaxOctave + 1)"] = $noteFrequency."C$($MaxOctave)" * 2
-
-# One last thing to do is transpose the keys.
 
 $this | Add-Member NoteProperty '#NoteFrequency' $noteFrequency -Force
 
