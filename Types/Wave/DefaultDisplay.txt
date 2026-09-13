@@ -1,0 +1,4 @@
+SampleRate
+BitsPerSample
+ChannelCount
+Duration
