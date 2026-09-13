@@ -34,8 +34,9 @@ $riff = $binaryReader.ReadChars(4) -join ''
 # If that is not the case, it is not a wave
 if ($riff -cne 'RIFF') { throw "Not a Wave (no RIFF header)" }
 
-# The next four bytes are the wave file size
-$fileSizeMinus8 = $binaryReader.ReadUInt32()
+# The next four bytes are the wave file size.
+# We do not actually care about this right now, and other properties will reveal it.
+$null = $binaryReader.ReadUInt32()
 
 # Followed by the four character File Format ID
 $fileFormatId = $binaryReader.ReadChars(4) -join ''
