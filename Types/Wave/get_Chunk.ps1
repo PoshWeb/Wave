@@ -1,0 +1,78 @@
+<#
+.SYNOPSIS
+    Get Wave Chunks
+.DESCRIPTION
+    Wave files are stored in chunks.  Gets the chunks within a wave file.
+.NOTES
+    When this property is first enumerated,
+    it will add additional properties for each trimmed chunk name and their start
+
+    * `$this.#data` will contain the `data` chunk bytes
+    * `$this.#data.start` will contain the `data` chunk start
+    * `$this.#fmt` will contain the format `fmt ` chunk bytes
+    * `$this.#fmt.start` will contain the `fmt ` chunk start
+
+    Additional chunks are optional.
+#>
+# If this has chunks, return them
+if ($this.'#Chunk') { return $this.'#Chunk'}
+
+# If this is not a stream, we can't read it.
+if ($this -isnot [IO.Stream]) { return }
+
+# If this cannot read or seek, we can't read it.
+if (-not ($this.CanRead -or $this.CanSeek)) { return }
+
+# Create a binary reader
+$binaryReader = [IO.BinaryReader]::new($this)
+# seek to zero
+$this.Position = 0
+
+# RIFF should be the first four characters
+$riff = $binaryReader.ReadChars(4) -join ''
+
+# If that is not the case, it is not a wave
+if ($riff -cne 'RIFF') { throw "Not a Wave (no RIFF header)" }
+
+# The next four bytes are the wave file size
+$fileSizeMinus8 = $binaryReader.ReadUInt32()
+
+# Followed by the four character File Format ID
+$fileFormatId = $binaryReader.ReadChars(4) -join ''
+
+# Which must be `WAVE`
+if ($fileFormatId -cne 'WAVE') { throw "Not a Wave (incorrect file format id: $fileFormatID)" }
+
+# While we have no reached the end of the stream
+$chunks = @(while ($this.Position -lt $this.Length) {
+    # Note the chunk start
+    $chunkStart = $this.Position
+    $chunk = [Ordered]@{
+        start = $chunkStart
+        # then get the ID
+        id = $binaryReader.ReadChars(4) -join ''
+        # and the length
+        length = $binaryReader.ReadUInt32()
+    }
+    
+    if (-not $chunk.id) {
+        throw "Malformed Chunks (no must have ID)"
+    }
+
+    # Initialize an array to hold the length
+    $chunk.data = [byte[]]::new($chunk.length)
+    # and read the chunk
+    $null = $this.Read($chunk.data, 0, $chunk.Length)
+    # Then cache the chunk and it's start into note properties.
+    $this | Add-Member NoteProperty "#$($chunk.id.Trim())" $chunk.data -Force
+    $this | Add-Member NoteProperty "#$($chunk.id.Trim()).start" $chunk.start -Force
+    # and emit the chunk.
+    $chunk
+})
+
+# Reset our position to zero.
+$this.Position = 0
+# cache the chunks
+$this | Add-Member NoteProperty '#Chunk' $chunks -Force
+# and return the chunks.
+return $chunks
