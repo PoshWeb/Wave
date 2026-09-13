@@ -4,7 +4,7 @@
 .DESCRIPTION
     Gets the Wave Bytes Per Block.
     
-    This should be the Bits Per Sample * Channel Count.
+    This should be `$this.BitsPerSample/8` * `$this.ChannelCount`
 .NOTES
     This is the second to last pair of bytes in the Format `fmt ` chunk (`12,13`)
 #>
