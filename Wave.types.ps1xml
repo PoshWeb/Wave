@@ -204,6 +204,37 @@ if ($IsMacOS -or $IsLinux) {
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
+        <Name>PlaySync</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Plays a Wave Synchronously
+.DESCRIPTION
+    Plays a Wave file and waits for the play to complete.
+.NOTES
+    On MacOS and Linux, uses `speaker-test` to play.
+
+    On Windows, uses `[Media.SoundPlayer]`
+.LINK
+    https://learn.microsoft.com/en-us/dotnet/api/system.media.soundplayer?wt.mc_id=MVP_321542
+.LINK
+    https://linux.die.net/man/1/speaker-test
+#&gt;
+param()
+
+if ($IsMacOS -or $IsLinux) {
+    speaker-test -w $this.Save().FullName
+} else {
+    if (-not ('Media.SoundPlayer' -as [type])) {
+        Add-Type -AssemblyName System.Windows.Extensions
+    }    
+    $soundPlayer = [Media.SoundPlayer]::new($this)
+    $soundPlayer.PlaySync()
+    $this.Position = 0
+}
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
         <Name>Save</Name>
         <Script>
                         &lt;#
