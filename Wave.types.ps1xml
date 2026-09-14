@@ -262,59 +262,6 @@ $wordsAndArguments = @(foreach ($arg in $ArgumentList) {
     }
 })
 
-# If any brackets are used, we want to balance them all now, and error if they appear unbalanced.        
-# Since we want to know the exact index, we walk thru matches
-$depth = 0
-# and keep track of when it became unbalanced.
-$unbalancedAt = $null
-foreach ($match in [Regex]::Matches(
-        (@(
-            foreach ($arg in $wordsAndArguments) {
-                if ($arg -is [string]) {
-                    $arg
-                }
-            }
-        ) -join ' '), '[\[\]]'
-    )
-) {
-    # To do this, we increment or decrement depth for brackets `[]`
-    if ($match.Value -eq '[') { $depth++ }
-    if ($match.Value -eq ']') { $depth-- }
-    # and, if the depth is ever negative, we are unbalanced.
-    if ($depth -lt 0) {
-        $unbalancedAt = $match; break
-    }
-}
-
-# If the depth is still positive when we are done,
-# we are also unbalanced
-if ($depth -gt 0) {
-    # and we can consider our last bracket the point that needs to be balanced
-    $unbalancedAt = $match
-}
-
-# If we are unbalanced,
-if ($unbalancedAt) {
-    # write an error
-    Write-Error -Message "Unbalanced at index $($match.Index)
-$(
-# (try to make it a nice error by pointing out the match)    
-$str = $match.Result('$_')
-if ($match.Index -ge 1) {
-$str.Substring(0, $match.Index - 1)
-if ($match.Index -lt ($str.Length - 1)) {
-    '--&gt;'
-}        
-}
-$match.Value
-'&lt;--'
-if ($match.Index -lt ($str.Length - 1)) {
-$str.Substring($match.Index + 1)
-}           
-) - $depth brackets off" # and by letting people know the depth difference.
-    return
-}        
-
 # Now that we have a series of balanced words, we can process them.
 # We want to keep track of the current member, 
 # and continue to the next word until we find a member name.        
@@ -389,8 +336,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
         $memberInfo = $waveType.Members[$currentMember]
     }
     
-    # We can also begin looking for arguments, as long as they are not bracketed.
-    $bracketDepth = 0             
+    # We can also begin looking for arguments.    
     for (
         # Let's start at the next index.
         $methodArgIndex = $argIndex + 1; 
@@ -399,15 +345,9 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
         $methodArgIndex++
     ) {
         # Count our brackets
-        if ($wordsAndArguments[$methodArgIndex] -is [string]) {
-            $brackets = $wordsAndArguments[$methodArgIndex] -replace '[^\[\]]'
-            foreach ($bracket in $brackets.ToCharArray()) {
-                if ("$bracket" -eq '[') { $bracketDepth++ }
-                if ("$bracket" -eq ']') { $bracketDepth-- } 
-            }            
+        if ($wordsAndArguments[$methodArgIndex] -is [string]) {                        
             # If the next word is a method name, and our brackets are balanced
-            if ($wordsAndArguments[$methodArgIndex] -in 
-                $waveType.Members.Keys -and -not $bracketDepth) {
+            if ($wordsAndArguments[$methodArgIndex] -in $waveType.Members.Keys) {
                 # break out of the loop.
                 break
             }
@@ -421,9 +361,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
     $switches = [Ordered]@{}
 
     $argList = 
-        @(if ($methodArgIndex -ne ($argIndex + 1)) {
-            # We only want to remove one pair of brackets
-            $bracketCount = 0
+        @(if ($methodArgIndex -ne ($argIndex + 1)) {                        
             foreach ($word in $wordsAndArguments[($argIndex + 1)..($methodArgIndex - 1)]) {
                 if ($word -in $helpfulKeywords) {
                     $HelpWanted = $true
@@ -457,25 +395,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
                         continue
                     }                            
                 }
-                
-                # If the word started with a bracket, and it's our first bracket
-                if ($word -is [string] -and $word.StartsWith('[') -and -not $bracketCount) {
-                    $word = $word -replace '^\[' # remove it
-                    $bracketCount++ # and increment our bracket counter.
-                    if (-not $word) {
-                        continue
-                    }
-                }
-                # If the word ended with a bracket, and we have only one bracket
-                if ($word -is [string] -and $word.EndsWith(']') -and $bracketCount -eq 1) {
-                    # remove the closing bracket
-                    $word = $word -replace '\]$'
-                    # and increment our removal counter
-                    $bracketCount++
-                    if (-not $word) {
-                        continue
-                    }
-                }
+                                
                 $word # output the word into the array.
             }
             $argIndex = $methodArgIndex - 1
