@@ -14,8 +14,12 @@
 #>
 param()
 
-if ($IsMacOS -or $IsLinux) {
-    $null = speaker-test -w $this.Save().FullName &
+if ($IsLinux) {
+    $filePath = $this.Save().FullName
+    $null = aplay $filePath &
+} elseif ($IsMacOS) {
+    $filePath = $this.Save().FullName
+    $null = afplay $filePath &
 } else {
     if (-not ('Media.SoundPlayer' -as [type])) {
         Add-Type -AssemblyName System.Windows.Extensions
