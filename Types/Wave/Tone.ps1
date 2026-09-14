@@ -10,7 +10,10 @@ param(
 [float]$Frequency = 440,
 
 # The amount of time to generate.
-[Timespan]$Time = [TimeSpan]::FromSeconds(60/128),
+[Timespan]$Duration = $(
+    if ($this.BPM -is [TimeSpan]) {$this.BPM} 
+    else { [TimeSpan]::FromSeconds(60/128) }
+),
 
 # The volume
 [float]$Volume = 0.5
@@ -27,7 +30,7 @@ $math = [Math]
 $BitConverter = [BitConverter]
 
 # Calculate the number of samples
-$numberOfSamples = $math::Round($Time.TotalSeconds * $BytesPerSecond) 
+$numberOfSamples = $math::Round($Duration.TotalSeconds * $BytesPerSecond) 
 
 # Our step size is the bits per sample / 8
 $step = $BitsPerSample/8
@@ -53,13 +56,13 @@ for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
 
     # We will scale this by the volume, and then by the envelope.
     $sample = $sample * $Volume * $envelope
-
+    
     # If there are 8 bits per sample
     if ($BitsPerSample -eq 8) {
         # round each sample into bytes, with 128 as the zero point.
         [byte]$math::Round(            
             128 + $sample * 127
-        )    
+        )
     }
 
     # If there are 16 bits per sample
