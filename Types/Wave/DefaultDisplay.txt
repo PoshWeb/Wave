@@ -1,4 +1,4 @@
 SampleRate
 BitsPerSample
-ChannelCount
+Channels
 Duration
