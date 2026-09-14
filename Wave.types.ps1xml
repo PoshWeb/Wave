@@ -499,6 +499,58 @@ if (-not $this.'#fmt') {
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>BPM</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets Wave BPM
+.DESCRIPTION
+    Gets a cached BPM value from a wave.
+
+    If no BPM has been provided, returns nothing.
+#&gt;
+if ($this.'#BPM') {
+    return $this.'#BPM'
+}
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets BPM
+.DESCRIPTION
+    Sets a common BPM used by the wave.
+#&gt;
+param(
+$BPM
+)
+
+if ($bpm -is [TimeSpan]) {
+    # If the BPM is already a timespan, just cache it
+    $this | 
+        Add-Member NoteProperty '#BPM' $bpm -Force
+    return
+} else {
+    # Otherwise, strip anything that is not a digit or a period
+    $bpm = $bpm -replace '[\D-[\.]]' -as [float] # and cast it to float.
+
+    # If that worked, 
+    if ($bpm) {
+        # convert it into a timespan.    
+        $this | 
+            Add-Member NoteProperty '#BPM' (
+                [TimeSpan]::FromSeconds(
+                    60/$bpm
+                )
+            ) -Force
+    }
+}
+
+
+
+
+                    </SetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>BytesPerBlock</Name>
         <GetScriptBlock>
                         &lt;#
