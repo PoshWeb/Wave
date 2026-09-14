@@ -232,8 +232,11 @@ return
     Generates a Silence for a `-Time`
 #&gt;
 param(
-# The amount of time to generate.
-[Timespan]$Time = [TimeSpan]::FromSeconds(60/128)
+# The duration to generate.
+[Timespan]$Duration = $(
+    if ($this.BPM -is [TimeSpan]) {$this.BPM} 
+    else { [TimeSpan]::FromSeconds(60/128) }
+)
 )
 
 # Cache our property values, so we are not wasting cycles.
@@ -245,7 +248,7 @@ $math = [Math]
 $BitConverter = [BitConverter]
 
 # Calculate the number of samples
-$numberOfSamples = $math::Round($Time.TotalSeconds * $BytesPerSecond) 
+$numberOfSamples = $math::Round($Duration.TotalSeconds * $BytesPerSecond) 
 
 # Our step size is the bits per sample / 8
 $step = $BitsPerSample/8
@@ -266,19 +269,17 @@ $silenceBytes = @(
     # If there are 16 bits per sample
     elseif ($BitsPerSample -eq 16) {
         # we just need to scale an `[int16]`
-        $BitConverter::GetBytes([int16]($sample * [int16]::MaxValue))
+        $BitConverter::GetBytes([int16]0)
     }
 
     # If there are 32 bits per sample
     elseif ($BitsPerSample -eq 32) {
         # we can just scale to an `[int32]`
-        $BitConverter::GetBytes([int32]($sample * [int32]::MaxValue))
+        $BitConverter::GetBytes([int32]0)
     }    
 )
 
 return ,($silenceBytes * ($numberOfSamples/$step) -as [byte[]]) 
-
-
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
