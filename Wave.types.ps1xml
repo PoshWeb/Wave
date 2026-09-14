@@ -11,12 +11,32 @@
             <ReferencedProperties>
               <Name>SampleRate</Name>
               <Name>BitsPerSample</Name>
-              <Name>ChannelCount</Name>
+              <Name>Channels</Name>
               <Name>Duration</Name>
             </ReferencedProperties>
           </PropertySet>
         </Members>
       </MemberSet>
+      <AliasProperty>
+        <Name>Channels</Name>
+        <ReferencedMemberName>ChannelCount</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>Rest</Name>
+        <ReferencedMemberName>Silence</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>Saw</Name>
+        <ReferencedMemberName>Sawtooth</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>Sin</Name>
+        <ReferencedMemberName>Tone</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>Sine</Name>
+        <ReferencedMemberName>Tone</ReferencedMemberName>
+      </AliasProperty>
       <ScriptMethod>
         <Name>Chirp</Name>
         <Script>
@@ -1183,7 +1203,7 @@ $this.Position = 4
         <Name>DefaultDisplay</Name>
         <Value>SampleRate
 BitsPerSample
-ChannelCount
+Channels
 Duration</Value>
       </NoteProperty>
     </Members>
