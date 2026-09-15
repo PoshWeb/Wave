@@ -1,13 +1,3 @@
-class Wave : IO.MemoryStream {
-    
-    Wave(
-        [uint32]$SampleRate = 44100,
-        [ushort]$BitsPerSample = 8        
-    ) {
-
-    }
-}
-
 #region Eponym
 
 # Functions and scripts are interchangeable in PowerShell
