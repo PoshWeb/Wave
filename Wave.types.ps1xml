@@ -2042,6 +2042,41 @@ if (-not $this.'#fmt') {
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>Volume</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets Wave Volume
+.DESCRIPTION
+    Gets a cached Volume value from a wave.
+
+    This is used to provide a default value for Wave methods that use `-Volume`.
+
+    If no Volume has been provided, returns nothing.
+#&gt;
+if ($this.'#Volume') {
+    return $this.'#Volume'
+}
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets BPM
+.DESCRIPTION
+    Sets a common BPM used by the wave.
+#&gt;
+param(
+[float]
+$Volume = 0.5
+)
+
+$this | 
+    Add-Member NoteProperty '#Volume' $Volume -Force
+return
+
+                    </SetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>WaveLength</Name>
         <GetScriptBlock>
                         &lt;#
