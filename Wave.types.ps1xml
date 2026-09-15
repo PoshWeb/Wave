@@ -1861,6 +1861,27 @@ $this.Position = 0
                     </SetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>DataUrl</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Wave Data Url
+.DESCRIPTION
+    Gets the Wave as a Data Url.
+    
+    This can be used as an audio source `&lt;audio src&gt;`.
+#&gt;
+"data:audio/wav;base64,$(
+    [Web.HttpUtility]::UrlPathEncode(
+        [Convert]::ToBase64String(            
+            $this.ToArray()                
+        )
+    )
+)"
+
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Duration</Name>
         <GetScriptBlock>
                         &lt;#
