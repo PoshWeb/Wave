@@ -1901,6 +1901,18 @@ if ($bps) {
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>HTML</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets an HTML wave
+.DESCRIPTION
+    Gets a waveform as HTML
+#&gt;
+"&lt;audio controls='' src='$($this.DataUrl)'&gt;&lt;/audio&gt;"
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>NoteFrequency</Name>
         <GetScriptBlock>
                         &lt;#
