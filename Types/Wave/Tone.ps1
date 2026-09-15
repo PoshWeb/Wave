@@ -58,8 +58,13 @@ for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
     $sample = $sample * $Volume * $envelope
     
     # Clamp our sample
-    $sample = $math::Clamp($sample, -1.0, 1.0)    
-    
+    $sample = $math::Clamp($sample, -1.0, 1.0)
+
+    #region Encode Sample
+    # We _could_ encapsulate the encoding off into it's own procedure    
+    # However, callstacks have overhead.
+    # Inline code will be quicker, even if it is duplicated across multiple files    
+
     # If there are 8 bits per sample
     if ($BitsPerSample -eq 8) {
         # round each sample into bytes, with 128 as the zero point.
@@ -79,4 +84,5 @@ for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
         # we can just scale to an `[int32]`
         $BitConverter::GetBytes([int32]($sample * [int32]::MaxValue))
     }
+    #endregion Encode Sample
 }
