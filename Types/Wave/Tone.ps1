@@ -57,6 +57,9 @@ for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
     # We will scale this by the volume, and then by the envelope.
     $sample = $sample * $Volume * $envelope
     
+    # Clamp our sample
+    $sample = $math::Clamp($sample, -1.0, 1.0)    
+    
     # If there are 8 bits per sample
     if ($BitsPerSample -eq 8) {
         # round each sample into bytes, with 128 as the zero point.
