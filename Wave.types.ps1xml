@@ -418,8 +418,10 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
                         $memberInfo.Script | getScriptHelp $memberInfo.Name
                     } else {
                         # Otherwise, set `$this` to the current wave
-                        $this = $currentWave                        
-                        $argList = @($argList | waveUnit)
+                        $this = $currentWave
+                        $argList = @(
+                            $argList | waveUnit
+                        )
                         # and call the script, splatting positional parameters
                         # (this allows more complex binding, like ValueFromRemainingArguments).
                         . $currentWave.$currentMember.Script @argList
@@ -501,8 +503,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
     # Luckily, this should be one of the few cases where this does not annoy too much.
     # Properties being returned will largely be strings or numbers, and these will always output directly.
     if ($null -ne $stepOutput -and -not ($stepOutput.pstypenames -eq 'wave')) {
-
-        if ($stepOutput -as [byte[]]) {
+        if ($stepOutput -is [object[]] -and $stepOutput -as [byte[]]) {
             $currentWave.Data += $stepOutput
             $outputWave = $true
         } else {
@@ -511,8 +512,6 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
             # and set the output wave to false.
             $outputWave = $false
         }
-
-        
     } elseif ($null -ne $stepOutput) {
         # Set the current wave to the step output.
         $currentWave = $stepOutput
