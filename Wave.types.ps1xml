@@ -691,10 +691,10 @@ param()
 
 if ($IsLinux) {
     $filePath = $this.Save().FullName
-    $null = aplay $filePath &amp;
+    $null = Start-Process -FilePath aplay -ArgumentList $filePath
 } elseif ($IsMacOS) {
     $filePath = $this.Save().FullName
-    $null = afplay $filePath &amp;
+    $null = Start-Process -FilePath afplay -ArgumentList $filePath
 } else {
     if (-not ('Media.SoundPlayer' -as [type])) {
         Add-Type -AssemblyName System.Windows.Extensions
@@ -1240,7 +1240,7 @@ if (-not $this.'#fmt') {
 }
 
 # Otherwise, convert the range into a [uint16]
-[bitConverter]::ToUint16($this.'#fmt'[$range] -as [byte[]])
+[bitConverter]::ToUint16($this.'#fmt'[$range] -as [byte[]], 0)
 
                     </GetScriptBlock>
       </ScriptProperty>
@@ -1347,7 +1347,7 @@ if (-not $this.'#fmt') {
 }
 
 # Otherwise, convert the range into a [uint16]
-[bitConverter]::ToUint16($this.'#fmt'[$range] -as [byte[]])
+[bitConverter]::ToUint16($this.'#fmt'[$range] -as [byte[]], 0)
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
@@ -1375,7 +1375,7 @@ if (-not $this.'#fmt') {
 }
 
 # Otherwise, convert the range into a [uint32]
-[bitConverter]::ToUint32($this.'#fmt'[$range] -as [byte[]])
+[bitConverter]::ToUint32($this.'#fmt'[$range] -as [byte[]], 0)
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
@@ -1405,7 +1405,7 @@ if (-not $this.'#fmt') {
 }
 
 # Otherwise, convert the range into a [uint16]
-[bitConverter]::ToUint16($this.'#fmt'[$range] -as [byte[]])
+[bitConverter]::ToUint16([byte[]]$this.'#fmt'[$range], 0)
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
@@ -1665,7 +1665,7 @@ if (-not $this.'#fmt') {
 }
 
 # Otherwise, convert the range into a [uint32]
-[bitConverter]::ToUint32($this.'#fmt'[$range] -as [byte[]])
+[bitConverter]::ToUint32($this.'#fmt'[$range] -as [byte[]], 0)
 
 
                     </GetScriptBlock>
