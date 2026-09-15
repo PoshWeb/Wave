@@ -31,25 +31,37 @@ $silenceBytes = @(
     # Silence is zero
     $sample = 0
 
+    #region Encode Sample
+
+    # We _could_ encapsulate the encoding off into it's own procedure.
+
+    # However, callstacks have overhead.
+
+    # Inline code will be quicker.
+    # (hence duplicating it across multiple files)
+
     # If there are 8 bits per sample
     if ($BitsPerSample -eq 8) {
         # round each sample into bytes, with 128 as the zero point.
-        [byte]$math::Round(            
+        [byte]$math::Round(
             128 + $sample * 127
-        )    
+        )
     }
 
     # If there are 16 bits per sample
     elseif ($BitsPerSample -eq 16) {
         # we just need to scale an `[int16]`
-        $BitConverter::GetBytes([int16]0)
+        # Hardcode `[int16]::MaxValue` for speed
+        $BitConverter::GetBytes([int16]($sample * 32767))
     }
 
     # If there are 32 bits per sample
     elseif ($BitsPerSample -eq 32) {
-        # we can just scale to an `[int32]`
-        $BitConverter::GetBytes([int32]0)
-    }    
+        # we can just scale to an `[int32]`.
+        # Hardcode `[int32]::MaxValue` for speed
+        $BitConverter::GetBytes([int32]($sample * 2147483647))
+    }
+    #endregion Encode Sample
 )
 
 $silenceBytes * ($numberOfSamples/$step)
