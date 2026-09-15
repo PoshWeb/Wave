@@ -32,7 +32,8 @@ $writer = [IO.BinaryWriter]::new($this)
 # Write our new data length
 $writer.Write([uint32]$data.Length)
 # then write our data
-$writer.Write($data)
+$this.Write($data, 0, $data.Length)
+# $writer.Write($data)
 
 # Then update our data chunk.
 $this.'#data' = $data
