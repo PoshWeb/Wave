@@ -583,7 +583,7 @@ $currentMember = $null
 # We want to output the wave by default, in case we were called with no parameters.
 $outputWave = $true
 
-$progress = @{id=Get-Random;activity='wave 〜'; status=' '}
+$progress = @{id=Get-Random;activity='Making Waves ~'; status=' '}
 
 # To do this in one pass, we will iterate through the words and arguments.
 # We use an indexed loop so we can skip past claimed arguments.
