@@ -45,20 +45,24 @@ $cycle = 2 * $math::PI * $Frequency
 # The divisor will remain the same, so compute it now.
 $divisor = ($sampleRate * $channelCount * $step)
 
+
+
+
 # Generate one sample at a time.
 for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
-
-    # Calculate the envelope
-    $envelope = 1.0 - ($i / $numberOfSamples)
+    # Normally, we would calculate the envelope.
+    # But a square wave does not have an envelope.
+    # (or rather, is has an envelope of 1 )
+    # $envelope = 1.0    
     
     # Calculate the angle at this point in time (in radians)
     $angle = ($cycle * $i) / $divisor    
 
     # The sample at this moment is the sine of that angle
-    $sample = $math::Sinh($math::Sin($angle))
+    $sample = $math::Sin($angle)
 
-    # We will scale this by the volume, and then by the envelope.
-    $sample = $sample * $Volume * $envelope
+    # We will scale this by the volume
+    $sample = $sample * $Volume
 
     # Clamp our sample
     $sample = $math::Clamp($sample, -1.0, 1.0)
