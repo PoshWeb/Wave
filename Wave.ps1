@@ -9,9 +9,14 @@
 [Alias('wav', '.wav','〜')]
 [CmdletBinding(PositionalBinding=$false)]
 param(
-# The arguments to pass to turtle.
+
+# The arguments to pass to Wave.
+# This is a flexible syntax that lets you make music from the command line.
+
 [ArgumentCompleter({
-    param ( $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters )
+    param ($commandName, $parameterName, 
+        $wordToComplete, $commandAst, $fakeBoundParameters )
+    
     if (-not $script:WaveTypeData) {
         $script:WaveTypeData = Get-TypeData -TypeName audio/wav
     } 
@@ -37,11 +42,11 @@ $ArgumentList,
 $InputObject,
 
 # The number of channels
-[ushort]
+[uint16]
 $ChannelCount = 1,
 
 # The bits per sample
-[ushort]
+[uint16]
 $BitsPerSample = 8,
 
 # The sample rate, in hertz
@@ -49,27 +54,58 @@ $BitsPerSample = 8,
 $Rate = 44100,
 
 # Audio format (2 bytes) (1: PCM integer, 3: IEEE 754 float)
-[ushort]
+[uint16]
 $AudioFormat = 1,
 
 # The number of bytes per block
-[ushort]
+[uint16]
 $BytesPerBlock,
 
 # The bytes per second
 [uint32]
 $BytesPerSecond,
 
+# The path to a wave file.
+# If this is provided, 
+# all bytes will be read into a memory stream (which will be treated as a wave).
 [string]
 $Path,
 
+# An existing stream.
+# If this is provided, it will try to treat it as a wave.
+# (this will be harmless, but may result in very odd looking metadata)
 [IO.Stream]
 $Stream,
 
 # The sample data.
 [byte[]]
-$PCM
+$PCM,
+
+# If set, will run as a background job.
+[switch]
+$AsJob
 )
+
+if ($AsJob) {
+    $IO = [Ordered]@{} + $PSBoundParameters
+    $IO.Remove('AsJob')
+    $IO.ModulePath = $MyInvocation.MyCommand.Module.Path -replace '\.psm1$', '.psd1'
+    $waveJob = Start-ThreadJob {
+        param(
+        [Collections.IDictionary]
+        $Parameter
+        )
+
+        if ($Parameter.ModulePath) {
+            Import-Module $parameter.ModulePath
+            $Parameter.Remove('ModulePath')
+        }
+
+        Wave @Parameter
+    } -ArgumentList $IO  
+        
+    return $waveJob
+}
 
 filter toWave {
     $WaveStream = $_
@@ -77,7 +113,12 @@ filter toWave {
     $WaveStream.pstypenames.insert(0,'Wave')    
 
     if ($ArgumentList) {
-        $WaveStream.Go($ArgumentList)
+        try {
+            $WaveStream.Go($ArgumentList)
+        } catch {
+            $PSCmdlet.WriteError($_)
+        }
+        
     } else {
         $WaveStream
     }
@@ -87,7 +128,6 @@ filter toWave {
 if ($Stream) {
     $stream | toWave    
 }
-
 elseif ($Path) {
     foreach ($unresolvedPath in 
         $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path)
@@ -100,8 +140,7 @@ elseif ($Path) {
         }
     }  
 }
-
-if (-not $Stream) {    
+elseif (-not $Stream) {    
     $stream =     
         $memoryStream =
             [IO.MemoryStream]::new()
