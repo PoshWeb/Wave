@@ -870,6 +870,8 @@ $Data * $LoopCount
     Midi Note to Frequency 
 .DESCRIPTION
     Converts a Midi Note to a Frequency
+.LINK
+    https://en.wikipedia.org/wiki/MIDI_tuning_standard
 #&gt;
 param(
 # The midi note
