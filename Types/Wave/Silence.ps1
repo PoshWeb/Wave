@@ -52,4 +52,4 @@ $silenceBytes = @(
     }    
 )
 
-return ,($silenceBytes * ($numberOfSamples/$step) -as [byte[]]) 
+$silenceBytes * ($numberOfSamples/$step)
