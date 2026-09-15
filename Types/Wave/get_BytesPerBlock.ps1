@@ -20,4 +20,4 @@ if (-not $this.'#fmt') {
 }
 
 # Otherwise, convert the range into a [uint16]
-[bitConverter]::ToUint16($this.'#fmt'[$range] -as [byte[]])
+[bitConverter]::ToUint16($this.'#fmt'[$range] -as [byte[]], 0)

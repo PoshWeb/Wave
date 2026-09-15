@@ -16,10 +16,10 @@ param()
 
 if ($IsLinux) {
     $filePath = $this.Save().FullName
-    $null = aplay $filePath &
+    $null = Start-Process -FilePath aplay -ArgumentList $filePath
 } elseif ($IsMacOS) {
     $filePath = $this.Save().FullName
-    $null = afplay $filePath &
+    $null = Start-Process -FilePath afplay -ArgumentList $filePath
 } else {
     if (-not ('Media.SoundPlayer' -as [type])) {
         Add-Type -AssemblyName System.Windows.Extensions
