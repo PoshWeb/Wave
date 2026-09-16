@@ -1,8 +1,22 @@
 <#
 .SYNOPSIS
-    `.wav` stream
+    Makes `.wav`es
 .DESCRIPTION
-    Creates a `.wav` stream.
+    Makes a Wave stream.
+
+    This lets us make music with PowerShell.
+.NOTES
+    ### What This Script Does
+
+    This script return a Wave in a `[IO.Stream]`.
+
+    If a `-Path` is provided, 
+    it will read the file into a `[IO.MemoryStream]`, 
+    and we will call it a `audio/wav`.
+    
+    If a `-Stream` is provided, we will call it an `audio/wav`.
+
+    If neither is provided, will create a new waveform. 
 .LINK
     https://en.wikipedia.org/wiki/WAV#WAV_file_header
 #>
@@ -86,15 +100,19 @@ $PCM,
 $AsJob
 )
 
+$allInput = @($input)
+
+if (-not $allInput) {
+    $allInput = $InputObject
+}
+
 if ($AsJob) {
     $IO = [Ordered]@{} + $PSBoundParameters
     $IO.Remove('AsJob')
     $IO.ModulePath = $MyInvocation.MyCommand.Module.Path -replace '\.psm1$', '.psd1'
-    $waveJob = Start-ThreadJob {
-        param(
-        [Collections.IDictionary]
-        $Parameter
-        )
+    $IO.InputObject = $allInput
+    $JobDefinition = {
+        param([Collections.IDictionary]$Parameter)
 
         if ($Parameter.ModulePath) {
             Import-Module $parameter.ModulePath
@@ -102,9 +120,35 @@ if ($AsJob) {
         }
 
         Wave @Parameter
-    } -ArgumentList $IO  
+    }
+    if ($ExecutionContext.SessionState.InvokeCommand.GetCommand('Start-ThreadJob', 'Cmdlet')) {
+        Start-ThreadJob -ScriptBlock $JobDefinition -ArgumentList $IO
+    } else {
+        Start-Job -ScriptBlock $JobDefinition -ArgumentList $IO
+    }
+    $waveJob = Start-ThreadJob 
         
     return $waveJob
+}
+
+if ($allInput.Length) {
+    # This will attempt to be a bit clever, 
+    # but hopefully not too much.
+
+    foreach ($in in $allInput) {
+        if ($in.pstypenames -contains 'audio/wav') {
+            $in.Go($ArgumentList)
+            continue
+        }
+        
+        if ($in -is [IO.FileInfo] -and 
+            $in.Extension -eq '.wav'
+        ) {
+            $in
+        }
+    }
+
+    return
 }
 
 filter toWave {
@@ -121,8 +165,7 @@ filter toWave {
         
     } else {
         $WaveStream
-    }
-    
+    }    
 }
 
 if ($Stream) {
@@ -182,8 +225,7 @@ elseif (-not $Stream) {
 
     $binaryWriter.Write($BytesPerSecond)
         
-    # Block Alignment. (not number of bytes per block) (NbrChannels * BitsPerSample / 8)
-    # Block Alignment
+    # Bytes Per Block (ChannelCount * BitsPerSample / 8)
     $binaryWriter.Write($BytesPerBlock)
     # Number of bits per sample
     $binaryWriter.Write($BitsPerSample)
