@@ -285,7 +285,7 @@ runs:
             if ($shouldSkip) {
                 return 
             }
-            $scriptFiles = @(
+            $scriptFiles = @(@(
                 Get-ChildItem -Recurse -Path $env:GITHUB_WORKSPACE |
                     Where-Object Extension -eq .ps1 |
                     Where-Object Name -Match $ScriptFilePattern
@@ -303,7 +303,7 @@ runs:
                             Where-Object FullName -Like $ActionScript
                     }
                 }
-            ) | Select-Object -Unique
+            ) | Select-Object -Unique)
         
             "Found $($scriptFiles.Length) script files matching '$($ScriptFilePattern)'" | Out-Host
             $scriptFiles | Out-Host
