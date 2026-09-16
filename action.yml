@@ -287,7 +287,7 @@ runs:
             }
             $scriptFiles = @(
                 Get-ChildItem -Recurse -Path $env:GITHUB_WORKSPACE |
-                    Where-Object Extension -eq ps1 |
+                    Where-Object Extension -eq .ps1 |
                     Where-Object Name -Match $ScriptFilePattern
                 if ($ActionScript) {
                     if ($ActionScript -match '^\s{0,}/' -and $ActionScript -match '/\s{0,}$') {
@@ -307,7 +307,7 @@ runs:
         
             "Found $($scriptFiles.Length) script files matching '$($ScriptFilePattern)'" | Out-Host
             $scriptFiles | Out-Host
-            
+        
             $scriptFiles |
                 ForEach-Object -Begin {
                     if ($env:GITHUB_STEP_SUMMARY) {
