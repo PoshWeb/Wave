@@ -14,11 +14,11 @@ $waveGenerationTime = Measure-Command {
     $wavePath = "./8bit/$(
         $note -replace '#','Sharp'
     ).wav"
-#if (-not (Test-Path $wavePath)) {
-        $wave = wave tone $wav.NoteFrequency[$note]
-        $waveFiles += $wave.Save($wavePath)
-        $waves += $wave
-#}    
+    if (-not (Test-Path $wavePath)) {
+            $wave = wave tone $wav.NoteFrequency[$note]
+            $waveFiles += $wave.Save($wavePath)
+            $waves += $wave
+    }    
     }
 }
 
@@ -32,5 +32,10 @@ $totalDuration = $waves |
     }
     
 $speed = $totalDuration/$waveGenerationTime 
-"Generated $($waves.Length) waves with a total duration of $totalDuration in $waveGenerationTime : Speed $speed"
+
+"Generated $($waves.Length) waves with a total duration of $totalDuration in $waveGenerationTime : Speed $speed" | 
+    Out-Host
+
+$waveFiles
+
 Pop-Location
