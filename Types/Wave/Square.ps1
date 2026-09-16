@@ -69,7 +69,7 @@ $BytesPerSecond = $SampleRate * $channelCount * $BitsPerSample/8
 
 # Cache our references, for the minor speed boost it may give us.
 $math = [Math]
-$GetBytes = $BitConverter::GetBytes
+$GetBytes = [BitConverter]::GetBytes
 
 # Calculate the number of samples
 $numberOfSamples = $math::Round($Duration.TotalSeconds * $BytesPerSecond) 
