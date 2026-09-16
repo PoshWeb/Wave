@@ -283,7 +283,7 @@ for ($index = 0; $index -lt $NoteSequence.Length; $index++) {
         $Instrument = 'Silence'        
     }
 
-    if (-not $this.Instrument.Script) {
+    if (-not $this.$Instrument.Script) {
         throw "Invalid Instrument $Instrument (must be a script method)"
     }
 
