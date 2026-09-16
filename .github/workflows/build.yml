@@ -497,4 +497,5 @@ jobs:
         if: ${{github.ref_name != 'main'}}
         uses: ./
         id: WaveAction
+        commitMessage: Making Waves
 
