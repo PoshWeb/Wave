@@ -123,9 +123,13 @@ for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
         continue # and continue 
     }
     
-    # If we are dealing with non-floating point audio
-    # We've got to clamp it down to an amplitude between -1 and 1    
-    $sample = $math::Clamp($sample, -1.0, 1.0)    
+    # If we are dealing with [byte], [int16], or [int32] audio formats,
+    # We've got to clamp it down to an amplitude between -1 and 1.    
+
+    # Unfortunately, `Clamp` is not part of older .NET framework versions
+    # So we will clamp the old-fashioned way, with an `if`
+    if ($sample -gt 1) { $sample = 1 }
+    elseif ($sample -lt -1) { $sample = -1 }
 
     # If there are 8 bits per sample
     if ($BitsPerSample -eq 8) {        
