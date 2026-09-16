@@ -1875,7 +1875,7 @@ $BytesPerSecond = $SampleRate * $channelCount * $BitsPerSample/8
 
 # Cache our references, for the minor speed boost it may give us.
 $math = [Math]
-$GetBytes = $BitConverter::GetBytes
+$GetBytes = [BitConverter]::GetBytes
 
 # Calculate the number of samples
 $numberOfSamples = $math::Round($Duration.TotalSeconds * $BytesPerSecond) 
@@ -2247,7 +2247,7 @@ for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
     # We've got to clamp it down to an amplitude between -1 and 1.
 
     # Unfortunately, `Clamp` is not part of older .NET framework versions
-    # So we will clamp the old fashioned way, with an `if`
+    # So we will clamp the old-fashioned way, with an `if`
     if ($sample -gt 1) { $sample = 1 }
     elseif ($sample -lt -1) { $sample = -1 }
 
@@ -2403,7 +2403,7 @@ for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
     # If we are dealing with non-floating point audio
     # We've got to clamp it down to an amplitude between -1 and 1.
     # Unfortunately, `Clamp` is not part of older .NET framework versions
-    # So we will clamp the old fashioned way, with an `if`
+    # So we will clamp the old-fashioned way, with an `if`
     if ($sample -gt 1) { $sample = 1 }
     elseif ($sample -lt -1) { $sample = -1 }
         
