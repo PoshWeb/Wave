@@ -110,7 +110,7 @@ for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
     # We've got to clamp it down to an amplitude between -1 and 1.
 
     # Unfortunately, `Clamp` is not part of older .NET framework versions
-    # So we will clamp the old fashioned way, with an `if`
+    # So we will clamp the old-fashioned way, with an `if`
     if ($sample -gt 1) { $sample = 1 }
     elseif ($sample -lt -1) { $sample = -1 }
 
