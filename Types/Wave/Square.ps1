@@ -28,18 +28,47 @@ param(
 [float]$Volume = $(
     if ($this.Volume) { $this.Volume }
     else { 0.5 }
+),
+
+# The sample rate.
+# Will default to the `.SampleRate` of `$this` wave.
+# If there is no `$this` wave, will default to 44100
+[uint32]$SampleRate = $(
+    if ($this.SampleRate) { $this.SampleRate } 
+    else { 44100 }
+),
+
+
+# The bits per sample.
+# Will default to the `.BitsPerSample` of `$this` wave.
+# If there is no `$this` wave, will default to 4.
+[uint16]$BitsPerSample = $(
+    if ($this.BitsPerSample) { $this.BitsPerSample } 
+    else { 4 }
+),
+
+# The channel count.
+# Will default to the `.ChannelCount` of `$this` wave.
+# If there is no `$this` wave, will default to 1 (mono).
+[uint16]$channelCount = $(
+    if ($this.ChannelCount) { $this.ChannelCount } 
+    else { 1 }
+),
+
+# The audio format.
+# Will default to the `.AudioFormat` of `$this` wave.
+# If there is no `$this` wave, will default to 3 (IEEE floating point).
+[uint16]$AudioFormat = $(
+    if ($this.AudioFormat) { $this.AudioFormat } 
+    else { 3 }
 )
 )
 
 # Cache our property values, so we are not wasting cycles.
-$sampleRate = $this.SampleRate
-$channelCount = $this.ChannelCount
-$BytesPerSecond = $this.BytesPerSecond
-$BitsPerSample = $this.BitsPerSample
+$BytesPerSecond = $SampleRate * $channelCount * $BitsPerSample/8
 
 # Cache our references, for the minor speed boost it may give us.
 $math = [Math]
-$BitConverter = [BitConverter]
 $GetBytes = $BitConverter::GetBytes
 
 # Calculate the number of samples
@@ -82,9 +111,6 @@ for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
     # We will scale this by the volume, and then by the envelope.
     $sample = $sample * $volume * $envelope
 
-    # Clamp our sample
-    $sample = $math::Clamp($sample, -1.0, 1.0)
-
     #region Encode Sample
 
     # We _could_ encapsulate the encoding off into it's own procedure.
@@ -94,8 +120,20 @@ for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
     # Inline code will be quicker.
     # (hence duplicating it across multiple files)
 
+    # If we are using 32-bit floating point audio
+    if ($BitsPerSample -eq 32 -and $audioFormat -eq 3) {
+        # we are basically done.
+        # No clamping required. # Just cast to float, 
+        $GetBytes.Invoke([float]$sample) # get the bytes,
+        continue # and continue 
+    }
+    
+    # If we are dealing with non-floating point audio
+    # We've got to clamp it down to an amplitude between -1 and 1    
+    $sample = $math::Clamp($sample, -1.0, 1.0)    
+
     # If there are 8 bits per sample
-    if ($BitsPerSample -eq 8) {
+    if ($BitsPerSample -eq 8) {        
         # round each sample into bytes, with 128 as the zero point.
         [byte]$math::Round(
             128 + $sample * 127
