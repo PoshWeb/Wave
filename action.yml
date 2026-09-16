@@ -7,7 +7,6 @@ inputs:
     description: |
       A PowerShell Script that uses Wave.  
       Any files outputted from the script will be added to the repository.
-      If those files have a .Message attached to them, they will be committed with that message.
   ScriptFilePattern: 
     required: false
     default: '\.wave?\.ps1$'
@@ -20,16 +19,6 @@ inputs:
   InstallModule: 
     required: false
     description: A list of modules to be installed from the PowerShell gallery before scripts run.
-  CommitMessage: 
-    required: false
-    description: |
-      If provided, will commit any remaining changes made to the workspace with this commit message.
-      If no commit message is provided, will not commit changes.
-  TargetBranch: 
-    required: false
-    description: |
-      If provided, will checkout a new branch before making the changes.
-      If not provided, will use the current branch.
   ActionScript: 
     required: false
     description: The name of one or more scripts to run, from this action's path.
@@ -37,22 +26,6 @@ inputs:
     required: false
     default: '{{ secrets.GITHUB_TOKEN }}'
     description: The github token to use for requests.
-  UserEmail: 
-    required: false
-    description: The user email associated with a git commit.  If this is not provided, it will be set to the username@noreply.github.com.
-  UserName: 
-    required: false
-    description: The user name associated with a git commit.
-  NoPush: 
-    required: false
-    description: |
-      If set, will not push any changes made to the repository.
-      (they will still be committed if a commit message is provided but `-NoCommit` is passed)
-  NoCommit: 
-    required: false
-    description: |
-      If set, will not commit any changes made to the repository.
-      (this also implies `-NoPush`)
 branding: 
   icon: terminal
   color: blue
@@ -63,17 +36,11 @@ runs:
       id: WaveAction
       shell: pwsh
       env: 
-        NoPush: ${{inputs.NoPush}}
-        CommitMessage: ${{inputs.CommitMessage}}
-        UserEmail: ${{inputs.UserEmail}}
         SkipScriptFile: ${{inputs.SkipScriptFile}}
-        NoCommit: ${{inputs.NoCommit}}
         ScriptFilePattern: ${{inputs.ScriptFilePattern}}
         InstallModule: ${{inputs.InstallModule}}
-        Run: ${{inputs.Run}}
         GitHubToken: ${{inputs.GitHubToken}}
-        UserName: ${{inputs.UserName}}
-        TargetBranch: ${{inputs.TargetBranch}}
+        Run: ${{inputs.Run}}
         ActionScript: ${{inputs.ActionScript}}
       run: |
         $Parameters = @{}
@@ -83,17 +50,9 @@ runs:
         $Parameters.SkipScriptFile = $parameters.SkipScriptFile -match 'true';
         $Parameters.InstallModule = ${env:InstallModule}
         $Parameters.InstallModule = $parameters.InstallModule -split ';' -replace '^[''"]' -replace  '[''"]$'
-        $Parameters.CommitMessage = ${env:CommitMessage}
-        $Parameters.TargetBranch = ${env:TargetBranch}
         $Parameters.ActionScript = ${env:ActionScript}
         $Parameters.ActionScript = $parameters.ActionScript -split ';' -replace '^[''"]' -replace  '[''"]$'
         $Parameters.GitHubToken = ${env:GitHubToken}
-        $Parameters.UserEmail = ${env:UserEmail}
-        $Parameters.UserName = ${env:UserName}
-        $Parameters.NoPush = ${env:NoPush}
-        $Parameters.NoPush = $parameters.NoPush -match 'true';
-        $Parameters.NoCommit = ${env:NoCommit}
-        $Parameters.NoCommit = $parameters.NoCommit -match 'true';
         foreach ($k in @($parameters.Keys)) {
             if ([String]::IsNullOrEmpty($parameters[$k])) {
                 $parameters.Remove($k)
@@ -110,17 +69,11 @@ runs:
             * If `-Run` is provided, run that script
             * Otherwise, unless `-SkipScriptFile` is passed, run all *.wave.ps1 files beneath the workflow directory
               * If any `-ActionScript` was provided, run scripts from the action path that match a wildcard pattern.
-        
-            If you will be making changes using the GitHubAPI, you should provide a -GitHubToken
-            If none is provided, and ENV:GITHUB_TOKEN is set, this will be used instead.
-            Any files changed can be outputted by the script, and those changes can be checked back into the repo.
-            Make sure to use the "persistCredentials" option with checkout.
         #>
         
         param(
         # A PowerShell Script that uses Wave.  
         # Any files outputted from the script will be added to the repository.
-        # If those files have a .Message attached to them, they will be committed with that message.
         [string]
         $Run,
         
@@ -137,41 +90,13 @@ runs:
         [string[]]
         $InstallModule,
         
-        # If provided, will commit any remaining changes made to the workspace with this commit message.
-        # If no commit message is provided, will not commit changes.
-        [string]
-        $CommitMessage,
-        
-        # If provided, will checkout a new branch before making the changes.
-        # If not provided, will use the current branch.
-        [string]
-        $TargetBranch,
-        
         # The name of one or more scripts to run, from this action's path.
         [string[]]
         $ActionScript,
         
         # The github token to use for requests.
         [string]
-        $GitHubToken = '{{ secrets.GITHUB_TOKEN }}',
-        
-        # The user email associated with a git commit.  If this is not provided, it will be set to the username@noreply.github.com.
-        [string]
-        $UserEmail,
-        
-        # The user name associated with a git commit.
-        [string]
-        $UserName,
-        
-        # If set, will not push any changes made to the repository.
-        # (they will still be committed if a commit message is provided but `-NoCommit` is passed)
-        [switch]
-        $NoPush,
-        
-        # If set, will not commit any changes made to the repository.
-        # (this also implies `-NoPush`)
-        [switch]
-        $NoCommit
+        $GitHubToken = '{{ secrets.GITHUB_TOKEN }}'
         )
         
         $ErrorActionPreference = 'continue'
@@ -245,35 +170,12 @@ runs:
                     Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
             }
         }
-        function InitializeAction {
-            #region Custom 
-            #endregion Custom
-        
-            # Configure git based on the $env:GITHUB_ACTOR
-            if (-not $UserName) { $UserName = $env:GITHUB_ACTOR }
-            if (-not $actorID)  { $actorID = $env:GITHUB_ACTOR_ID }    
-            if (-not $UserEmail) { $UserEmail = "$actorId+$UserName@users.noreply.github.com" }
-            git config --global user.email $UserEmail
-            git config --global user.name  $UserName
-        
-            # Pull down any changes
-            git pull | Out-Host
-        
-            if ($TargetBranch) {
-                "::notice title=Expanding target branch string $targetBranch" | Out-Host
-                $TargetBranch = $ExecutionContext.SessionState.InvokeCommand.ExpandString($TargetBranch)
-                "::notice title=Checking out target branch::$targetBranch" | Out-Host
-                git checkout -b $TargetBranch | Out-Host    
-                git pull | Out-Host
-            }
-        }
         
         function InvokeActionModule {
             $myScriptStart = [DateTime]::Now
             $myScript = $ExecutionContext.SessionState.PSVariable.Get("Run").Value
             if ($myScript) {
-                Invoke-Expression -Command $myScript |
-                    . ProcessOutput |
+                Invoke-Expression -Command $myScript |            
                     Out-Host
                 return
             }
@@ -333,8 +235,7 @@ runs:
                     }
                     Push-Location $scriptFile.Directory.Fullname
                     $scriptFileOutputs = . $scriptCmd
-                    $scriptFileOutputs |
-                        . ProcessOutput  | 
+                    $scriptFileOutputs |                
                         Out-Host
                     Pop-Location
                 }    
@@ -384,68 +285,7 @@ runs:
             }
         }
         
-        function PushActionOutput {
-            if ($anyFilesChanged) {
-                "::notice::$($anyFilesChanged) Files Changed" | Out-Host        
-            }
-            if ($CommitMessage -and $anyFilesChanged) {
-                if ($CommitMessage) {
-                    Get-ChildItem $env:GITHUB_WORKSPACE -Recurse |
-                        ForEach-Object {
-                            $gitStatusOutput = git status $_.Fullname -s
-                            if ($gitStatusOutput) {
-                                git add $_.Fullname
-                            }
-                        }
-            
-                    git commit -m $CommitMessage
-                }
-            
-                $checkDetached = git symbolic-ref -q HEAD
-                if (-not $LASTEXITCODE -and $NoPush -and -not $noCommit) {
-                    if ($TargetBranch -and $anyFilesChanged) {
-                        "::notice::Pushing Changes to $targetBranch" | Out-Host
-                        git push --set-upstream origin $TargetBranch
-                    } elseif ($anyFilesChanged) {
-                        "::notice::Pushing Changes" | Out-Host
-                        git push
-                    }
-                    "Git Push Output: $($gitPushed  | Out-String)"
-                } else {
-                    "::notice::Not pushing changes (on detached head)" | Out-Host
-                    $LASTEXITCODE = 0
-                    exit 0
-                }
-            }
-        }
-        
-        filter ProcessOutput {
-            $out = $_
-            $outItem = Get-Item -Path $out -ErrorAction Ignore
-            if (-not $outItem -and $out -is [string]) {
-                $out | Out-Host
-                if ($env:GITHUB_STEP_SUMMARY) {
-                    "> $out" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
-                }
-                return
-            }
-            $fullName, $shouldCommit = 
-                if ($out -is [IO.FileInfo]) {
-                    $out.FullName, (git status $out.Fullname -s)
-                } elseif ($outItem) {
-                    $outItem.FullName, (git status $outItem.Fullname -s)
-                }
-            if ($shouldCommit -and -not $NoCommit) {
-                "$fullName has changed, and should be committed" | Out-Host
-                git add $fullName        
-                $anyFilesChanged = $true
-            }    
-            $out
-        }
-        
         . ImportActionModule
-        . InitializeAction
         . InvokeActionModule
-        . PushActionOutput
         . OutError} @Parameters
 
