@@ -1967,8 +1967,13 @@ param(
     else { [TimeSpan]::FromSeconds(60/128) }
 ),
 
-# The volume
-[float]$Volume = 0.5,
+# The volume.
+# If the current wave has set a `volume`, 
+# will use that volume.
+# Otherwise, will default to 0.5
+[float]$Volume = $(
+    if ($this.Volume) { $this.Volume } else { 0.5 }
+),
 
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
