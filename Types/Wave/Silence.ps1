@@ -15,8 +15,7 @@ param(
 # Will default to the `.SampleRate` of `$this` wave.
 # If there is no `$this` wave, will default to 44100
 [uint32]$SampleRate = $(
-    if ($this.SampleRate) { $this.SampleRate } 
-    else { 44100 }
+    if ($this.SampleRate) { $this.SampleRate } else { 44100 }
 ),
 
 
@@ -24,16 +23,14 @@ param(
 # Will default to the `.BitsPerSample` of `$this` wave.
 # If there is no `$this` wave, will default to 4.
 [uint16]$BitsPerSample = $(
-    if ($this.BitsPerSample) { $this.BitsPerSample } 
-    else { 4 }
+    if ($this.BitsPerSample) { $this.BitsPerSample } else { 4 }
 ),
 
 # The channel count.
 # Will default to the `.ChannelCount` of `$this` wave.
 # If there is no `$this` wave, will default to 1 (mono).
 [uint16]$channelCount = $(
-    if ($this.ChannelCount) { $this.ChannelCount } 
-    else { 1 }
+    if ($this.ChannelCount) { $this.ChannelCount } else { 1 }
 )
 )
 
