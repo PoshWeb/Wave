@@ -256,7 +256,9 @@ elseif (-not $Stream) {
                 $GetBytes.Invoke([int32]($sample * 2147483647))
             }
             #endregion Encode Sample
-        })        
+        })
+        $memoryStream | 
+            Add-Member NoteProperty '#Samples' $Samples -Force
     }
     
     $stream =     
