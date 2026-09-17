@@ -4,4 +4,5 @@
     Sin = 'Tone'
     Sine = 'Tone'
     Saw = 'Sawtooth'
+    Tri = 'Triangle'    
 }
