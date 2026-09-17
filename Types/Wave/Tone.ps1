@@ -41,7 +41,7 @@ param(
 )
 
 # Calculate the number of samples
-$numberOfSamples = $math::Round(
+$numberOfSamples = [Math]::Round(
     $Duration.TotalSeconds * $SampleRate * $channelCount
 )
 
