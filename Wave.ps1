@@ -56,16 +56,19 @@ $ArgumentList,
 $InputObject,
 
 # The number of channels
+[Alias('Channels')]
 [uint16]
 $ChannelCount = 1,
 
 # The bits per sample
+[Alias('bps')]
 [uint16]
 $BitsPerSample = 8,
 
 # The sample rate, in hertz
-[int]
-$Rate = 44100,
+[uint32]
+[Alias('Rate')]
+$SampleRate = 44100,
 
 # Audio format (2 bytes) (1: PCM integer, 3: IEEE 754 float)
 [uint16]
@@ -214,14 +217,14 @@ elseif (-not $Stream) {
     $binaryWriter.Write($ChannelCount)
 
     # Sample rate (in hertz)
-    $binaryWriter.Write($Rate)
+    $binaryWriter.Write($SampleRate)
 
     if (-not $BytesPerBlock) {
         $BytesPerBlock = $ChannelCount * $BitsPerSample/8
     }
     
     # Number of bytes to read per channel per second (Frequency * BytePerBloc).
-    $BytesPerSecond = $Rate * $BytesPerBlock
+    $BytesPerSecond = $SampleRate * $BytesPerBlock
 
     $binaryWriter.Write($BytesPerSecond)
         
