@@ -315,9 +315,6 @@ elseif (-not $Stream) {
         # and the data chunk.
         $binaryWriter.Write($PCM)
     }
-    
-    $Time = [TimeSpan]::FromSeconds($pcm.Length / $BytesPerSecond)
-
     # Seek the stream back to 0.
     $memoryStream.Position = 0
 
