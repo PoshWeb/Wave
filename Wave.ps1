@@ -56,25 +56,33 @@ $ArgumentList,
 $InputObject,
 
 # The number of channels
-[Alias('Channels')]
+[Alias('Channels','CC')]
 [uint16]
 $ChannelCount = 1,
 
 # The bits per sample
-[Alias('bps')]
+[Alias('BPS')]
 [uint16]
 $BitsPerSample = 8,
 
 # The sample rate, in hertz
 [uint32]
-[Alias('Rate')]
+[Alias('Rate','SR')]
 $SampleRate = 44100,
 
 # Audio format (2 bytes) (1: PCM integer, 3: IEEE 754 float)
+[ValidateScript({
+    if ($_ -notin 1,3) {
+        throw "Audio Format must be 1 (PCM integer) or 3 (IEEE float)"
+    }
+    return $true
+})]
+[Alias('AF')]
 [uint16]
 $AudioFormat = 1,
 
 # The number of bytes per block
+[Alias('BPB', 'PB')]
 [uint16]
 $BytesPerBlock,
 
@@ -94,7 +102,14 @@ $Path,
 [IO.Stream]
 $Stream,
 
+# A series of samples.
+# These will be converted to PCM data
+[Alias('Sample')]
+[double[]]
+$Samples,
+
 # The sample data.
+[Alias('PulseControlModulation')]
 [byte[]]
 $PCM,
 
@@ -164,8 +179,7 @@ filter toWave {
             $WaveStream.Go($ArgumentList)
         } catch {
             $PSCmdlet.WriteError($_)
-        }
-        
+        }        
     } else {
         $WaveStream
     }    
@@ -187,6 +201,64 @@ elseif ($Path) {
     }  
 }
 elseif (-not $Stream) {    
+    
+    if ($AudioFormat -eq 3 -and $BitsPerSample -lt 32) {
+        $BitsPerSample = 32
+    }
+
+    if ($samples -and -not $PCM) {
+        $GetBytes = [BitConverter]::GetBytes
+        $PCM = @(foreach ($sample in $samples) {
+            #region Encode Sample
+
+            # We _could_ encapsulate the encoding off into it's own procedure.
+
+            # However, callstacks have overhead.
+
+            # Inline code will be quicker.
+            # (hence duplicating it across multiple files)
+
+            # If we are using 32-bit floating point audio
+            if ($BitsPerSample -eq 32 -and $audioFormat -eq 3) {
+                # we are basically done.
+                # No clamping required. # Just cast to float, 
+                $GetBytes.Invoke([float]$sample) # get the bytes,
+                continue # and continue 
+            }
+
+            # If we are dealing with whole number audio formats,
+            # We've got to clamp it down to an amplitude between -1 and 1.
+
+            # Unfortunately, `Clamp` is not part of older .NET framework versions
+            # So we will clamp the old-fashioned way, with an `if`
+            if ($sample -gt 1) { $sample = 1 }
+            elseif ($sample -lt -1) { $sample = -1 }
+
+            # If there are 8 bits per sample
+            if ($BitsPerSample -eq 8) {
+                # round each sample into bytes, with 128 as the zero point.
+                [byte][Math]::Round(
+                    128 + $sample * 127
+                )
+            }
+
+            # If there are 16 bits per sample
+            elseif ($BitsPerSample -eq 16) {
+                # we just need to scale an `[int16]`
+                # Hardcode `[int16]::MaxValue` for speed
+                $GetBytes.Invoke([int16]($sample * 32767))
+            }
+
+            # If there are 32 bits per sample
+            elseif ($BitsPerSample -eq 32) {
+                # we can just scale to an `[int32]`.
+                # Hardcode `[int32]::MaxValue` for speed
+                $GetBytes.Invoke([int32]($sample * 2147483647))
+            }
+            #endregion Encode Sample
+        })        
+    }
+    
     $stream =     
         $memoryStream =
             [IO.MemoryStream]::new()
@@ -247,14 +319,7 @@ elseif (-not $Stream) {
     # Seek the stream back to 0.
     $memoryStream.Position = 0
 
-    # Decorate the memory stream with two typenames:
-    # * `audio/wav` (its content type)
-    # * `Wave` (its pseudotype)
-    $memoryStream.pstypenames.insert(0,'audio/wav')
-    $memoryStream.pstypenames.insert(0,'Wave')
-
-    # Return the memory stream
-    $memoryStream | toWave
+    return $memoryStream | toWave
 }
 
 if (-not $memoryStream) { return }
