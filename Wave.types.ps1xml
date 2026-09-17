@@ -37,6 +37,10 @@
         <Name>Sine</Name>
         <ReferencedMemberName>Tone</ReferencedMemberName>
       </AliasProperty>
+      <AliasProperty>
+        <Name>Tri</Name>
+        <ReferencedMemberName>Triangle</ReferencedMemberName>
+      </AliasProperty>
       <ScriptMethod>
         <Name>Chirp</Name>
         <Script>
@@ -1892,8 +1896,7 @@ param(
 # will use that volume.
 # Otherwise, will default to 0.5
 [float]$Volume = $(
-    if ($this.Volume) { $this.Volume}
-    else { 0.5 }
+    if ($this.Volume) { $this.Volume } else { 0.5 }
 ),
 
 # The sample rate.
@@ -1915,10 +1918,9 @@ param(
 $numberOfSamples = [Math]::Round(
     $Duration.TotalSeconds * $SampleRate * $channelCount
 )
-
 # We can imagine each cycle as a series of circles
 # how many circles?  Whatever our frequency may be.
-$cycle = 2 * $math::PI * $Frequency
+$cycle = 2 * [Math]::PI * $Frequency
 $stepAngle = $cycle/($sampleRate * $channelCount)
 
 # Return a `[double[]]` containing the samples
@@ -1972,63 +1974,39 @@ param(
 # Will default to the `.SampleRate` of `$this` wave.
 # If there is no `$this` wave, will default to 44100
 [uint32]$SampleRate = $(
-    if ($this.SampleRate) { $this.SampleRate } 
-    else { 44100 }
-),
-
-
-# The bits per sample.
-# Will default to the `.BitsPerSample` of `$this` wave.
-# If there is no `$this` wave, will default to 4.
-[uint16]$BitsPerSample = $(
-    if ($this.BitsPerSample) { $this.BitsPerSample } 
-    else { 4 }
+    if ($this.SampleRate) { $this.SampleRate } else { 44100 }
 ),
 
 # The channel count.
 # Will default to the `.ChannelCount` of `$this` wave.
 # If there is no `$this` wave, will default to 1 (mono).
 [uint16]$channelCount = $(
-    if ($this.ChannelCount) { $this.ChannelCount } 
-    else { 1 }
+    if ($this.ChannelCount) { $this.ChannelCount } else { 1 }
 )
 )
-
-# Cache our property values, so we are not wasting cycles.
-$BytesPerSecond = $SampleRate * $channelCount * $BitsPerSample/8
-
-# Cache our references, for the minor speed boost it may give us.
-$math = [Math]
 
 # Calculate the number of samples
-$numberOfSamples = $math::Round($Duration.TotalSeconds * $BytesPerSecond) 
+$numberOfSamples = [Math]::Round(    
+    $Duration.TotalSeconds * $SampleRate * $channelCount
+) 
 
-# Our step size is the bits per sample / 8
-$step = $BitsPerSample/8
+# We can imagine each cycle as a series of circles
+# how many circles?  Whatever our frequency may be.
+$cycle = 2 * [Math]::PI * $Frequency
+$stepAngle = $cycle/($sampleRate * $channelCount)
 
-# The divisor will remain the same, so compute it now.
-$divisor = ($sampleRate * $channelCount * $step)
-
-# We will return the wave as a `[double[]]`,
-# and preceeed it by a comma so that we return all samples at once.
-
+# Return a `[double[]]` containing the samples
 return ,[double[]]@(
-    # We will generate one sample at a time.
-    for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
-        # Calculate the envelope
+    # generated one at a time
+    for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
+        # The sample is the arc sin of the sine of the angle
+        $sample = [Math]::asin([Math]::sin($stepAngle * $i)) 
+
+        # Our envelope is how we want to enclose the sound.
+        # This will fade the sound over the `-Duration`
         $envelope = 1.0 - ($i / $numberOfSamples)
 
-        # We can imagine each cycle as a series of circles
-        # how many circles?  Whatever our frequency may be.
-        $cycle = (2 * $math::PI * $Frequency)
-        
-        # Calculate the angle at this point in time (in radians)
-        $angle = ($cycle * $i) / $divisor
-
-        # The sample at this moment is the arc tangent of half that angle
-        $sample = $math::asin($math::sin($angle))
-
-        # We will scale this by the volume, and then by the envelope.
+        # We scale our sample by the volume and the envelope
         $sample * $volume * $envelope
     }
 )
