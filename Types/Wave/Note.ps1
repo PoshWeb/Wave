@@ -9,7 +9,7 @@
     wave note cafe
 .EXAMPLE
     wave note d e c c3 g3
-.EXAMPLE
+.EXAMPLE    
     $Korobeiniki = wav @(
         'note'
         ('
@@ -25,18 +25,15 @@
     $Korobeiniki.Play()
 
 .EXAMPLE
-    $Korobeiniki = wav @(
-        'note'
-        ('
-            𝅝 e5 𝅗𝅥 b4 c5 𝅝 d5 𝅗𝅥 c5 b4
-            𝅝 a4 𝅗𝅥 a4 c5 𝅝 e5 𝅗𝅥 d5 c5
-            𝅝 b4 𝅗𝅥 ~  c5 𝅝 d5 e5 c5 a4 a4 ~
-            𝅗𝅥 ~ d5 ~ f5 𝅝 a5 𝅗𝅥 g5 f5 
-            𝅝 e5 𝅗𝅥 ~ c5 𝅝 e5 𝅗𝅥 d5 c5 
-            𝅝 b4 𝅗𝅥 b4 c5 𝅝 d5 e5 c5 a4 a4 ~
-        ' * 4)
-        '<sine> <square> <triangle> <saw>'    
-    )
+    $tune = '
+        𝅝 e5 𝅗𝅥 b4 c5 𝅝 d5 𝅗𝅥 c5 b4
+        𝅝 a4 𝅗𝅥 a4 c5 𝅝 e5 𝅗𝅥 d5 c5
+        𝅝 b4 𝅗𝅥 ~  c5 𝅝 d5 e5 c5 a4 a4 ~
+        𝅗𝅥 ~ d5 ~ f5 𝅝 a5 𝅗𝅥 g5 f5 
+        𝅝 e5 𝅗𝅥 ~ c5 𝅝 e5 𝅗𝅥 d5 c5 
+        𝅝 b4 𝅗𝅥 b4 c5 𝅝 d5 e5 c5 a4 a4 ~
+    '
+    $Korobeiniki = wav note $tune '<sine> <square> <triangle> <saw>'
     $Korobeiniki.Play()
 .EXAMPLE
     $tune = 'c'
@@ -229,6 +226,14 @@ $null = $events.GenerateEvent(
 )
 
 
+
+$waveSplat = [Ordered]@{
+    AudioFormat = $this.AudioFormat
+    SampleRate = $this.SampleRate
+    ChannelCount = $this.ChannelCount
+    BitsPerSample = $this.BitsPerSample
+}
+
 # Next up: Instruments!
 # We can think of any Script Method on this object as an instrument
 # (though not all of them will make pleasing sounds)
@@ -269,7 +274,7 @@ for ($index = 0; $index -lt $NoteSequence.Length; $index++) {
     # and writing progress as we go.
     $progress.PercentComplete = $index * 100 / $NoteSequence.Length
     $progress.Activity = "$($note.Name)@$($note.Duration) $index / $($NoteSequence.Length)"
-    Write-Progress @progress    
+    Write-Progress @progress
 
     # Get the instrument used for this sample.
     if ($Instruments.Length) {
@@ -342,11 +347,21 @@ for ($index = 0; $index -lt $NoteSequence.Length; $index++) {
     )
     
     if (-not $WaveCache[$cacheKey]) {
-        # And call our instrument script.  This should output a stream of bytes.
-        $WaveCache[$cacheKey] = [byte[]](. $this.$instrument.Script @instrumentParameters)
+        # Call our instrument script.  
+        # This should output be a `[byte[]]` stream of PCM data
+        # Or a `[double[]]` stream of samples.
+        $samples = . $this.$instrument.Script @instrumentParameters
+        if ($samples.Length) {
+            if ($samples[0] -is [byte]) {
+                $WaveCache[$cacheKey] = (wave @waveSplat -PCM $samples)
+            }
+            elseif ($samples[0] -is [double]) {
+                $WaveCache[$cacheKey] = (wave @waveSplat -Samples $samples)
+            }
+        }
     }
 
-    $WaveCache[$cacheKey]    
+    $WaveCache[$cacheKey].Data
     # . $this.$instrument.Script @instrumentParameters
 }    
 
