@@ -21,8 +21,7 @@ param(
 # will use that volume.
 # Otherwise, will default to 0.5
 [float]$Volume = $(
-    if ($this.Volume) { $this.Volume}
-    else { 0.5 }
+    if ($this.Volume) { $this.Volume } else { 0.5 }
 ),
 
 # The sample rate.
@@ -44,10 +43,9 @@ param(
 $numberOfSamples = [Math]::Round(
     $Duration.TotalSeconds * $SampleRate * $channelCount
 )
-
 # We can imagine each cycle as a series of circles
 # how many circles?  Whatever our frequency may be.
-$cycle = 2 * $math::PI * $Frequency
+$cycle = 2 * [Math]::PI * $Frequency
 $stepAngle = $cycle/($sampleRate * $channelCount)
 
 # Return a `[double[]]` containing the samples
