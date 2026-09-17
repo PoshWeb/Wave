@@ -28,14 +28,6 @@ param(
     if ($this.SampleRate) { $this.SampleRate } else { 44100 }
 ),
 
-
-# The bits per sample.
-# Will default to the `.BitsPerSample` of `$this` wave.
-# If there is no `$this` wave, will default to 4.
-[uint16]$BitsPerSample = $(
-    if ($this.BitsPerSample) { $this.BitsPerSample } else { 4 }
-),
-
 # The channel count.
 # Will default to the `.ChannelCount` of `$this` wave.
 # If there is no `$this` wave, will default to 1 (mono).
@@ -44,37 +36,25 @@ param(
 )
 )
 
-# Cache our property values, so we are not wasting cycles.
-$BytesPerSecond = $SampleRate * $channelCount * $BitsPerSample/8
-
-# Cache our references, for the minor speed boost it may give us.
-$math = [Math]
-
 # Calculate the number of samples
-$numberOfSamples = $math::Round($Duration.TotalSeconds * $BytesPerSecond) 
-
-# Our step size is the bits per sample / 8
-$step = $BitsPerSample/8
+$numberOfSamples = $math::Round(
+    $Duration.TotalSeconds * $SampleRate * $channelCount
+)
 
 # We can imagine each cycle as a series of circles
 # how many circles?  Whatever our frequency may be.
 $cycle = 2 * $math::PI * $Frequency
+$stepAngle = $cycle/($sampleRate * $channelCount)
 
-# The divisor will remain the same, so compute it now.
-$divisor = ($sampleRate * $channelCount * $step)
-
-return ,[double[]]@(for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
+# Return a `[double[]]` containing the samples
+return ,[double[]]@(for ($i = 0; $i -lt $numberOfSamples; $i++) {
 
     # Calculate the envelope
     $envelope = 1.0 - ($i / $numberOfSamples)
     
-    # Calculate the angle at this point in time (in radians)
-    $angle = ($cycle * $i) / $divisor    
-
-    # The sample at this moment is the sine of that angle
-    $sample = $math::Sin($angle)
+    # The sample is the sine of that angle at this moment in time.
+    $sample = [Math]::Sin($stepAngle * $i)
 
     # We will scale this by the volume, and then by the envelope.
     $sample * $Volume * $envelope
 })
-# return
