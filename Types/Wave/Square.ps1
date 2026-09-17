@@ -37,14 +37,6 @@ param(
     if ($this.SampleRate) { $this.SampleRate } else { 44100 }
 ),
 
-
-# The bits per sample.
-# Will default to the `.BitsPerSample` of `$this` wave.
-# If there is no `$this` wave, will default to 4.
-[uint16]$BitsPerSample = $(
-    if ($this.BitsPerSample) { $this.BitsPerSample } else { 4 }
-),
-
 # The channel count.
 # Will default to the `.ChannelCount` of `$this` wave.
 # If there is no `$this` wave, will default to 1 (mono).
@@ -53,48 +45,36 @@ param(
 )
 )
 
-# Cache our property values, so we are not wasting cycles.
-$BytesPerSecond = $SampleRate * $channelCount * $BitsPerSample/8
-
-# Cache our references, for the minor speed boost it may give us.
-$math = [Math]
-
 # Calculate the number of samples
-$numberOfSamples = $math::Round($Duration.TotalSeconds * $BytesPerSecond) 
+$numberOfSamples = [Math]::Round(    
+    $Duration.TotalSeconds * $SampleRate * $channelCount
+) 
 
-# Our step size is the bits per sample / 8
-$step = $BitsPerSample/8
+# We can imagine each cycle as a series of circles
+# how many circles?  Whatever our frequency may be.
+$cycle = 2 * [Math]::PI * $Frequency
+$stepAngle = $cycle/($sampleRate * $channelCount)
 
-# The divisor will remain the same, so compute it now.
-$divisor = ($sampleRate * $channelCount * $step)
-
-# We will return the wave as a `[double[]]`,
-# and preceeed it by a comma so that we return all samples at once.
+# Return a `[double[]]` containing the samples
 return ,[double[]]@(
-    # Generate one sample at a time.
-    for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
-    
-    # Calculate the envelope
-    $envelope = 1.0 - ($i / $numberOfSamples)
+    # generated one at a time
+    for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
+        # The sample is the arc sin of the sine of the angle
+        $sample = [Math]::sin($stepAngle * $i)
 
-    # We can imagine each cycle as a series of circles
-    # how many circles?  Whatever our frequency may be.
-    $cycle = (2 * $math::PI * $Frequency)
-    
-    # Calculate the angle at this point in time (in radians)
-    $angle = ($cycle * $i) / $divisor    
-    
-    # Calculate the angle at the moment
-    $sample = $math::sin($angle)
-    
-    # For a square wave, 
-    # we simply check the sign of the sample.
-    if ($sample -gt 0) {
-        $sample = 1 # and use either 1
-    } elseif ($sample -lt 0) {
-        $sample = -1 # or negative 1.
+        # For a square wave, 
+        # we simply check the sign of the sample.
+        if ($sample -gt 0) {
+            $sample = 1 # and use either 1
+        } elseif ($sample -lt 0) {
+            $sample = -1 # or negative 1.
+        }
+
+        # Our envelope is how we want to enclose the sound.
+        # This will fade the sound over the `-Duration`
+        $envelope = 1.0 - ($i / $numberOfSamples)
+
+        # We scale our sample by the volume and the envelope
+        $sample * $volume * $envelope
     }
-
-    # We will scale this by the volume, and then by the envelope.
-    $sample * $volume * $envelope
-})
+)
