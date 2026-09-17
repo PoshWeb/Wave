@@ -18,6 +18,13 @@ if (-not $ArgumentList) { return $currentWave }
 
 $waveType = $(Get-TypeData -TypeName audio/wav)
 
+$waveSplat = [Ordered]@{
+    AudioFormat = $currentWave.AudioFormat
+    SampleRate = $currentWave.SampleRate
+    ChannelCount = $currentWave.ChannelCount
+    BitsPerSample = $currentWave.BitsPerSample
+}
+
 filter waveUnit {
     $arg = $_
     if ($arg -isnot [string]) {
@@ -340,9 +347,13 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
     # Luckily, this should be one of the few cases where this does not annoy too much.
     # Properties being returned will largely be strings or numbers, and these will always output directly.
     if ($null -ne $stepOutput -and -not ($stepOutput.pstypenames -eq 'wave')) {
-        if ($stepOutput -is [object[]] -and $stepOutput -as [byte[]]) {
-            $currentWave.Data += $stepOutput
-            $outputWave = $true
+        if ($stepOutput -is [object[]] -and $stepOutput.Length) {
+            if ($stepOutput[0] -is [byte]) {
+                $currentWave.Data += $stepOutput
+                $outputWave = $true
+            } elseif ($stepOutput[0] -is [double]) {                
+                $currentWave.Data += (wave @waveSplat -Samples $stepOutput).Data
+            }
         } else {
             # Output the step
             $stepOutput
