@@ -17,9 +17,13 @@ param(
 ),
 
 # The volume.
-# If the AudioFormat is not floating point, 
-# values will be clamped between -1 and 1
-[float]$Volume = 0.5,
+# If the current wave has set a `volume`, 
+# will use that volume.
+# Otherwise, will default to 0.5
+[float]$Volume = $(
+    if ($this.Volume) { $this.Volume}
+    else { 0.5 }
+),
 
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
