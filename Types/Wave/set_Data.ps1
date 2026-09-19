@@ -45,3 +45,5 @@ $writer.Write([uint32]($this.Length - 8))
 
 # and set our position back to the start.
 $this.Position = 0
+
+$this | Add-Member NoteProperty '#Samples' $null -Force
