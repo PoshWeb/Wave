@@ -11,4 +11,6 @@
     '△' = 'Triangle'
     '◭' = 'Sawtooth'
     '🪚' = 'Sawtooth'
+
+    Backmask = 'Reverse'
 }
