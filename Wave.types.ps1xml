@@ -2651,6 +2651,20 @@ return
                     </SetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>TimeBase</Name>
+        <GetScriptBlock>
+                        $sampleRate = $this.SampleRate
+
+if (-not $sampleRate) { return [TimeSpan]::FromSeconds(0) }
+
+if ($sampleRate) {
+    [TimeSpan]::FromSeconds(
+        (1 / $this.SampleRate)
+    )
+}
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Volume</Name>
         <GetScriptBlock>
                         &lt;#
