@@ -38,6 +38,10 @@
         <ReferencedMemberName>Sawtooth</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
+        <Name>Backmask</Name>
+        <ReferencedMemberName>Reverse</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
         <Name>Channels</Name>
         <ReferencedMemberName>ChannelCount</ReferencedMemberName>
       </AliasProperty>
@@ -1483,6 +1487,31 @@ if ($IsLinux) {
     $soundPlayer.PlaySync()
     $this.Position = 0
 }
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>Reverse</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Reverses waves.
+.DESCRIPTION
+    Reverses a wave, backmasking the audio.
+.NOTES
+    This will reverse the samples in the wave, which will play the sound backwards
+.LINK
+    https://en.wikipedia.org/wiki/Backmasking
+.EXAMPLE
+    wave note cafe reverse play
+#&gt;
+[OutputType('audio/wav')]
+param()
+
+[double[]]$samples = $this.Samples
+[Array]::Reverse($samples)
+$waveFormat = $this.WaveFormat
+return wave @waveFormat -Samples $samples
+
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
