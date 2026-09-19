@@ -18,6 +18,26 @@
         </Members>
       </MemberSet>
       <AliasProperty>
+        <Name>〜</Name>
+        <ReferencedMemberName>Tone</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>□</Name>
+        <ReferencedMemberName>Square</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>△</Name>
+        <ReferencedMemberName>Triangle</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>◭</Name>
+        <ReferencedMemberName>Sawtooth</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>🪚</Name>
+        <ReferencedMemberName>Sawtooth</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
         <Name>Channels</Name>
         <ReferencedMemberName>ChannelCount</ReferencedMemberName>
       </AliasProperty>
