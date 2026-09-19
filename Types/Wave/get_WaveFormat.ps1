@@ -27,6 +27,6 @@ $waveFormat['ChannelCount'] = [BitConverter]::ToUInt16($this.'#fmt', 2)
 $waveFormat['SampleRate'] = [BitConverter]::ToUInt32($this.'#fmt', 4)
 $waveFormat['BytesPerSecond'] = [BitConverter]::ToUInt32($this.'#fmt', 8)
 $waveFormat['BytesPerBlock'] = [BitConverter]::ToUInt16($this.'#fmt', 12)
-$waveFormat['BitsPerSecond'] = [BitConverter]::ToUInt16($this.'#fmt', 14)
+$waveFormat['BitsPerSample'] = [BitConverter]::ToUInt16($this.'#fmt', 14)
 
 return $waveFormat
