@@ -20,7 +20,7 @@
 .LINK
     https://en.wikipedia.org/wiki/WAV#WAV_file_header
 #>
-[Alias('wav', '.wav','〜')]
+[Alias('wav', '.wav','〜','🌊')]
 [CmdletBinding(PositionalBinding=$false)]
 param(
 
@@ -206,6 +206,10 @@ elseif (-not $Stream) {
         $BitsPerSample = 32
     }
 
+    $stream =     
+        $memoryStream =
+            [IO.MemoryStream]::new()
+
     if ($samples -and -not $PCM) {
         $GetBytes = [BitConverter]::GetBytes
         $PCM = @(foreach ($sample in $samples) {
@@ -259,11 +263,7 @@ elseif (-not $Stream) {
         })
         $memoryStream | 
             Add-Member NoteProperty '#Samples' $Samples -Force
-    }
-    
-    $stream =     
-        $memoryStream =
-            [IO.MemoryStream]::new()
+    }    
 
     $ascii        = [Text.Encoding]::ASCII
 

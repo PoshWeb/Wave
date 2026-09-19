@@ -30,7 +30,7 @@ CompanyName = 'Start-Automating'
 Copyright = '2026 Start-Automating'
 
 # Description of the functionality provided by this module
-Description = ''
+Description = 'Make Waves with PowerShell'
 
 # Minimum version of the PowerShell engine required by this module
 # PowerShellVersion = ''
@@ -78,7 +78,7 @@ CmdletsToExport = @()
 VariablesToExport = @('Wave')
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @('wav', '.wav', '〜')
+AliasesToExport = @('wav', '.wav', '〜','🌊')
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
@@ -107,7 +107,9 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = @'
+
+'@
 
         # Prerelease string of this module
         # Prerelease = ''
@@ -118,8 +120,54 @@ PrivateData = @{
         # External dependent modules of this module
         # ExternalModuleDependencies = @()
 
+        PSIntro = @'
+Wave is a wonderful module that lets you make music in PowerShell.
+
+Wave lets us encode, decode, generate, and manipulate raw wave data (`.wav` files).
+
+This give us a rich DAW in our terminals, and hopefully helps us all understand how sound works. 
+
+This module is a modernized reference implementation for wave files and how to work with them.
+
+If anything does not make sense or is not clearly explained, please reach out and file an issue.
+
+### Making Waves
+
+We can make waves in PowerShell, using nothing but notes.
+
+~~~PowerShell
+wave note cafe play
+~~~
+
+### Wave Basics
+
+You might have heard that sound is just waves.  That's true!
+
+.wav files are also just waves.
+
+They contain a minimal 44 byte header, and then the rest is all waves.
+
+If you want to get into the nitty gritty, 
+see the [Wave File Format](/Help/Wave-File-Format.md) breakdown.
+
+`.wav` data is just a series of these amplitudes, or the amount that moves up or down.
+
+Each reading is called a sample.
+
+We collect samples at a given rate per second.  This is called the `SampleRate`.
+
+CD quality audio has 44100 samples per second, or 44100 variations in amplitude
+
+'@
     } # End of PSData hashtable
 
+    Recommends = @(
+        'https://github.com/StartAutomating/RoughDraft'
+        'https://github.com/PoshWeb/Turtle'
+        'https://ffmpeg.org'
+        # '[ffmpeg](https://ffmpeg.org)'
+    )
+    
 } # End of PrivateData hashtable
 
 # HelpInfo URI of this module
