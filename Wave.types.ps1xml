@@ -2736,6 +2736,15 @@ return
                     </SetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>SHA256</Name>
+        <GetScriptBlock>
+                        [BitConverter]::ToString(
+    [Security.Cryptography.SHA256]::Create().ComputeHash($this)
+) -replace '-'
+$rev.Position = 0
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>TimeBase</Name>
         <GetScriptBlock>
                         &lt;#
