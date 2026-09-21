@@ -44,7 +44,7 @@ $SampleCount = $samples.Length
         [Numerics.Vector3]::new(1, $delta, $(
             $length * $(
                 if ($delta -gt 0) { 1 }
-                elseif ($delta -lt 0) { 1 }
+                elseif ($delta -lt 0) { -1 }
                 else { 0 }    
             )
         ))                
