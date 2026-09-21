@@ -48,5 +48,6 @@ $this.Position = 0
 
 # Nullify any cached values we may have
 $this | Add-Member NoteProperty '#Samples' $null -Force
+$this | Add-Member NoteProperty '#Angle' $null -Force
 $this | Add-Member NoteProperty '#Vector2' $null -Force
 $this | Add-Member NoteProperty '#Vector3' $null -Force
