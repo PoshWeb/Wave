@@ -2423,7 +2423,10 @@ $writer.Write([uint32]($this.Length - 8))
 # and set our position back to the start.
 $this.Position = 0
 
+# Nullify any cached values we may have
 $this | Add-Member NoteProperty '#Samples' $null -Force
+$this | Add-Member NoteProperty '#Vector2' $null -Force
+$this | Add-Member NoteProperty '#Vector3' $null -Force
                     </SetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
