@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
-    Gets Wave Metadata
+    Sets Wave Metadata
 .DESCRIPTION
-    Gets Metadata about a Wave File.
+    Sets Metadata about a Wave File.
 
     Wave files can include metadata in a LIST chunk
 
@@ -15,6 +15,35 @@
 #>
 param([Collections.IDictionary]$MetaData)
 
+$shortNames = [Ordered]@{
+    "ArchiveLocation" = 'IARL'
+    "Artist" = 'IART'
+    'BPM' = 'TBPM'
+    'BeatsPerMinute' = 'TBPM'
+    "Commissioned" = 'ICMS'
+    "Comment" ='ICMT'
+    "Comments" ='ICMT'
+    "Copyright" = 'ICOP'
+    "CreationDate"= 'ICRD'
+    "Engineer"= 'IENG'
+    "Genre"='IGNR'
+    "Tag" = "IKEY"
+    "Tags" = "IKEY"
+    "Keyword"="IKEY"
+    "Keywords"='IKEY'
+    "Medium"='IMED'
+    "Title"='INAM'
+    'Album' = 'IPRD'
+    "Product"= 'IPRD' 
+    "TrackNumber"= 'IPRT'
+    "Subject"= 'ISBJ'
+    "Software" = 'ISFT'
+    "Source"= 'ISRC'
+    "SourceForm" =  'ISRF'
+    "Technician" = 'ITCH'    
+}
+
+# https://mediaarea.net/BWFMetaEdit/listinfo
 
 # Start off by refreshing out chunk list
 $this | Add-Member NoteProperty '#Chunk' $null -Force
@@ -58,7 +87,10 @@ $writer.Write([Text.Encoding]::ASCII.GetBytes("LIST"))
         # Each key can only be four ASCII characters.
         $shortKey = 
             # If the key was longer than four characters
-            if ("$key".Length -gt 4) {
+            if ($shortNames[$key]) {
+                $shortNames[$key]
+            }
+            elseif ("$key".Length -gt 4) {
                 # take the first four characters
                 "$key".Substring(0, 4)
             } else {
@@ -77,8 +109,14 @@ $writer.Write([Text.Encoding]::ASCII.GetBytes("LIST"))
                 [Text.Encoding]::UTF8.GetBytes("$($MetaData[$key])")
             }            
         } else {
-            # Get the bytes stored in the value
-            [Text.Encoding]::ASCII.GetBytes("$($MetaData[$key])")
+            if ($MetaData[$key] -is [DateTime]) {
+                [Text.Encoding]::ASCII.GetBytes("$(
+                    ($MetaData[$key]).ToString('yyyy-MM-dd')
+                )")
+            } else {
+                # Get the bytes stored in the value
+                [Text.Encoding]::ASCII.GetBytes("$($MetaData[$key])")
+            }
         }
         
         [BitConverter]::GetBytes([uint32]$valueBytes.Length)
