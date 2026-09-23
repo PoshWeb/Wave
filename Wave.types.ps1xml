@@ -2550,7 +2550,7 @@ if ($bps) {
     the string will be decoded as UTF-8 and cast to `[XML]`
 
     If the identifier does not contain `XML`,
-    the string will be decoded as ASCII.
+    the string will be decoded as ASCII.    
 .NOTES    
     Each header must start at a WORD boundary, or two bytes.
     
@@ -2567,12 +2567,37 @@ if (-not $this.'#list') {
     if (-not $this.'#list') { return }
 }
 
-
 # Almost everything in metadata is encoded in ASCII
 # (Wave file predate UTF-8 encoding by about a decade)
 
 # We want to return metadata as a dictionary
 $metadata = [Ordered]@{}
+
+# We also want to make names more readable where we can
+$LongNames = [Ordered]@{
+    # Standard Wave Information
+    IARL = "ArchiveLocation"
+    IART = "Artist"
+    ICMS = "Commissioned"
+    ICMT = "Comments"
+    ICOP = "Copyright"
+    ICRD = "CreationDate"
+    IENG = "Engineer"
+    IGNR = "Genre"
+    IKEY = "Keywords"
+    IMED = "Medium"
+    INAM = "Title" # (Technically `Name`)
+    IPRD = "Album" # (Technically `Product`)
+    IPRT = "TrackNumber"
+    ISBJ = "Subject"
+    ISFT = "Software"
+    ISRC = "Source"
+    ISRF = "SourceForm"
+    ITCH = "Technician"    
+
+    # Supported ID3 tags 
+    TBPM = "BPM"
+}
 
 # Get our list bytes
 $list = $this.'#list'
@@ -2587,15 +2612,21 @@ for ($index = 4; $index -lt $list.Length; ) {
     # Get the chunk length 
     $metadataLength = [BitConverter]::ToUInt32($list,$index)
     # and advance four bytes
-    $index +=4
+    $index +=4    
 
     # While _most_ content in LIST sections is ASCII,
     # the Broadcast Wave Standard allows a UTF-8 encoded XML.
+    
+    $fourByteId = $metaDataId
+
+    if ($LongNames[$metaDataId]) {
+        $metaDataId = $LongNames[$metaDataId]
+    }
 
     # Rather than special case this one scenario, 
     # we will presume anything with the letters `XML` in the key is UTF-8 XML.
-    if ($metaDataId -match 'XML') {
-        $metadata[$metaDataId] = [Text.Encoding]::UTF8.GetString($list, $index, $metadataLength)
+    if ($fourByteId -match 'XML') {
+        $metadata[$metaDataId] = [Text.Encoding]::UTF8.GetString($list, $index, $metadataLength).Trim()
         # If we can cast the value to XML
         if ($metadata[$metaDataId] -as [xml]) {
             # then return this metadata as XML
@@ -2603,7 +2634,7 @@ for ($index = 4; $index -lt $list.Length; ) {
         }
     } else {
         # Get the string
-        $metadata[$metaDataId] = [Text.Encoding]::ASCII.GetString($list, $index, $metadataLength)
+        $metadata[$metaDataId] = [Text.Encoding]::ASCII.GetString($list, $index, $metadataLength).Trim()
     }
     
     # and advance by the string length.
@@ -2614,15 +2645,35 @@ for ($index = 4; $index -lt $list.Length; ) {
     }
 }
 
+foreach ($key in @($metadata.Keys)) {
+    if ($key -match 'Date$') {
+        $date = $metadata[$key] -as [DateTime]        
+        if ($date) {
+            $metadata[$key] = $date
+        }
+        elseif ($metadata[$key] -match '(?&lt;y&gt;\d{4})') {
+            $metadata[$key] = [DateTime]::new($matches.y, 1, 1)
+        }
+    }
+    if ($null -ne ($metadata[$key] -as [double])) {        
+        $metadata[$key] = $metadata[$key] -as [double]
+        if (
+            ($metadata[$key] -as [int]) -eq [Math]::Floor($metadata[$key])
+        ) {
+            $metadata[$key] = $metadata[$key] -as [int]
+        }
+    }
+}
+
 # Return our metadata.
 return $metadata
                     </GetScriptBlock>
         <SetScriptBlock>
                         &lt;#
 .SYNOPSIS
-    Gets Wave Metadata
+    Sets Wave Metadata
 .DESCRIPTION
-    Gets Metadata about a Wave File.
+    Sets Metadata about a Wave File.
 
     Wave files can include metadata in a LIST chunk
 
@@ -2635,6 +2686,35 @@ return $metadata
 #&gt;
 param([Collections.IDictionary]$MetaData)
 
+$shortNames = [Ordered]@{
+    "ArchiveLocation" = 'IARL'
+    "Artist" = 'IART'
+    'BPM' = 'TBPM'
+    'BeatsPerMinute' = 'TBPM'
+    "Commissioned" = 'ICMS'
+    "Comment" ='ICMT'
+    "Comments" ='ICMT'
+    "Copyright" = 'ICOP'
+    "CreationDate"= 'ICRD'
+    "Engineer"= 'IENG'
+    "Genre"='IGNR'
+    "Tag" = "IKEY"
+    "Tags" = "IKEY"
+    "Keyword"="IKEY"
+    "Keywords"='IKEY'
+    "Medium"='IMED'
+    "Title"='INAM'
+    'Album' = 'IPRD'
+    "Product"= 'IPRD' 
+    "TrackNumber"= 'IPRT'
+    "Subject"= 'ISBJ'
+    "Software" = 'ISFT'
+    "Source"= 'ISRC'
+    "SourceForm" =  'ISRF'
+    "Technician" = 'ITCH'    
+}
+
+# https://mediaarea.net/BWFMetaEdit/listinfo
 
 # Start off by refreshing out chunk list
 $this | Add-Member NoteProperty '#Chunk' $null -Force
@@ -2678,7 +2758,10 @@ $writer.Write([Text.Encoding]::ASCII.GetBytes("LIST"))
         # Each key can only be four ASCII characters.
         $shortKey = 
             # If the key was longer than four characters
-            if ("$key".Length -gt 4) {
+            if ($shortNames[$key]) {
+                $shortNames[$key]
+            }
+            elseif ("$key".Length -gt 4) {
                 # take the first four characters
                 "$key".Substring(0, 4)
             } else {
@@ -2697,8 +2780,14 @@ $writer.Write([Text.Encoding]::ASCII.GetBytes("LIST"))
                 [Text.Encoding]::UTF8.GetBytes("$($MetaData[$key])")
             }            
         } else {
-            # Get the bytes stored in the value
-            [Text.Encoding]::ASCII.GetBytes("$($MetaData[$key])")
+            if ($MetaData[$key] -is [DateTime]) {
+                [Text.Encoding]::ASCII.GetBytes("$(
+                    ($MetaData[$key]).ToString('yyyy-MM-dd')
+                )")
+            } else {
+                # Get the bytes stored in the value
+                [Text.Encoding]::ASCII.GetBytes("$($MetaData[$key])")
+            }
         }
         
         [BitConverter]::GetBytes([uint32]$valueBytes.Length)
