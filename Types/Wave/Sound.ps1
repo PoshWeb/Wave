@@ -21,8 +21,6 @@ if (-not $Instruments) {
     } else {
         'sine'
     })
-    
-    
 }
 
 # If we have no melody
@@ -69,6 +67,7 @@ $noteSequence = @(foreach ($note in $this.Melody) {
     $noteTable = [Ordered]@{}
     foreach ($prop in $note.psobject.properties) {
         if ($prop -isnot [psnoteproperty]) { continue }
+        if (-not $prop.IsInstance) { continue }
         $noteTable[$prop.Name] = $note.($prop.Name)
     }
     $noteTable
@@ -152,18 +151,18 @@ $noteSequence = @(foreach ($note in $this.Melody) {
             }
         }
     ) -join ' '
+
+    $noteData = [Ordered]@{PSTypeName='Note'} + $noteSequence[$index] + @{
+        # played with the current instrument
+        Instrument = $Instrument
+        Id = $cacheKey 
+    }
         
     # Generate an event representing a note.
     # Even if we have already cached the note, 
     # we still want to log that we want to play it.
     $null = $events.GenerateEvent(
-        'Note', $this, @($friendly), [PSCustomObject](
-            [Ordered]@{PSTypeName='Note'} + $noteSequence[$index] + @{
-                # played with the current instrument
-                Instrument = $Instrument
-                Id = $cacheKey 
-            }
-        )
+        'Note', $this, @($friendly), [PSCustomObject]$noteData
     )
     
     if (-not $WaveCache[$cacheKey]) {
