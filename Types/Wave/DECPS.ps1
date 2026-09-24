@@ -99,11 +99,7 @@ $Sequence,
 
 # The number of octaves to shift.  By default -2.
 [int]
-$ShiftOctave = -2,
-
-# The instrument or instruments used to play
-[string]
-$Instrument = 'Tone',
+$ShiftOctave = -1,
 
 # The amount of time to generate per note.
 [Timespan]$Duration = $(
@@ -130,8 +126,8 @@ $decps = @([Regex]::Matches($Sequence, '\e\[.+?,~'))
 # It's fast if we just find use the index as an offset.
 $notelist = @(
     "~"
-    "c5", "c#5", "d5", "d#5", "e5", "f5", "f#5", "g5", "g#5", "a5", "a#5", "b5"
-    "c6", "c#6", "d6", "d#6", "e6", "f6", "f#6", "g6", "g#6", "a6", "a#6", "b6"
+    "c5", "c♯5", "d5", "d♯5", "e5", "f5", "f♯5", "g5", "g♯5", "a5", "a♯5", "b5"
+    "c6", "c♯6", "d6", "d♯6", "e6", "f6", "f♯6", "g6", "g♯6", "a6", "a♯6", "b6"
     "c7"
 )
 
@@ -141,7 +137,8 @@ $noteFrequency = $this.NoteFrequency
 # Prepare a progress bar
 $progress = @{
     id = Get-Random
-    status = 'Converting'    
+    status = 'Converting'
+    activity = ' '
 }
 
 # And prepare to generate events.
@@ -190,10 +187,11 @@ $NoteSequence = @(
 
         # Walk over each friendly note
         foreach ($friendly in $friendlyNote) {
+            $friendly = $friendly -replace '#', '♯' -creplace 'b', '♭'
             # and make it into a dictionary
             [Ordered]@{
                 Name = $friendly; Frequency = $noteFrequency[$friendly]
-                Duration = $noteDuration; Volume = $volume
+                Duration = $noteDuration; Volume = $volume; ShiftOctave = $ShiftOctave
             }
         }
     }
@@ -209,85 +207,19 @@ $null = $events.GenerateEvent(
     )
 )
 
-
-# Next up: Instruments!
-# We can think of any Script Method on this object as an instrument
-# (though not all of them will make pleasing sounds)
-
-# Replace angle brackets 
-# and split on whitespace to get a sequence of instruments
-$Instruments = @($Instrument -replace '[<>]') -split '\s+'
-# Start at the first instrument.
-$InstrumentIndex = 0 
-
-# Update our progress info
-$progress.status = 'Generating'
-
-# And make waves!
-
-# We go over each note in the sequence,
-for ($index = 0; $index -lt $NoteSequence.Length; $index++) {
-    $note = $NoteSequence[$index]
-    $friendly = $note.Name
-    # shifting the octave,
-    if ($shiftOctave) {
-        $note.Name = $friendly = [Regex]::Replace($friendly, '(?<d>\d)', {
-            param($match)
-            ("$match" -as [int]) + $shiftOctave
-        })
-    }
-    # and writing progress as we go.
-    $progress.PercentComplete = $index * 100 / $NoteSequence.Length
-    $progress.Activity = "$($note.Name)@$($note.Duration) $index / $($NoteSequence.Length)"
-    Write-Progress @progress    
-
-    if (-not $noteFrequency[$friendly]) { continue }
-
-    # Get the instrument used for this sample.
-    if ($Instruments.Length) {
-        $Instrument = $Instruments[$InstrumentIndex % $Instruments.Length]
-        $InstrumentIndex++
-    }    
-
-    # Then find our instrument parameter names
-    $instrumentParameterNames =
-        # by walking over the parameters in the script's AST
-        foreach ($param in $this.$Instrument.Script.Ast.ParamBlock.Parameters) { 
-            "$($param.Name)" -replace '^\$'
-            foreach ($attr in $param.Attributes) {
-                if ($attr.TypeName.Name -eq 'alias') {
-                    $attr.PositionalArguments.Value
-                }
-            }
+if ($this) {
+    $this.Melody += @(
+        foreach ($note in $NoteSequence) {
+            $note.PSTypeName = 'Note'
+            [PSCustomObject]$note
         }
-
-    # Collect our instrument parameters
-    $instrumentParameters = [Ordered]@{}
-    
-    # Any information in our note
-    foreach ($key in $note.Keys) {
-        # that is a parameter for that instrument
-        if ($instrumentParameterNames -contains $key) {
-            # becomes an instrument parameter.
-            $instrumentParameters[$key] = $note[$key]
-        }
-    }                
-        
-    # Generate an event representing a note 
-    $null = $events.GenerateEvent(
-        'Note', $this, @($friendly), (
-            [Ordered]@{} + $note + @{
-                # played with the current instrument
-                Instrument = $Instrument
-            }
-        )
     )
+}
 
-    # And call our instrument script.  This should output a stream of bytes.
-    & $this.$instrument.Script @instrumentParameters
-}    
-
-# Last but not least, complete our progress bars.
+# Last but not least, complete our progress bars,
 $progress.Remove('PercentComplete')
 $progress.Completed = $true
 Write-Progress @progress
+
+# and return our sound with any instruments.
+return $this.Sound()
