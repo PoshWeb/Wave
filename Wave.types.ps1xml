@@ -2533,6 +2533,32 @@ if ($bps) {
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>Instrument</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets Wave Instrument
+.DESCRIPTION
+    Gets the instruments used to play a wave, if any have been set.    
+.NOTES
+    At present, this stores the instrument list in memory.
+    
+    It does not attempt any detection of instruments for existing waves.
+#&gt;
+return $this.'#Instrument'
+
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets Wave Instruments
+.DESCRIPTION
+    Sets the Instruments used to play a wave.
+#&gt;
+$this | Add-Member NoteProperty '#Instrument' $args -Force
+                    </SetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Melody</Name>
         <GetScriptBlock>
                         &lt;#
