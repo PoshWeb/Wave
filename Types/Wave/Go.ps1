@@ -100,10 +100,11 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
         $currentWave.Data += $arg.Data
         continue 
     }
+    $progress.status = "$($argIndex) / $($wordsAndArguments.Length)"
+    Write-Progress @progress
     # If the argument is not in the member names list, we can complain about it.
     if ($arg -is [string]) {
-        $progress.status = "$($arg -replace '~','rest') "
-        Write-Progress @progress
+        
         if ($arg -notin $waveType.Members.Keys) {
             $stepOutput = $currentWave.Note($arg)
             if ($stepOutput.pstypenames -contains 'audio/wav') {
