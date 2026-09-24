@@ -12,7 +12,7 @@ param()
 
 $currentWave = if ($this) { $this } else { wave }
 # Unroll our arguments so we handle lists of lists
-$ArgumentList = @($args | . {process { $_ }})
+$ArgumentList = @($args)
 
 if (-not $ArgumentList) { return $currentWave }
 
@@ -23,35 +23,6 @@ $waveSplat = [Ordered]@{
     SampleRate = $currentWave.SampleRate
     ChannelCount = $currentWave.ChannelCount
     BitsPerSample = $currentWave.BitsPerSample
-}
-
-filter waveUnit {
-    $arg = $_
-    if ($arg -isnot [string]) {
-        return $arg
-    }
-    switch -regex ($arg) {        
-        'hz$' {
-            # Treat hertz as a float
-            ($_ -replace 'hz$' -as [single])
-            continue
-        }
-        'bpm$' {
-            $bpm = $_ -replace 'bpm$' -as [single]
-            if ($bpm) {
-                [TimeSpan]::FromSeconds(60 / $bpm)
-            } else {
-                $_
-            }            
-        }
-        default {
-            if ($currentWave.NoteFrequency["$_"]) {
-                $currentWave.NoteFrequency["$_"]
-            } else {
-                $_
-            }            
-        }
-    }
 }
 
 if ($VerbosePreference -notin 'ignore','silentlyContinue') {
@@ -100,7 +71,11 @@ $wordsAndArguments = @(foreach ($arg in $ArgumentList) {
         # } else {
             $arg
         #}
-    } else {
+    } 
+    elseif ($arg -is [Collections.IEnumerable]) {
+        ,$arg
+    }
+    else {
         # otherwise, leave the argument alone.
         $arg
     }
@@ -129,8 +104,22 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
     if ($arg -is [string]) {
         $progress.status = "$($arg -replace '~','rest') "
         Write-Progress @progress
-        if ($arg -notin $waveType.Members.Keys) {    
-            if ($arg -match 'bpm$') {
+        if ($arg -notin $waveType.Members.Keys) {
+            $stepOutput = $currentWave.Note($arg)
+            if ($stepOutput.pstypenames -contains 'audio/wav') {
+                $newWave = $stepOutput
+                $currentWave = $newWave
+                continue
+            }
+            elseif ($stepOutput -is [double[]]) {
+                $currentWave.Samples += $stepOutput
+                continue
+            }
+            elseif ($stepOutput -is [byte[]]) {
+                $currentWave.Data += $stepOutput
+                continue
+            }
+            elseif ($arg -match 'bpm$') {
                 $currentWave.BPM = $arg -replace 'bpm$'
                 continue
             }
@@ -153,9 +142,8 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
                 Write-Warning "Unknown command '$arg'."                    
                 continue
             }
-        }        
-    }
-    
+        }
+    }    
     
     # If we have a current member, we can invoke it or get it.
     $currentMember = $arg
@@ -239,8 +227,11 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
                         continue
                     }                            
                 }
-                                
-                $word # output the word into the array.
+                elseif ($word -is [object[]]) {
+                    ,$word
+                } else {
+                    $word # output the word into the array.
+                }                                            
             }
             $argIndex = $methodArgIndex - 1
         })
@@ -251,7 +242,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
             # If the member is a method, let's invoke it.
             $memberInfo -is [Management.Automation.Runspaces.ScriptMethodData] -or 
             $memberInfo -is [Management.Automation.PSMethod]
-        ) {                    
+        ) {            
             # If we have arguments,
             if ($argList) {                
                 # and a script method
@@ -263,9 +254,6 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
                     } else {
                         # Otherwise, set `$this` to the current wave
                         $this = $currentWave
-                        $argList = @(
-                            $argList | waveUnit
-                        )
                         # and call the script, splatting positional parameters
                         # (this allows more complex binding, like ValueFromRemainingArguments).
                         . $currentWave.$currentMember.Script @argList
@@ -347,22 +335,38 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
     # Luckily, this should be one of the few cases where this does not annoy too much.
     # Properties being returned will largely be strings or numbers, and these will always output directly.
     if ($null -ne $stepOutput -and -not ($stepOutput.pstypenames -eq 'wave')) {
-        if ($stepOutput -is [object[]] -and $stepOutput.Length) {
-            if ($stepOutput[0] -is [byte]) {
+        if ($stepOutput -is [double[]]) {
+            $currentWave.Data += (wave @waveSplat -Samples $stepOutput).Data
+        }
+        elseif ($stepOutput -is [byte[]]) {
+            $currentWave.Data += $stepOutput
+        }        
+        elseif ($stepOutput -is [object[]] -and $stepOutput.Length) {
+            if ($stepOutput -is [Collections.IDictionary[]]) {
+                $currentWave.Melody += $stepOutput
+                $currentWave = $currentWave.Sound()
+            }
+            elseif ($stepOutput[0] -is [byte]) {
                 $currentWave.Data += $stepOutput
                 $outputWave = $true
             } elseif ($stepOutput[0] -is [double]) {                
                 $currentWave.Data += (wave @waveSplat -Samples $stepOutput).Data
-            }
+            } elseif ($stepOutput[0] -is [Collections.IDictionary]) {
+                $stepOutput
+                $outputWave = $false
+            }            
         } else {
             # Output the step
             $stepOutput
             # and set the output wave to false.
             $outputWave = $false
-        }
-    } elseif ($null -ne $stepOutput) {
-        # Set the current wave to the step output.
-        $currentWave = $stepOutput
+        }        
+    } elseif ($stepOutput.pstypenames -contains 'audio/wav') {
+        # The step output is our new wave
+        $newWave = $stepOutput        
+
+        # Set the current wave to the new wave.
+        $currentWave = $newWave
         # and output it later (presumably).
         $outputWave = $true
     }
