@@ -16,8 +16,13 @@ $Instruments = @(
 
 # If we could not detect instruments
 if (-not $Instruments) {
-    # default to `sine`.
-    $Instruments = @('sine')
+    $Instruments = @(if ($this.Instrument) {
+        $this.Instrument
+    } else {
+        'sine'
+    })
+    
+    
 }
 
 # If we have no melody
