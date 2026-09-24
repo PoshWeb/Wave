@@ -6,39 +6,54 @@
 .NOTES
     Perhaps unsurprisingly, the logo for Wave is a wave.
 .EXAMPLE
-    .\Wave.svg.ps1 > .\Wave-Animated.svg
+    .\Wave.svg.ps1 -Variant Animated > .\WaveAnimated.svg
 .EXAMPLE
-    .\Wave.svg.ps1 -Variant '' > .\Wave.svg
+    .\Wave.svg.ps1 > .\Wave.svg
 #>
 param(
-$Variant = 'animated',
+# The variant of the design.
+$Variant = '',
 
+# The frequency used for the wave.
+[double]
+$Frequency = 20,
+
+# The rate at which the wave is animated.
 [double]
 $BPM = 8
 )
 
-$psChevron = '<symbol id="psChevron" viewBox="0 0 100 100">
-    <polygon points="40,20 45,20 60,50 35,80 32.5,80 55,50"/>
-</symbol>'
+$poshWeb = $(.\PoshWeb.svg.ps1 -Variant $Variant) -as [xml]
+$poshWebSymbol = "<symbol id='PoshWeb' viewBox='$($poshWeb.svg.viewBox)'>$(
+    $poshWeb.svg.InnerXml
+)</symbol>"
 
+$wavePath = "c 1 -2 1 2 2 0"
+$antiWavePath = ' c 1 2 1 -2 2 0'
 
-$h = 4.2
+$h = 50
 @"
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'>
-$psChevron
-<use href='#psChevron' y='$(50.0 - $h/2)%' height='$h%' fill='#4488ff' class='foreground-fill' />
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 $($frequency * 2) 2'>
+$(
+    if ($variant -match 'animated') {
+        $poshWebSymbol
+    } else {
+        $poshWebSymbol
+    }
+)
 <path 
-    stroke='#224488' 
-    fill ='#4488ff' 
-    class='foreground-fill background-stroke'
+    stroke='#4488ff' 
+    fill ='transparent' 
+    class='foreground-fill foreground-stroke'
     transform-origin='50% 50%'
-    d='m 0 0 m 0 100 c 0 -100 200 100 200 0'>
+    stroke-width='0.1%'
+    d='m 0 1 $($wavePath * $frequency)'>
 $(
     if ($variant -match 'animated') {
         $steps = @(
-            "m 0 0 m 0 100 c 0 -100 200 100 200 0"
-            "m 0 0 m 0 100 c 0 100 200 -100 200 0"
-            "m 0 0   m 0 100 c 0 -100 200 100 200 0"
+            "m 0 1 $($wavePath * $frequency)"
+            "m 0 1 $($antiWavePath * $frequency)"
+            "m 0 1 $($wavePath * $frequency)"
         )
         "<animate attributeName='d' values='$(
             $steps -join ';'
@@ -46,5 +61,8 @@ $(
     }
 )
 </path>
+$(    
+    "<use href='#PoshWeb' y='$(50.0 - $h/2)%' height='$h%' fill='#224488' class='foreground-fill' />"    
+)
 </svg>
 "@
