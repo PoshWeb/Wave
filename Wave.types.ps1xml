@@ -1738,18 +1738,40 @@ $waveTable = [PSCustomObject]@{PSTypeName='WaveTable'}
 # and get the static cache.
 $waveCache = $waveTable.WaveCache
 
+filter waveID {
+    $note = $_
+    "data-audio-format='$($this.AudioFormat)'"
+    "data-channel-count='$($this.ChannelCount)'"
+    "data-sample-rate='$($this.SampleRate)'"
+    "data-bits-per-sample='$($this.BitsPerSample)'"
+    "data-instrument='$($Instrument -replace "'", "''")'"
+    foreach ($key in $note.Keys) {
+        "data-$key='$($note[$key] -replace "'","''")'"
+        # that is a parameter for that instrument
+        if ($instrumentParameterNames -contains $key) {
+            # becomes an instrument parameter.
+            $instrumentParameters[$key] = $note[$key]
+        }
+    }
+}
+
 $noteSequence = @(foreach ($note in $this.Melody) {
     $noteTable = [Ordered]@{}
-    foreach ($prop in $note.psobject.properties) {
-        if ($prop -isnot [psnoteproperty]) { continue }
-        if (-not $prop.IsInstance) { continue }
-        $noteTable[$prop.Name] = $note.($prop.Name)
+    if ($note -is [Collections.IDictionary]) {
+        $noteTable += $note
+    } else {
+        foreach ($prop in $note.psobject.properties) {
+            if ($prop -isnot [psnoteproperty]) { continue }
+            if (-not $prop.IsInstance) { continue }
+            $noteTable[$prop.Name] = $note.($prop.Name)
+        }
     }
+    
     $noteTable
 })
 
 # We go over each note in the sequence,
-[byte[]]$PCMData = @(for ($index = 0; $index -lt $NoteSequence.Length; $index++) {
+[byte[]]$wavaData = @(for ($index = 0; $index -lt $NoteSequence.Length; $index++) {
     $note = $NoteSequence[$index]
     $friendly = $note.Name
     # and writing progress as we go.
@@ -1764,99 +1786,120 @@ $noteSequence = @(foreach ($note in $this.Melody) {
     }
     
     # If the note name is rest or the frequency is zero
-    if (-not $note.Frequency -or $Name -eq 'REST') {
+    if ((-not $note.Frequency) -or ($note.Name -eq 'REST')) {
         # the instrument is `Silence`.
         $Instrument = 'Silence'
     }
 
-    if ($note.ShiftOctave) {
-        if ($note.ShiftOctave -gt 0) {
-            for ($shiftNumber = 1; $shiftNumber -le $note.ShiftOctave; $shiftNumber++) {
-                $note.Frequency *= 2
-            }            
+    # We want to be able to make multiple sounds at once.
+    # Our combined wave is the sum of all of the samples.
+    # Start by split our instruments by commas.
+    $AllSamples = @(foreach ($instrument in $Instrument -split ',') {
+        if (-not $this.$Instrument.Script) {
+            throw "Invalid Instrument $Instrument (must be a script method)"
         }
-        elseif ($note.ShiftOctave -lt 0) {
-            for ($shiftNumber = -1; $shiftNumber -ge $note.ShiftOctave; $shiftNumber--) {
-                $note.Frequency /= 2
-            }
-        }
-    }
 
-    if (-not $this.$Instrument.Script) {
-        throw "Invalid Instrument $Instrument (must be a script method)"
-    }
-
-    # Then find our instrument parameter names
-    $instrumentParameterNames =
-        # by walking over the parameters in the script's AST
-        foreach ($param in $this.$Instrument.Script.Ast.ParamBlock.Parameters) {
-            "$($param.Name)" -replace '^\$'
-            foreach ($attr in $param.Attributes) {
-                if ($attr.TypeName.Name -eq 'alias') {
-                    $attr.PositionalArguments.Value
+        # Then find our instrument parameter names
+        $instrumentParameterNames =
+            # by walking over the parameters in the script's AST
+            foreach ($param in $this.$Instrument.Script.Ast.ParamBlock.Parameters) {
+                "$($param.Name)" -replace '^\$'
+                foreach ($attr in $param.Attributes) {
+                    if ($attr.TypeName.Name -eq 'alias') {
+                        $attr.PositionalArguments.Value
+                    }
                 }
             }
+
+        if (-not $instrumentParameterNames.Count) {
+            throw "No Instrument Parameters for $instrument"
         }
-
-    if (-not $instrumentParameterNames.Count) {
-        throw "No Instrument Parameters for $instrument"
-    }
-
-    # Collect our instrument parameters
-    $instrumentParameters = [Ordered]@{}
-    
-    # As we map our instrument parameters, let us also construct a cache key.
-    # If the same instrument and parameters are requested,
-    # we can reliably avoid making the same note twice.
-    
-    # We might as well keep this key in a html friendly format.
-    # (we might want this information later)
-    $cacheKey = @(
-        "data-audio-format='$($this.AudioFormat)'"
-        "data-channel-count='$($this.ChannelCount)'"
-        "data-sample-rate='$($this.SampleRate)'"
-        "data-bits-per-sample='$($this.BitsPerSample)'"
-        "data-instrument='$($Instrument -replace "'", "''")'"
-        foreach ($key in $note.Keys) {
-            "data-$key='$($note[$key] -replace "'","''")'"
-            # that is a parameter for that instrument
-            if ($instrumentParameterNames -contains $key) {
-                # becomes an instrument parameter.
-                $instrumentParameters[$key] = $note[$key]
-            }
-        }
-    ) -join ' '
-
-    $noteData = [Ordered]@{PSTypeName='Note'} + $noteSequence[$index] + @{
-        # played with the current instrument
-        Instrument = $Instrument
-        Id = $cacheKey 
-    }
         
-    # Generate an event representing a note.
-    # Even if we have already cached the note, 
-    # we still want to log that we want to play it.
-    $null = $events.GenerateEvent(
-        'Note', $this, @($friendly), [PSCustomObject]$noteData
-    )
-    
-    if (-not $WaveCache[$cacheKey]) {
-        # Call our instrument script.  
-        # This should output be a `[byte[]]` stream of PCM data
-        # Or a `[double[]]` stream of samples.
-        $samples = . $this.$instrument.Script @instrumentParameters
-        if ($samples.Length) {
-            if ($samples[0] -is [byte]) {
-                $WaveCache[$cacheKey] = (wave @waveSplat -PCM $samples) 
-            }
-            elseif ($samples[0] -is [double]) {
-                $WaveCache[$cacheKey] = (wave @waveSplat -Samples $samples)
-            }
-        }
-    }
+        # We want to be able to play multiple frequencies, too.
+        # So split our note frequency by commas
+        foreach ($frequency in @($note.Frequency -split ',')) {
+            $note = [Ordered]@{} + $noteSequence[$index]
+            $note.Frequency = $Frequency
 
+            # If we are shifting octaves
+            if ($note.ShiftOctave) {
+                if ($note.ShiftOctave -gt 0) {
+                    for ($shiftNumber = 1; $shiftNumber -le $note.ShiftOctave; $shiftNumber++) {
+                        $note.Frequency *= 2
+                    }            
+                }
+                elseif ($note.ShiftOctave -lt 0) {
+                    for ($shiftNumber = -1; $shiftNumber -ge $note.ShiftOctave; $shiftNumber--) {
+                        $note.Frequency /= 2
+                    }
+                }
+            }
+
+            # Collect our instrument parameters
+            $instrumentParameters = [Ordered]@{}
+            
+            # As we map our instrument parameters, let us also construct a cache key.
+            # If the same instrument and parameters are requested,
+            # we can reliably avoid making the same note twice.
+            
+            # We might as well keep this key in a html friendly format.
+            # (we might want this information later)
+            $cacheKey = @($note | waveID) -join ' '
+
+            $noteData = [Ordered]@{PSTypeName='Note'} + $noteSequence[$index] + @{
+                # played with the current instrument
+                Instrument = $Instrument
+                Id = $cacheKey 
+            }
+                
+            # Generate an event representing a note.
+            # Even if we have already cached the note, 
+            # we still want to log that we want to play it.
+            $null = $events.GenerateEvent(
+                'Note', $this, @($friendly), [PSCustomObject]$noteData
+            )
+            
+            if (-not $WaveCache[$cacheKey]) {
+                # Call our instrument script.  
+                # This should output be a `[byte[]]` stream of PCM data
+                # Or a `[double[]]` stream of samples.
+                $samples = . $this.$instrument.Script @instrumentParameters
+                if ($samples.Length) {
+                    if ($samples[0] -is [byte]) {
+                        $WaveCache[$cacheKey] = (wave @waveSplat -PCM $samples) 
+                    }
+                    elseif ($samples[0] -is [double]) {
+                        $WaveCache[$cacheKey] = (wave @waveSplat -Samples $samples)
+                    }
+                }
+            }
+
+            ,$WaveCache[$cacheKey].Samples
+        }
+    })
+    
+    if (-not $AllSamples.Length) { continue }
+
+    $note = [Ordered]@{} + $noteSequence[$index]
+
+    $cacheKey = @($note | waveID) -join ' '
+
+    if (-not $WaveCache[$cacheKey]) {
+        [double[]]$sumSamples = (
+            @(0) * $AllSamples[0].Length
+        )
+
+        foreach ($samples in $AllSamples) {
+            $sampleNumber = 0
+            foreach ($sample in $samples) {
+                $sumSamples[$sampleNumber] += $sample
+                $sampleNumber++
+            }
+        }        
+        $WaveCache[$cacheKey] = wave @waveSplat -Samples $sumSamples
+    }
+    
     $WaveCache[$cacheKey].Data
-    # . $this.$instrument.Script @instrumentParameters
 })
 
 # Last but not least: complete our progress bars
@@ -1864,7 +1907,7 @@ $progress.Remove('PercentComplete')
 $progress.Completed = $true
 Write-Progress @progress
 
-$newWave = wave @waveSplat -PCM $PCMData
+$newWave = wave @waveSplat -PCM $wavaData
 $newWave.Melody = $this.Melody
 $NewWave.Instrument = $Instruments
 return $newWave
