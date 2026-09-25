@@ -362,7 +362,7 @@ if ($samples -and -not $PCM) {
         if ($BitsPerSample -eq 32 -and $audioFormat -eq 3) {
             # we are basically done.
             # No clamping required. # Just cast to float, 
-            $GetBytes.Invoke([float]$sample) # get the bytes,
+            [BitConverter]::GetBytes([float]$sample) # get the bytes,
             continue # and continue 
         }
 
