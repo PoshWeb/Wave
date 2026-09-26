@@ -1814,10 +1814,96 @@ $noteSequence = @(foreach ($note in $this.Melody) {
         if (-not $instrumentParameterNames.Count) {
             throw "No Instrument Parameters for $instrument"
         }
-        
+
+        # Get the list of frequencies played.
+        $frequencyList = @(
+            # This is the frequency list, split by commas
+            foreach ($frequency in 
+                $note.Frequency -split ',' -replace 
+                    'hz', ',' -split ',' -as [double[]]
+            ) {
+                &lt;#
+                
+                A frequency can be played on any number of "strings"
+
+                We can think of each vibration within a sound as a literal string, 
+                vibrating at a frequency.  
+                
+                That's what a lot of "real" music actually is.
+
+                Each string is a harmonic vibration.
+
+                Strings can be present on the note or on this wave.
+
+                If strings is a positive number, each string will vibrate at half the frequency.
+
+                If strings is a negative number, each string will vibrate at twice the frequency.
+
+                If strings can be a list of `[double[]]`, 
+                each frequency will be generated at that ratio.
+
+                #&gt;
+                
+                $strings = 
+                    # strings can be defined on our notes
+                    if ($note.Strings) {
+                        $note.Strings
+                    } 
+                    # Or on this object
+                    elseif($this.Strings)
+                    {    
+                        $this.Strings
+                    }
+
+                # If no strings are defined,
+                if (-not $strings) { 
+                    # we are simply playing this frequency
+                    $frequency
+                    continue
+                }
+
+                # If the strings is an integer, it's a multiple 
+                if ($strings -is [int]) {
+                    # If the number of strings is positive
+                    if ($strings -ge 1) {
+                        # we are generating that number of frequencies
+                        foreach ($noteString in 1..$note.Strings) {
+                            # Each string is half of the previous
+                            # so we will divide by powers of two
+                            $frequency / [Math]::Pow(2, ($noteString - 1))
+                        }
+                    }
+                    # If the number of strings is negative 
+                    elseif ($strings -le 1) {
+                        # we are generating the absolute value of that number of frequencies
+                        # Each frequency is double the previous                        
+                        foreach ($noteString in 1..([Math]::Abs($note.Strings))) {
+                            # So we will multiply by powers of two.
+                            $frequency * [Math]::Pow(2, ($noteString - 1))
+                        }
+                    }
+                    else {
+                        # If the number of strings is zero,
+                        # we obviously must be generating silence.
+                        0
+                    }
+                }
+                elseif (
+                    # If the strings is a series of doubles
+                    $strings -as [double[]]
+                ) {
+                    # emit the original frequency
+                    $frequency                    
+                    foreach ($noteString in ($strings -as [double[]])) {
+                        # and the frequency at each of those ratios.
+                        $frequency * $noteString
+                    }
+                }
+            }
+        )
         # We want to be able to play multiple frequencies, too.
         # So split our note frequency by commas
-        foreach ($frequency in @($note.Frequency -split ',')) {
+        foreach ($frequency in $frequencyList) {
             $note = [Ordered]@{} + $noteSequence[$index]
             $note.Frequency = $Frequency
 
