@@ -13,4 +13,5 @@
     '🪚' = 'Sawtooth'
 
     Backmask = 'Reverse'
+    Rev = 'ReverseMelody'
 }
