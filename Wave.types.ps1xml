@@ -50,6 +50,10 @@
         <ReferencedMemberName>Silence</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
+        <Name>Rev</Name>
+        <ReferencedMemberName>ReverseMelody</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
         <Name>Saw</Name>
         <ReferencedMemberName>Sawtooth</ReferencedMemberName>
       </AliasProperty>
@@ -1502,6 +1506,36 @@ $waveFormat = $this.WaveFormat
 return wave @waveFormat -Samples (
     [Linq.Enumerable]::Reverse([double[]]$this.Samples)
 )
+
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>ReverseMelody</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Reverses Wave Melody
+.DESCRIPTION
+    Reverses a Wave's melody.  
+    
+    This reverses the notes in the wave, but does not reverse the samples.
+#&gt;
+param()
+
+# Get the current melody
+$melody = @($this.Melody)
+
+# If there is not a current melody, return this
+if (-not $melody) { return $this }
+
+# Reverse the melody
+[Array]::Reverse($melody)
+
+# Reassign the current melody to it's reverse
+$this.Melody = $melody
+
+# Return the reversed melody
+return $this.Sound()
 
                     </Script>
       </ScriptMethod>
