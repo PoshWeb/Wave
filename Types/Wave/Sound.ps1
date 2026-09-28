@@ -17,7 +17,7 @@ $Instruments = @(
 # If we could not detect instruments
 if (-not $Instruments) {
     $Instruments = @(if ($this.Instrument) {
-        $this.Instrument
+        $this.Instrument -replace '[\.<>]' -split '\s+'
     } else {
         'sine'
     })
@@ -80,7 +80,11 @@ filter waveID {
     }
 }
 
-$noteSequence = @(foreach ($note in $this.Melody) {
+$melody = @(foreach ($note in $this.Melody) {
+    $note
+})
+
+$noteSequence = @(foreach ($note in $Melody) {
     $noteTable = [Ordered]@{}
     if ($note -is [Collections.IDictionary]) {
         $noteTable += $note
@@ -192,7 +196,7 @@ $noteSequence = @(foreach ($note in $this.Melody) {
                     # If the number of strings is positive
                     if ($strings -ge 1) {
                         # we are generating that number of frequencies
-                        foreach ($noteString in 1..$note.Strings) {
+                        foreach ($noteString in 1..$Strings) {
                             # Each string is half of the previous
                             # so we will divide by powers of two
                             $frequency / [Math]::Pow(2, ($noteString - 1))
@@ -202,7 +206,7 @@ $noteSequence = @(foreach ($note in $this.Melody) {
                     elseif ($strings -le 1) {
                         # we are generating the absolute value of that number of frequencies
                         # Each frequency is double the previous                        
-                        foreach ($noteString in 1..([Math]::Abs($note.Strings))) {
+                        foreach ($noteString in 1..([Math]::Abs($Strings))) {
                             # So we will multiply by powers of two.
                             $frequency * [Math]::Pow(2, ($noteString - 1))
                         }
@@ -228,7 +232,7 @@ $noteSequence = @(foreach ($note in $this.Melody) {
         )
         # We want to be able to play multiple frequencies, too.
         # So split our note frequency by commas
-        foreach ($frequency in $frequencyList) {
+        foreach ($frequency in @($frequencyList)) {
             $note = [Ordered]@{} + $noteSequence[$index]
             $note.Frequency = $Frequency
 
@@ -257,11 +261,13 @@ $noteSequence = @(foreach ($note in $this.Melody) {
             # (we might want this information later)
             $cacheKey = @($note | waveID) -join ' '
 
-            $noteData = [Ordered]@{PSTypeName='Note'} + $noteSequence[$index] + @{
+            $noteData = [Ordered]@{} + $noteSequence[$index] + @{
                 # played with the current instrument
                 Instrument = $Instrument
                 Id = $cacheKey 
             }
+
+            $noteData.PSTypeName = 'Note'
                 
             # Generate an event representing a note.
             # Even if we have already cached the note, 
