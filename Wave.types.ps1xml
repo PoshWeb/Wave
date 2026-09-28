@@ -1756,7 +1756,7 @@ $Instruments = @(
 # If we could not detect instruments
 if (-not $Instruments) {
     $Instruments = @(if ($this.Instrument) {
-        $this.Instrument
+        $this.Instrument -replace '[\.&lt;&gt;]' -split '\s+'
     } else {
         'sine'
     })
@@ -1819,7 +1819,11 @@ filter waveID {
     }
 }
 
-$noteSequence = @(foreach ($note in $this.Melody) {
+$melody = @(foreach ($note in $this.Melody) {
+    $note
+})
+
+$noteSequence = @(foreach ($note in $Melody) {
     $noteTable = [Ordered]@{}
     if ($note -is [Collections.IDictionary]) {
         $noteTable += $note
@@ -1931,7 +1935,7 @@ $noteSequence = @(foreach ($note in $this.Melody) {
                     # If the number of strings is positive
                     if ($strings -ge 1) {
                         # we are generating that number of frequencies
-                        foreach ($noteString in 1..$note.Strings) {
+                        foreach ($noteString in 1..$Strings) {
                             # Each string is half of the previous
                             # so we will divide by powers of two
                             $frequency / [Math]::Pow(2, ($noteString - 1))
@@ -1941,7 +1945,7 @@ $noteSequence = @(foreach ($note in $this.Melody) {
                     elseif ($strings -le 1) {
                         # we are generating the absolute value of that number of frequencies
                         # Each frequency is double the previous                        
-                        foreach ($noteString in 1..([Math]::Abs($note.Strings))) {
+                        foreach ($noteString in 1..([Math]::Abs($Strings))) {
                             # So we will multiply by powers of two.
                             $frequency * [Math]::Pow(2, ($noteString - 1))
                         }
@@ -1967,7 +1971,7 @@ $noteSequence = @(foreach ($note in $this.Melody) {
         )
         # We want to be able to play multiple frequencies, too.
         # So split our note frequency by commas
-        foreach ($frequency in $frequencyList) {
+        foreach ($frequency in @($frequencyList)) {
             $note = [Ordered]@{} + $noteSequence[$index]
             $note.Frequency = $Frequency
 
@@ -1996,11 +2000,13 @@ $noteSequence = @(foreach ($note in $this.Melody) {
             # (we might want this information later)
             $cacheKey = @($note | waveID) -join ' '
 
-            $noteData = [Ordered]@{PSTypeName='Note'} + $noteSequence[$index] + @{
+            $noteData = [Ordered]@{} + $noteSequence[$index] + @{
                 # played with the current instrument
                 Instrument = $Instrument
                 Id = $cacheKey 
             }
+
+            $noteData.PSTypeName = 'Note'
                 
             # Generate an event representing a note.
             # Even if we have already cached the note, 
@@ -3516,6 +3522,81 @@ return
 ) -replace '-'
 $this.Position = 0
                     </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>Strings</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the strings in a wave
+.DESCRIPTION
+    Gets any custom strings applied to a wave.
+    A frequency can be played on any number of "strings"
+
+    We can think of each vibration within a sound as a literal string, 
+    vibrating at a frequency.  
+    
+    That's what a lot of "real" music actually is.
+
+    Each string is a harmonic vibration.
+
+    Strings can be present on the note or on this wave.
+
+    If strings is a positive number, each string will vibrate at half the frequency.
+
+    If strings is a negative number, each string will vibrate at twice the frequency.
+
+    If strings can be a list of `[double[]]`, 
+    each frequency will be generated at that ratio.
+#&gt;
+return $this.'#Strings'
+
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets the strings in a wave
+.DESCRIPTION
+    Sets any custom strings applied to a wave.
+
+    A frequency can be played on any number of "strings"
+
+    We can think of each vibration within a sound as a literal string, 
+    vibrating at a frequency.  
+    
+    That's what a lot of "real" music actually is.
+
+    Each string is a harmonic vibration.
+
+    Strings can be present on the note or on this wave.
+
+    If strings is a positive number, each string will vibrate at half the frequency.
+
+    If strings is a negative number, each string will vibrate at twice the frequency.
+
+    If strings can be a list of `[double[]]`, 
+    each frequency will be generated at that ratio.
+#&gt;
+
+if ($args.Length -eq 1 -and $args[0] -as [int]) {
+    $this | Add-Member NoteProperty '#Strings' ($args[0] -as [int]) -Force
+} else {
+    # If we have a variable number of non-integer strings
+    # unroll our list of arguments
+    $unrollArgs = $args | . { process { $_ } }    
+    # and pick out any items that are nonzero `[double]`
+    $doubleStrings = foreach ($arg in $unrollArgs) {
+        if ($null -ne ($arg -as [double])) {
+            $arg -as [double]
+        }
+    }
+    # these are each of the strings.    
+    $this | Add-Member NoteProperty '#Strings' $doubleStrings -Force
+}
+
+
+
+                    </SetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
         <Name>TimeBase</Name>
