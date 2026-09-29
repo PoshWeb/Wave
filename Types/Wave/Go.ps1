@@ -8,6 +8,9 @@
     $wave.Go("square", 440)
     $wave.Go("play")
 #>
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+    'PSAvoidAssignmentToAutomaticVariable', '', Justification='We need $this to work'
+)]
 param()
 
 $currentWave = if ($this) { $this } else { wave }
@@ -34,11 +37,7 @@ if ($VerbosePreference -notin 'ignore','silentlyContinue') {
 }
 
 $helpfulKeywords = @(
-    '?'
-    '--help'
-    'help'
-    '/help'
-    '/?'
+    '?','--help','help','/help','/?'
 )
 
 filter getScriptHelp {
@@ -64,15 +63,13 @@ filter getScriptHelp {
 # * `wave forward 10`
 # * `wave 'forward', 10`
 $wordsAndArguments = @(foreach ($arg in $ArgumentList) {
-    # If the argument is a string, and it starts with whitespace            
+    # If the argument is a string,
     if ($arg -is [string]) {
-        #if ($arg -match '^[\r\n\s]+') {
-            # $arg -split '\s{1,}'
-        # } else {
-            $arg
-        #}
-    } 
+        $arg # leave it alone
+    }
+    # If the argument is an enumerable
     elseif ($arg -is [Collections.IEnumerable]) {
+        # preceed by comma so we do not enumerate.
         ,$arg
     }
     else {
@@ -81,7 +78,6 @@ $wordsAndArguments = @(foreach ($arg in $ArgumentList) {
     }
 })
 
-# Now that we have a series of balanced words, we can process them.
 # We want to keep track of the current member, 
 # and continue to the next word until we find a member name.        
 $currentMember = $null
@@ -93,21 +89,28 @@ $progress = @{id=Get-Random;activity='Making Waves ~'; status=' '}
 # To do this in one pass, we will iterate through the words and arguments.
 # We use an indexed loop so we can skip past claimed arguments.
 for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
-    
+
     $progress.PercentComplete = $argIndex * 100 / $wordsAndArguments.Length
     $arg = $wordsAndArguments[$argIndex]
     if ($arg.pstypenames -contains 'audio/wav') {
         $currentWave.Data += $arg.Data
         continue 
     }
-    $progress.status = "$($argIndex) / $($wordsAndArguments.Length)"
+    $progress.status = "$($argIndex) / $($wordsAndArguments.Length)"    
     Write-Progress @progress
     # If the argument is not in the member names list, we can complain about it.
     if ($arg -is [string]) {
         
         if ($arg -notin $waveType.Members.Keys) {
             $stepOutput = $currentWave.Note($arg)
-            if ($stepOutput.pstypenames -contains 'audio/wav') {
+            if ($stepOutput -as [Collections.IDictionary[]]) {
+                $this.Melody += foreach ($stepOut in $stepOutput) {
+                    [PSCustomObject](
+                        [Ordered]@{PSTypeName='Note'} + $stepOut
+                    )
+                }
+            }
+            elseif ($stepOutput.pstypenames -contains 'audio/wav') {
                 $newWave = $stepOutput
                 $currentWave = $newWave
                 continue
@@ -119,15 +122,8 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
             elseif ($stepOutput -is [byte[]]) {
                 $currentWave.Data += $stepOutput
                 continue
-            }
-            elseif ($arg -match 'bpm$') {
-                $currentWave.BPM = $arg -replace 'bpm$'
-                continue
-            }
-            elseif ($arg -eq '~') {
-                $currentWave.Data += $currentWave.Silence()
-                continue
-            } elseif ($currentWave.NoteFrequency[$arg]) {
+            }            
+            elseif ($currentWave.NoteFrequency[$arg]) {
                 $currentWave.Data += $currentWave.Tone($currentWave.NoteFrequency[$arg])
                 continue
             }
@@ -138,9 +134,9 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
             elseif (
                 # (we might not want to, if it starts with a bracket)
                 -not $currentMember -and $arg -is [string] -and
-                "$arg".Trim() -and $arg -notmatch '^\['                 
+                "$arg".Trim()
             ) {            
-                Write-Warning "Unknown command '$arg'."                    
+                Write-Warning "Unknown command '$arg'."
                 continue
             }
         }
@@ -152,7 +148,8 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
 
     if (-not $memberInfo) {
         $memberInfo = foreach ($typeInfo in $waveTypes) {
-            if ($typeInfo.Members -is [Collections.IDictionary] -and $typeInfo.Members[$currentMember]) {
+            if ($typeInfo.Members -is [Collections.IDictionary] -and 
+                $typeInfo.Members[$currentMember]) {
                 $typeInfo; break
             }
             if ($typeInfo::$currentMember) {
@@ -161,6 +158,17 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
             }
         }
     }
+
+    $IsMethod = 
+        $memberInfo -is [Management.Automation.Runspaces.ScriptMethodData] -or 
+        $memberInfo -is [Management.Automation.PSMethod] -or
+        (
+            $memberInfo.ReferencedMemberName -and (
+                $waveType.Members[$memberInfo.ReferencedMemberName] -is 
+                    [Management.Automation.Runspaces.ScriptMethodData]
+            )
+        )
+        
 
     # If it's an alias
     if ($memberInfo.ReferencedMemberName) {
@@ -241,8 +249,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
     $stepOutput =
         if (
             # If the member is a method, let's invoke it.
-            $memberInfo -is [Management.Automation.Runspaces.ScriptMethodData] -or 
-            $memberInfo -is [Management.Automation.PSMethod]
+            $IsMethod            
         ) {            
             # If we have arguments,
             if ($argList) {                
@@ -331,12 +338,21 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
             }
         }
 
+    if ((-not $IsMethod) -and $null -ne $stepOutput) {
+        $stepOutput
+        $outputWave = $false
+        continue
+    }
     # If the output is not a wave object, we can output it.
     # NOTE: This may lead to multiple types of output in the pipeline.
     # Luckily, this should be one of the few cases where this does not annoy too much.
     # Properties being returned will largely be strings or numbers, and these will always output directly.
-    if ($null -ne $stepOutput -and -not ($stepOutput.pstypenames -eq 'wave')) {
-        if ($stepOutput -is [double[]]) {
+    if ($null -ne $stepOutput -and -not ($stepOutput.pstypenames -eq 'wave') -and $IsMethod) {
+        if ($stepOutput -as [Collections.IDictionary[]]) {
+            $currentWave.Melody += $stepOutput
+            $currentWave = $currentWave.Sound()
+        }
+        elseif ($stepOutput -is [double[]]) {
             $currentWave.Data += (wave @waveSplat -Samples $stepOutput).Data
         }
         elseif ($stepOutput -is [byte[]]) {
@@ -379,5 +395,8 @@ Write-Progress @progress
 
 # If the last members returned a wave object, we can output it.
 if ($outputWave) {
+    if ($currentWave.Melody -and -not $currentWave.Duration) {
+        return $currentWave.Sound()
+    }
     return $currentWave
 }
