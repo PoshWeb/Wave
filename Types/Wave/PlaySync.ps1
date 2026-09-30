@@ -14,17 +14,23 @@
 #>
 param()
 
+$currentWave = $this
+# If we know what tune to play, but haven't played it yet,
+if ($currentWave.Melody -and -not $currentWave.Duration) {
+    $currentWave = $this.Sound() # render the wave.
+}
+
 if ($IsLinux) {
-    $filePath = $this.Save().FullName
+    $filePath = $currentWave.Save().FullName
     $null = aplay $filePath
 } elseif ($IsMacOS) {
-    $filePath = $this.Save().FullName
+    $filePath = $currentWave.Save().FullName
     $null = afplay $filePath
 } else {
     if (-not ('Media.SoundPlayer' -as [type])) {
         Add-Type -AssemblyName System.Windows.Extensions
     }    
-    $soundPlayer = [Media.SoundPlayer]::new($this)
-    $soundPlayer.PlaySync()
-    $this.Position = 0
+    $soundPlayer = [Media.SoundPlayer]::new($currentWave)
+    $currentWave.Position = 0
+    $soundPlayer.PlaySync()    
 }
