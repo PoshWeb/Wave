@@ -10,11 +10,11 @@ param([string]$Path)
 
 # If no path is provided
 if (-not $path) {
-    # default to the temp path
-    $path = [IO.Path]::GetTempPath(), (
-        # and name the file based off of the current ticks.
-        '' + [DateTimeOffset]::Now.Ticks + '.wav'
-    ) -join '/'
+    # default to a subpath of local application data
+    $path = [Environment]::GetFolderPath("LocalApplicationData"),
+        'Wave',
+            # and name the file using it's sha256 hash.
+            "$($this.SHA256).wav" -join '/'    
 }
 
 # Get ready to get paths
