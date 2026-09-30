@@ -2529,12 +2529,15 @@ param()
 # Get our samples as a `[double[]]`
 [double[]]$samples = $this.Samples
 
-# If we had any samples
-if (-not $samples) { return 0 }    
+# If we had no samples, 
+# the average volume is obviously zero
+if (-not $samples) { return 0 }
+# If we had any samples, square them
 [double[]]$Squared = @(foreach ($sample in $samples) {
     $sample * $sample
 })
 
+# then average the squares and get the square root.
 return [Math]::Sqrt([Linq.Enumerable]::Average($Squared))
 
                     </GetScriptBlock>
