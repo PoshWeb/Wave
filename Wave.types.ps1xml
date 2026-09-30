@@ -46,6 +46,10 @@
         <ReferencedMemberName>ChannelCount</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
+        <Name>MaxVolume</Name>
+        <ReferencedMemberName>MaximumVolume</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
         <Name>Rest</Name>
         <ReferencedMemberName>Silence</ReferencedMemberName>
       </AliasProperty>
@@ -2970,6 +2974,30 @@ $this | Add-Member NoteProperty '#Instrument' $args -Force
                     </SetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>MaximumVolume</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets Maximum Volume
+.DESCRIPTION
+    Gets the Maximum Volume from a wave.
+.NOTES
+    This is the delta between the maximum and minimum sample
+#&gt;
+param()
+# Get our samples as a `[double[]]`
+[double[]]$samples = $this.Samples
+
+# If we did not have any samples,
+# the maximum volume is obviously zero.
+if (-not $samples) { return 0 }
+
+# Otherwise, find the delta between max and min
+return [Linq.Enumerable]::Max($samples) - [Linq.Enumerable]::Min($samples)    
+
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Melody</Name>
         <GetScriptBlock>
                         &lt;#
@@ -3832,26 +3860,15 @@ return $vector3
 .SYNOPSIS
     Gets Wave Volume
 .DESCRIPTION
-    Gets a cached Volume value from a wave.
+    Gets a custom volume to apply to a wave.
 
     This is used to provide a default value for Wave methods that use `-Volume`.
 
-    If no Volume has been provided, will measure the volume of the samples.
+    If no value has been set, will return zero.
 #&gt;
-if ($this.'#Volume') {
-    return $this.'#Volume'
-}
-$samples = $this.Samples
-# Get our samples as a `[double[]]`
-[double[]]$samples = $this.Samples
-
-# If we had any samples
-if ($samples) {
-    # then the max volume of the entire sequence is the max minus the min.
-    return [Linq.Enumerable]::Max($samples) - [Linq.Enumerable]::Min($samples)    
-} else {
-    return 0
-}
+param()
+if ($this.'#Volume') { return $this.'#Volume' }
+return 0
                     </GetScriptBlock>
         <SetScriptBlock>
                         &lt;#
