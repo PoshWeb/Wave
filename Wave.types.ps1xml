@@ -2796,6 +2796,21 @@ return $chunks
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>ContentType</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets Wave Content Type
+.DESCRIPTION
+    Gets the Wave Content type: `audio/wav`
+#&gt;
+param()
+
+'audio/wav'
+
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Data</Name>
         <GetScriptBlock>
                         &lt;#
