@@ -14,4 +14,7 @@
 
     Backmask = 'Reverse'
     Rev = 'ReverseMelody'
+    
+    # Shortform property names
+    MaxVolume = 'MaximumVolume'
 }
