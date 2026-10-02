@@ -35,7 +35,7 @@
 [Alias('wav', '.wav','〜','🌊')]
 [CmdletBinding(PositionalBinding=$false)]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-    'PSAvoidAssignmentToAutomaticVariable', '', Justification='$this does not always get properly assigned'
+    'PSAvoidAssignmentToAutomaticVariable', '', Justification='We need $this to work'
 )]
 param(
 
@@ -78,7 +78,7 @@ $ChannelCount = 1,
 # The bits per sample
 [Alias('BPS')]
 [uint16]
-$BitsPerSample = 8,
+$BitsPerSample = 32,
 
 # The sample rate, in hertz
 [uint32]
@@ -94,7 +94,7 @@ $SampleRate = 44100,
 })]
 [Alias('AF')]
 [uint16]
-$AudioFormat = 1,
+$AudioFormat = 3,
 
 # The number of bytes per block
 [Alias('BPB')]
@@ -185,15 +185,15 @@ if ($allInput.Length) {
     # but hopefully not too much.
 
     # Walk over each input
-    foreach ($in in $allInput) {
+    :nextInput foreach ($in in $allInput) {
         # if it is a wave
         if ($in.pstypenames -contains 'audio/wav') {
             # Set `$this` to be the wave.
-            $this = $in
+            $in | makeWave
             # Then call `Go` with splatting
-            # (so arguments bind properly and do not get unrolled).            
-            . $in.Go.Script @ArgumentList
-            continue
+            # (so arguments bind properly and do not get unrolled).
+            
+            continue nextInput
         }        
         
         if ($in -is [IO.FileInfo] -and 
@@ -207,7 +207,7 @@ if ($allInput.Length) {
             $memoryStream.Write($fileBytes, 0,$fileBytes.Length)
             # and make waves.
             $memoryStream | makeWave
-            continue
+            continue nextInput
         }
 
         # Pass thru unknown input
@@ -237,6 +237,11 @@ filter makeWave {
     if (-not $ArgumentList.Length) {
         $WaveStream # simply output the wave.
     } else {
+        if (-not $WaveStream.Go.Script) {
+            Write-Warning "Interpreter not found.  Please import the Wave module."
+            return $WaveStream
+            
+        }
         # If we have any arguments    
         # try to execute them.
         try {
@@ -377,8 +382,8 @@ if ($samples -and -not $PCM) {
         # If there are 8 bits per sample
         if ($BitsPerSample -eq 8) {
             # round each sample into bytes, with 127 as the zero point.
-            [byte][Math]::Round(
-                127.5 + $sample * 127.5
+            [byte][Math]::Floor(
+                127 + $sample * 127
             )
         }
 

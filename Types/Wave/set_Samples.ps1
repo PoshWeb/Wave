@@ -12,6 +12,12 @@ $audioFormat =
     else { 1 }
 
 $GetBytes = [BitConverter]::GetBytes
+$sampleNumber = 0
+$progress = [Ordered]@{
+    Id = Get-Random
+    Status = "Encoding"
+    Activity = " "
+}
 
 $This.Data = @(
     foreach ($sample in $samples) {
@@ -23,6 +29,13 @@ $This.Data = @(
 
         # Inline code will be quicker.
         # (hence duplicating it across multiple files)
+        
+        $sampleNumber++
+        if (-not ($sampleNumber % 1kb)) {
+            $progress.Status = "$sampleNumber / $($Samples.Length)"
+            $progress.PercentComplete = ($sampleNumber * 100 / $samples.Length)
+            Write-Progress @progress
+        }
 
         # If we are using 32-bit floating point audio
         if ($BitsPerSample -eq 32 -and $audioFormat -eq 3) {
@@ -42,9 +55,9 @@ $This.Data = @(
 
         # If there are 8 bits per sample
         if ($BitsPerSample -eq 8) {        
-            # round each sample into bytes, with 128 as the zero point.
-            [byte][Math]::Round(
-                128 + $sample * 127
+            # round each sample into bytes, with 127 as the zero point.
+            [byte][Math]::Floor(
+                127 + $sample * 127
             )
         }
 
@@ -63,6 +76,10 @@ $This.Data = @(
         }
         #endregion Encode Sample
     }
+
+    $progress.Remove('PercentComplete')
+    $progress.Completed = $true
+    Write-Progress @progress
 )
 
 return
