@@ -70,6 +70,6 @@ return ,[double[]]@(
         $envelope = 1.0 - ($i / $numberOfSamples)
 
         # We scale our sample by the volume and the envelope
-        $sample * $volume * $envelope
+        $sample * $volume/2 * $envelope
     }
 )
