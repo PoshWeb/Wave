@@ -2974,10 +2974,55 @@ $this.SampleRate/2
 .SYNOPSIS
     Gets an HTML wave
 .DESCRIPTION
-    Gets a waveform as HTML
+    Gets a waveform as HTML.  
+    
+    By default, renders an `&lt;audio&gt;` element with the current wave as the source.
+.NOTES
+    This can be customized by setting the HTML.
 #&gt;
-"&lt;audio controls='' src='$($this.DataUrl)'&gt;&lt;/audio&gt;"
+param()
+if ($this.'#HTML') {
+    @(foreach ($object in $this.'#HTML') {
+        if ($object -is [xml]) {
+            $object.OuterXml
+        }
+        elseif ($object.html) {
+            $object.html
+        } elseif ($object.ToString) {
+            $object.ToString()
+        }
+    }) -join [Environment]::NewLine
+    return 
+}
+return "&lt;audio controls='' src='$($this.DataUrl)'&gt;&lt;/audio&gt;"
                     </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets Wave HTML
+.DESCRIPTION
+    Sets a custom HTML representation of a wave.
+
+    By default, a wave in is just an `&lt;audio&gt;` element,
+    with the source being the wave's `.DataUrl`.
+
+    This allows us to show a Wave in HTML any way we wish.
+.NOTES
+    By default, a wave in is just an `&lt;audio&gt;` element,
+    with the source being the wave's `.DataUrl`.
+
+    While this works, 
+    it does not provide any surrounding context or allow for customization.
+
+    By allowing a custom value, we can add simple surrounding context
+    (like the name of the note or tune).
+
+    We can also change how the audio is displayed or used.
+#&gt;
+param()
+
+$this | Add-Member NoteProperty '#HTML' $args -Force
+                    </SetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
         <Name>Instrument</Name>
