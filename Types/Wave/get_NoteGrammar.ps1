@@ -32,7 +32,6 @@
     * `[]` (Open/Close Divide) only supports some partial syntax
     * `𝆱𝆲` (GlissandoUp/Down) are not yet implemented
     * `𝆒𝆓` (Crescendo/Decrescendo) are not yet implemented
-    
 #>
 
 [Ordered]@{
@@ -66,8 +65,7 @@
     Divide = [Regex]::New('/(?<scale>[\d\.]+)')
     Repeat = [Regex]::New('!(?<scale>[\d+])')
     DECPS = [regex]::new('\e\[(?<volume>[0-7]);(?<duration>\d+);(?:(?<decnote>\d+);?){1,},~')
-    Emoji = [Regex]::new("[\p{IsHighSurrogates}\p{IsLowSurrogates}\p{IsVariationSelectors}\p{IsCombiningHalfMarks}]+")
-    MidiNote = [Regex]::New('m(?:idi)?\s{0,}(?<midiNumber>[\d\.]+)','IgnoreCase')
+    Emoji = [Regex]::new("[\p{IsHighSurrogates}\p{IsLowSurrogates}\p{IsVariationSelectors}\p{IsCombiningHalfMarks}]+")    
     AtTime = [Regex]::new('\@(?<scale>[\d\.]+)')
     Rest = [Regex]::new('
         (?>
@@ -92,6 +90,7 @@
         ',
         'IgnoreCase,IgnorePatternWhitespace'
     )
+    MidiNote = [Regex]::New('m(?:idi)?\s{0,}(?<midiNumber>[\d\.]+)','IgnoreCase')
     <#ExactFrequency = [Regex]::new(
         '(?<frequency>[\d\.]+)(?<scale>(?>hz|㎐|㎑|㎒|㎓))'
     )#>
@@ -106,15 +105,22 @@
         \p{Pe}?                # Optional ending punctuation',
         'IgnoreCase,IgnorePatternWhitespace'
     )
-    LetterNote = [Regex]::new('    
+    # Letter notes are one of the more challenging parts of the grammar
+    # We only want to match letters within words that are all notes.
+    LetterNote = [Regex]::new('
+    # Do not match if we preceed a letter that is not a-g
+    # followed by any number of a-g letters
+    (?<![\p{L}-[abcdefg]][abcdefg]{0,})
     (?<pitch>
         (?>
-            (?<flat>[b\u266d_])
+            (?<flat>[\u266d_])
             |
             (?<sharp>[\#\u266f\^])
         )
     )?
     (?<letter>[a-g]) # a letter between a and g
+    # as long as the next character is not a letter and not a-g.
+    (?![\p{L}-[abcdefg]])
     (?: 
         # Then an optional flat/sharp alter
         # and a number
@@ -136,7 +142,7 @@
             |
             # If there was no sharp or flat, the octave can still be present
             (?<octave>[1-8])
-        )        
+        )
     )?
      # an optional octave
     ', 'IgnoreCase, IgnorePatternWhitespace'        
