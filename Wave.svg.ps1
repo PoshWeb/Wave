@@ -62,7 +62,12 @@ $Amplitude = 2,
 # While most music is much faster than this,
 # we do not want the logo to be _too_ distracting.
 [double]
-$BPM = 16
+$BPM = 16,
+
+# The width used in the stroke.
+# By default 0.1%
+[double]
+$StrokeWidth = 0.1
 )
 
 $poshWeb = $(.\PoshWeb.svg.ps1 -Variant $Variant) -as [xml]
@@ -84,10 +89,10 @@ $(
 )
 <path 
     stroke='#4488ff' 
-    fill ='transparent' 
+    fill ='$(if ($variant -match 'fill') { '#4488ff'} else { 'transparent'})' 
     class='foreground-fill foreground-stroke'
     transform-origin='50% 50%'
-    stroke-width='0.1%'
+    stroke-width='$StrokeWidth%'
     d='m 0 $($Amplitude/2) $(
         if ($variant -match 'cos(?:ine)?') {
             $($CosineWave * $frequency)
