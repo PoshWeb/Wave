@@ -3683,7 +3683,6 @@ return $noteFrequency
     * `[]` (Open/Close Divide) only supports some partial syntax
     * `𝆱𝆲` (GlissandoUp/Down) are not yet implemented
     * `𝆒𝆓` (Crescendo/Decrescendo) are not yet implemented
-    
 #&gt;
 
 [Ordered]@{
@@ -3717,8 +3716,7 @@ return $noteFrequency
     Divide = [Regex]::New('/(?&lt;scale&gt;[\d\.]+)')
     Repeat = [Regex]::New('!(?&lt;scale&gt;[\d+])')
     DECPS = [regex]::new('\e\[(?&lt;volume&gt;[0-7]);(?&lt;duration&gt;\d+);(?:(?&lt;decnote&gt;\d+);?){1,},~')
-    Emoji = [Regex]::new("[\p{IsHighSurrogates}\p{IsLowSurrogates}\p{IsVariationSelectors}\p{IsCombiningHalfMarks}]+")
-    MidiNote = [Regex]::New('m(?:idi)?\s{0,}(?&lt;midiNumber&gt;[\d\.]+)','IgnoreCase')
+    Emoji = [Regex]::new("[\p{IsHighSurrogates}\p{IsLowSurrogates}\p{IsVariationSelectors}\p{IsCombiningHalfMarks}]+")    
     AtTime = [Regex]::new('\@(?&lt;scale&gt;[\d\.]+)')
     Rest = [Regex]::new('
         (?&gt;
@@ -3743,6 +3741,7 @@ return $noteFrequency
         ',
         'IgnoreCase,IgnorePatternWhitespace'
     )
+    MidiNote = [Regex]::New('m(?:idi)?\s{0,}(?&lt;midiNumber&gt;[\d\.]+)','IgnoreCase')
     &lt;#ExactFrequency = [Regex]::new(
         '(?&lt;frequency&gt;[\d\.]+)(?&lt;scale&gt;(?&gt;hz|㎐|㎑|㎒|㎓))'
     )#&gt;
@@ -3757,15 +3756,22 @@ return $noteFrequency
         \p{Pe}?                # Optional ending punctuation',
         'IgnoreCase,IgnorePatternWhitespace'
     )
-    LetterNote = [Regex]::new('    
+    # Letter notes are one of the more challenging parts of the grammar
+    # We only want to match letters within words that are all notes.
+    LetterNote = [Regex]::new('
+    # Do not match if we preceed a letter that is not a-g
+    # followed by any number of a-g letters
+    (?&lt;![\p{L}-[abcdefg]][abcdefg]{0,})
     (?&lt;pitch&gt;
         (?&gt;
-            (?&lt;flat&gt;[b\u266d_])
+            (?&lt;flat&gt;[\u266d_])
             |
             (?&lt;sharp&gt;[\#\u266f\^])
         )
     )?
     (?&lt;letter&gt;[a-g]) # a letter between a and g
+    # as long as the next character is not a letter and not a-g.
+    (?![\p{L}-[abcdefg]])
     (?: 
         # Then an optional flat/sharp alter
         # and a number
@@ -3787,7 +3793,7 @@ return $noteFrequency
             |
             # If there was no sharp or flat, the octave can still be present
             (?&lt;octave&gt;[1-8])
-        )        
+        )
     )?
      # an optional octave
     ', 'IgnoreCase, IgnorePatternWhitespace'        
