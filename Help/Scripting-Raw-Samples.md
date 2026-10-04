@@ -4,7 +4,7 @@ We can do amazing things just by manipulating samples.
 
 A sample is a wave at a moment in a time.
 
-It is just an array of `[double[]]`s.
+It is just an array of `[double[]]`.
 
 Each sample represents a point in wave.
 
@@ -19,7 +19,7 @@ using whatever `-AudioFormat`, `-SampleRate`, `-ChannelCount`, etc.
 
 This means we can script raw samples with PowerShell if we want to.
 
-Let's show how.
+Let's show how:
 
 ## Step 1 : Making a Wave
 
