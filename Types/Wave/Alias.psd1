@@ -5,6 +5,7 @@
     Sine = 'Tone'
     Saw = 'Sawtooth'
     Tri = 'Triangle'
+    Cos = 'Cosine'
 
     # Pictographic Aliases
     '〜' = 'Tone'
