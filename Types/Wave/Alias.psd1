@@ -6,6 +6,8 @@
     Saw = 'Sawtooth'
     Tri = 'Triangle'
     Cos = 'Cosine'
+    CosSquare = 'CosineSquare'
+    CosTriangle = 'CosineTriangle'
 
     # Pictographic Aliases
     '〜' = 'Tone'
