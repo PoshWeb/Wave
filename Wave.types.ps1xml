@@ -38,6 +38,10 @@
         <ReferencedMemberName>Sawtooth</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
+        <Name>Antinoise</Name>
+        <ReferencedMemberName>Negate</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
         <Name>Backmask</Name>
         <ReferencedMemberName>Reverse</ReferencedMemberName>
       </AliasProperty>
@@ -50,12 +54,28 @@
         <ReferencedMemberName>Cosine</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
+        <Name>CosSaw</Name>
+        <ReferencedMemberName>CosineSawtooth</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>CosSawtooth</Name>
+        <ReferencedMemberName>CosineSawtooth</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
         <Name>CosSquare</Name>
         <ReferencedMemberName>CosineSquare</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
         <Name>CosTriangle</Name>
         <ReferencedMemberName>CosineTriangle</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>Invert</Name>
+        <ReferencedMemberName>Negate</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>InvertPolarity</Name>
+        <ReferencedMemberName>Negate</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
         <Name>MaxVolume</Name>
@@ -340,6 +360,86 @@ return ,[double[]]@(for ($i = 0; $i -lt $numberOfSamples; $i++) {
     # We will scale this by the volume, and then by the envelope.
     $sample * $Volume * $envelope
 })
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>CosineSawooth</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Sawtooth tone Generator
+.DESCRIPTION
+    Generates a sawtooth tone of a `-Frequency`, for `-Duration`, at `-Volume`
+.NOTES
+    A sawtooth wave is calculated given at a given angle using:
+
+    ~~~PowerShell
+    [Math]::atan([Math]::Tan($angle/2))
+    ~~~
+.LINK
+    https://en.wikipedia.org/wiki/Sawtooth_wave
+#&gt;
+[OutputType([double[]])]
+param(
+# The frequency.
+# Defaults to A4 (440hz)
+[Alias('Hz')]
+[float]$Frequency = 440,
+
+# The amount of time to generate.
+[Timespan]$Duration = $(
+    if ($this.BPM -is [TimeSpan]) {$this.BPM} 
+    else { [TimeSpan]::FromSeconds(60/128) }
+),
+
+# The volume.
+# If the current wave has set a `volume`, 
+# will use that volume.
+# Otherwise, will default to 0.5
+[float]$Volume = $(
+    if ($this.Volume) { $this.Volume } else { 0.5 }
+),
+
+# The sample rate.
+# Will default to the `.SampleRate` of `$this` wave.
+# If there is no `$this` wave, will default to 44100
+[uint32]$SampleRate = $(
+    if ($this.SampleRate) { $this.SampleRate } else { 44100 }
+),
+
+# The channel count.
+# Will default to the `.ChannelCount` of `$this` wave.
+# If there is no `$this` wave, will default to 1 (mono).
+[uint16]$channelCount = $(
+    if ($this.ChannelCount) { $this.ChannelCount } else { 1 }
+)
+)
+
+# Calculate the number of samples
+$numberOfSamples = [Math]::Round(    
+    $Duration.TotalSeconds * $SampleRate * $channelCount
+) 
+
+# We can imagine each cycle as a series of circles
+# how many circles?  Whatever our frequency may be.
+$cycle = 2 * [Math]::PI * $Frequency
+$stepAngle = $cycle/($sampleRate * $channelCount)
+
+# Return a `[double[]]` containing the samples
+return ,[double[]]@(
+    # generated one at a time
+    for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
+        # The sample at this moment is the arc tangent of half that angle
+        $sample = [Math]::atan([Math]::Tan($stepAngle * $i/-2))
+
+        # Our envelope is how we want to enclose the sound.
+        # This will fade the sound over the `-Duration`
+        $envelope = 1.0 - ($i / $numberOfSamples)
+
+        # We scale our sample by the volume and the envelope
+        $sample * $volume/2 * $envelope
+    }
+)
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
@@ -1319,6 +1419,38 @@ $midiNote
     2,
     (($MidiNote - 69)/12)
 )
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>Negate</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Negates Auto
+.DESCRIPTION
+    Negates all samples, switching their polarity and generating an opposite wave.
+
+    This is sometimes called "antinoise".
+    
+    If you mix a negated wave with the original wave it will cancel out.
+
+    This is because mixing is adding samples together, 
+    and if you add 1 to -1 you get zero.
+.NOTES
+    This will make sine waves into cosine waves.
+#&gt;
+[OutputType('audio/wav')]
+param()
+
+[double[]]$Samples = $this.Samples
+
+$waveFormat = $this.WaveFormat
+
+[double[]]$Inverse = foreach ($sample in $samples) {
+    $sample * -1
+}
+
+return wave @waveFormat -Samples $Inverse
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
