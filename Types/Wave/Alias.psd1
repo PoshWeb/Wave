@@ -11,6 +11,10 @@
     CosSawtooth = 'CosineSawtooth'
     CosSaw = 'CosineSawtooth'
 
+    Invert = 'Negate'
+    InvertPolarity = 'Negate'
+    Antinoise = 'Negate'
+
     # Pictographic Aliases
     '〜' = 'Tone'
     '□' = 'Square'
@@ -19,7 +23,7 @@
     '🪚' = 'Sawtooth'
 
     # Shortform method names
-    Backmask = 'Reverse'    
+    Backmask = 'Reverse'
     Rev = 'ReverseMelody'
 
     # Shortform property names
