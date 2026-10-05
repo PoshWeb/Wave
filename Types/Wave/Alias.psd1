@@ -8,6 +8,8 @@
     Cos = 'Cosine'
     CosSquare = 'CosineSquare'
     CosTriangle = 'CosineTriangle'
+    CosSawtooth = 'CosineSawtooth'
+    CosSaw = 'CosineSawtooth'
 
     # Pictographic Aliases
     '〜' = 'Tone'
