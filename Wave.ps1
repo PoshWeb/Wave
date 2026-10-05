@@ -5,6 +5,22 @@
     Makes a Wave stream.
 
     This lets us make music with PowerShell.
+
+    Wave has an open-ended syntax.  Any number of arguments can be passed to Wave
+.INPUTS
+    Accepts any input.
+
+    If the input is a `[double[]]` of samples,
+    and there are no -Samples provided, this will become the samples.
+
+    If the input is a `[double[]]` of samples and there are `-Samples`,
+    this will mix the two samples together.
+
+    If the input was already an `audio/wav` 
+    it will operate on the current wave.
+
+    If the input was a `[IO.FileInfo]` with the `.wav` extension,
+    it will load the wave into memory and operate on that wave.
 .NOTES
     ### What This Script Does
 
@@ -17,6 +33,12 @@
     If a `-Stream` is provided, we will call it an `audio/wav`.
 
     If neither is provided, will create a new waveform. 
+.OUTPUTS
+    Normally outputs the current `audio/wav` object.
+    
+    If properties are requested, will output the values of those properties.
+    
+    If methods return values that cannot become a wave, they will output.
 .LINK
     https://en.wikipedia.org/wiki/WAV#WAV_file_header
 .EXAMPLE
@@ -31,6 +53,31 @@
     wave tone 440 tone 220
 .EXAMPLE
     # Play a series of notes
+    wave note abba play
+.EXAMPLE
+    # Set the bpm, then play notes
+    wave bpm 256 a2a3a4a5 play
+.EXAMPLE
+    # Go to the cafe
+    wave note cafe play
+.EXAMPLE
+    # Go to the cafe and back
+    wave note cafeefac play
+.EXAMPLE
+    # Go to the cafe in reverse
+    wave note cafe rev play
+.EXAMPLE
+    # Or make a palindrome
+    wave note cafe palindrome play
+.EXAMPLE
+    # Or play it backwards
+    wave note cafe palindrome backmask play
+.EXAMPLE
+    # Play notes in octaves
+    wave note a2a3b2b3 play
+.EXAMPLE
+    # Add rests
+    wave bpm 256 note a2a3~~b2b3~~ play
 #>
 [Alias('wav', '.wav','〜','🌊')]
 [CmdletBinding(PositionalBinding=$false)]
@@ -163,7 +210,7 @@ if ($AsJob) {
         if ($Parameter.Contains('ModulePath')) {
             if ($Parameter.ModulePath) {
                 Import-Module $parameter.ModulePath
-            }            
+            }
             $Parameter.Remove('ModulePath')
         }
 
@@ -179,10 +226,99 @@ if ($AsJob) {
     return $waveJob
 }
 
-# If we have any input,
+# Define a filter to decorate our wave and execute arguments
+filter makeWave {
+    # Take the input object.
+    $WaveStream = $_
+    # If it is not yet a `Wave`
+    if ($WaveStream.pstypenames -notcontains 'Wave') { 
+        # make it a `Wave`.
+        $WaveStream.pstypenames.insert(0,'Wave')
+    }
+    # If it is not yet an `audio/wav`
+    if ($WaveStream.pstypenames -notcontains 'audio/wav') {
+        # make it an `audio/wav`
+        $WaveStream.pstypenames.insert(0,'audio/wav')
+    }       
+
+    # If we have no arguments
+    if (-not $ArgumentList.Length) {
+        $WaveStream # simply output the wave.
+    } else {
+        if (-not $WaveStream.Go.Script) {
+            Write-Warning "Interpreter not found.  Please import the Wave module."
+            return $WaveStream
+        }
+        # If we have any arguments    
+        # try to execute them.
+        try {
+            # Set `$this` first.
+            $this = $WaveStream
+            # Then call `Go` with splatting
+            # (so arguments bind properly and do not get unrolled).
+            . $WaveStream.Go.Script @ArgumentList
+        } catch {
+            # If this failed, write an error
+            $PSCmdlet.WriteError($_)
+        }
+    }
+}
+
+# If we have any input, we want to work with it.
 if ($allInput.Length) {
+    # One simple and cool possibility is being piped a series of samples.
+    # If we can cast all of the input to a double array, 
+    # we can treat it as samples. 
+    $inputSamples = $allInput -as [double[]]
+
+    # If we have input samples and no samples
+    if ($inputSamples -and -not $Samples) {
+        # our input is now our samples
+        $samples = $inputSamples
+    }
+    # If we have input samples and samples
+    elseif ($inputSamples -and $Samples) {
+        # we can mix them together
+        for ($mixIndex = 0 ; $mixIndex -lt $Samples.Count; $mixIndex++) {
+            # just add our input to our samples
+            $samples[$mixIndex] +=
+                $inputSamples[$mixIndex % $inputSamples.Length]
+        }
+    } else {
+        # Walk over each input
+        :nextInput foreach ($in in $allInput) {
+            # if it is a wave
+            if ($in.pstypenames -contains 'audio/wav') {
+                # just make waves `$this` to be the wave.
+                $in | makeWave                
+                continue nextInput
+            }        
+            
+            if ($in -is [IO.FileInfo] -and 
+                $in.Extension -eq '.wav'
+            ) {
+                # Create a new memory stream,
+                $memoryStream = [IO.MemoryStream]::new()
+                # read our file bytes,
+                $fileBytes = [IO.File]::ReadAllBytes($in.FullName)
+                # write our file bytes to our stream,
+                $memoryStream.Write($fileBytes, 0,$fileBytes.Length)
+                # and make waves.
+                $memoryStream | makeWave
+                continue nextInput
+            }
+
+            # Pass thru unknown input
+            $in
+        }
+    }
+
+    if (-not $samples) { return }     
+}
+# If we have any input,
+if ($allInput.Length -and -not $allInput -as [double[]]) {
     # This will attempt to be a bit clever, 
-    # but hopefully not too much.
+    # but hopefully not too much.    
 
     # Walk over each input
     :nextInput foreach ($in in $allInput) {
@@ -216,45 +352,6 @@ if ($allInput.Length) {
 
     # If we had any piped input, return now
     return
-}
-
-# Define a filter to decorate our wave and execute arguments
-filter makeWave {
-    # Take the input object.
-    $WaveStream = $_
-    # If it is not yet a `Wave`
-    if ($WaveStream.pstypenames -notcontains 'Wave') { 
-        # make it a `Wave`.
-        $WaveStream.pstypenames.insert(0,'Wave')
-    }
-    # If it is not yet an `audio/wav`
-    if ($WaveStream.pstypenames -notcontains 'audio/wav') {
-        # make it an `audio/wav`
-        $WaveStream.pstypenames.insert(0,'audio/wav')
-    }       
-
-    # If we have no arguments
-    if (-not $ArgumentList.Length) {
-        $WaveStream # simply output the wave.
-    } else {
-        if (-not $WaveStream.Go.Script) {
-            Write-Warning "Interpreter not found.  Please import the Wave module."
-            return $WaveStream
-            
-        }
-        # If we have any arguments    
-        # try to execute them.
-        try {
-            # Set `$this` first.
-            $this = $WaveStream
-            # Then call `Go` with splatting
-            # (so arguments bind properly and do not get unrolled).
-            . $WaveStream.Go.Script @ArgumentList
-        } catch {
-            # If this failed, write an error
-            $PSCmdlet.WriteError($_)
-        }
-    }
 }
 
 # If a stream is provided
