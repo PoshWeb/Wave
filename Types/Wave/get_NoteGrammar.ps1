@@ -63,8 +63,9 @@
     Rest1_128 = '𝅂'    
     Multiply = [Regex]::new('\*(?<scale>[\d\.]+)')
     Divide = [Regex]::New('/(?<scale>[\d\.]+)')
+    RatioTime = [Regex]::New('\:(?<scale>[\d\.]+)')
     Repeat = [Regex]::New('!(?<scale>[\d+])')
-    DECPS = [regex]::new('\e\[(?<volume>[0-7]);(?<duration>\d+);(?:(?<decnote>\d+);?){1,},~')
+    DECPS = [regex]::new('\e\[(?<decVolume>[0-7]);(?<decDuration>\d+);(?:(?<decNote>\d+);?){1,},~')
     Emoji = [Regex]::new("[\p{IsHighSurrogates}\p{IsLowSurrogates}\p{IsVariationSelectors}\p{IsCombiningHalfMarks}]+")    
     AtTime = [Regex]::new('\@(?<scale>[\d\.]+)')
     Rest = [Regex]::new('
