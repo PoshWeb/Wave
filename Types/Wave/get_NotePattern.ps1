@@ -74,4 +74,12 @@ $(
 )
 )"
 
-[Regex]::new($combinedPattern, 'IgnoreCase,IgnorePatternWhitespace','00:00:01')
+# Try to create a new pattern.
+# Always ignore case and pattern whitespace, 
+# and set a timeout of a second.
+try {
+    [Regex]::new($combinedPattern, 'IgnoreCase,IgnorePatternWhitespace','00:00:01')
+} catch {
+    return $_
+}
+
