@@ -4610,6 +4610,14 @@ try {
     This is the number of audio samples per second
 .NOTES
     This is bytes 4 to 7 in the Format `fmt ` chunk (`4..7`)
+
+    Mathematically speaking, we can have a negative sample rate, or a fractional sample rate.
+
+    The `.wav` standard specifies the length in four bytes.
+    
+    Those bytes are expected to be a `[uint32]`.
+
+    Many players will not play wave files below a 4400hz rate.
 #&gt;
 
 # The expected range
