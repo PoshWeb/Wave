@@ -27,10 +27,21 @@ $audioFormat = $this.AudioFormat
 if (-not $audioFormat) { $audioFormat = 1 }
 [byte[]]$PCM = $this.'#data'
 $bitConverter = [BitConverter]
+$progress = [Ordered]@{
+    Id = Get-Random
+    Status = " "
+    Activity = "Decoding"
+}
+
 
 
 $step = $bitsPerSample/8
-$samples = for ($i =0; $i -lt $PCM.Length; $i+=$step) {
+$samples = for ($i =0; $i -lt $PCM.Length; $i+=$step) {    
+    if (-not ($i % 64kb)) {
+        $progress.Status = "$i / $($PCM.Length)"
+        $progress.PercentComplete = ($i * 100 / $PCM.Length)
+        Write-Progress @progress
+    }
     if ($audioFormat -eq 1 -and $bitsPerSample -eq 8) {
         ($PCM[$i] / 255) - 0.5
     }
@@ -46,6 +57,11 @@ $samples = for ($i =0; $i -lt $PCM.Length; $i+=$step) {
 }
 
 $this | Add-Member NoteProperty '#samples' $samples -Force
+
+$progress.Remove('PercentComplete')
+$progress.Remove('SecondsRemaining')
+$progress.Completed = $true
+Write-Progress @progress
 
 # Use the comma operator to return a list containin the data, 
 # so that it unrolls to the data itself (rather than tries to stream the bytes)
