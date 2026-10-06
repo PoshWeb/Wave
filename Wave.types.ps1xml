@@ -2519,6 +2519,7 @@ filter waveID {
     }
 }
 
+# Unroll the notes in the melody
 $melody = @(foreach ($note in $this.Melody) {
     $note
 })
@@ -2547,22 +2548,24 @@ $noteSequence = @(foreach ($note in $Melody) {
     $progress.Activity = "$($note.Name)@$($note.Duration) $index / $($NoteSequence.Length)"
     Write-Progress @progress
 
-    # Get the instrument used for this sample.
+    # Initialize our instrument list (we can play multiple instruments at once)
+    $InstrumentList = ''
+    # Get the instrument list used for this sample.
     if ($Instruments.Length) {
-        $Instrument = $Instruments[$InstrumentIndex % $Instruments.Length]
+        $InstrumentList = $Instruments[$InstrumentIndex % $Instruments.Length]
         $InstrumentIndex++
     }
     
     # If the note name is rest or the frequency is zero
     if ((-not $note.Frequency) -or ($note.Name -eq 'REST')) {
         # the instrument is `Silence`.
-        $Instrument = 'Silence'
+        $InstrumentList = 'Silence'
     }
 
     # We want to be able to make multiple sounds at once.
     # Our combined wave is the sum of all of the samples.
     # Start by split our instruments by commas.
-    $AllSamples = @(foreach ($instrument in $Instrument -split ',') {
+    $AllSamples = @(foreach ($instrument in @($InstrumentList -split ',')) {
         if (-not $this.$Instrument.Script) {
             throw "Invalid Instrument $Instrument (must be a script method)"
         }
@@ -2629,6 +2632,9 @@ $noteSequence = @(foreach ($note in $Melody) {
                     $frequency
                     continue
                 }
+                # Set the number of strings on the note itself
+                # this will influence how the note is cached.
+                $note.Strings = $strings
 
                 # If the strings is an integer, it's a multiple 
                 if ($strings -is [int]) {
@@ -2737,24 +2743,41 @@ $noteSequence = @(foreach ($note in $Melody) {
     if (-not $AllSamples.Length) { continue }
 
     $note = [Ordered]@{} + $noteSequence[$index]
-
+    # Join all instruments by comma.    
+    $note.Instrument = $InstrumentList -join ','
+    # This will let us make an accurate cache key for the combined sound.
     $cacheKey = @($note | waveID) -join ' '
 
+    # If we have not cached the combined wave
     if (-not $WaveCache[$cacheKey]) {
+        # Create an array of samples to hold the sums
         [double[]]$sumSamples = (
             @(0) * $AllSamples[0].Length
         )
 
+        # Go thru each set of samples
         foreach ($samples in $AllSamples) {
+            # starting at sample 0
             $sampleNumber = 0
+            # and Add It Up.
             foreach ($sample in $samples) {
                 $sumSamples[$sampleNumber] += $sample
                 $sampleNumber++
-            }
-        }        
+            }            
+        }
+        
+        # While a pure add is mathematically accurate,
+        foreach ($sample in $sumSamples) {
+            # an average of all samples may sound a bit better.
+            $sample /= $allSamples.Length
+        }
+        # Create and cache new wave with the summed samples        
         $WaveCache[$cacheKey] = wave @waveSplat -Samples $sumSamples
     }
     
+    # Emit the cached wave data at this point
+    # By emitting data instead of samples, 
+    # we make it faster to concatenate the wave.
     $WaveCache[$cacheKey].Data
 })
 
