@@ -3086,6 +3086,10 @@ param(
 [Alias('Hz2')]
 [float]$ToFrequency = 0,
 
+# The number of steps in the sweep
+# If none are provided, the frequencies will change continously
+[int]$StepCount = 0,
+
 # The duration to generate.
 [Timespan]$Duration = $(
     if ($this.BPM -is [TimeSpan]) {$this.BPM} 
@@ -3121,6 +3125,13 @@ if ($ToFrequency -eq 0) { $ToFrequency = $Frequency / 2 }
 # Calculate the number of samples
 $numberOfSamples = [Math]::Round($Duration.TotalSeconds * $SampleRate * $channelCount) 
 
+$stepFrequency = 
+    if ($stepCount) {
+        ($ToFrequency-$Frequency)/$StepCount
+    } else {
+        0
+    }
+
 # The divisor will remain the same, so compute it now.
 $divisor = ($sampleRate * $channelCount)
 
@@ -3135,7 +3146,12 @@ return ,[double[]]@(
         # Calculate the envelope
         $envelope = 1.0 - $t
 
-        $currentFrequency = $Frequency + ($ToFrequency - $Frequency) * $t
+        $currentFrequency = 
+            if ($StepCount) {
+                $Frequency + ($stepFrequency * [Math]::Floor($t * $StepCount))
+            } else {
+                $Frequency + ($ToFrequency - $Frequency) * $t
+            }
 
         # We can imagine each cycle as a series of circles
         # how many circles?  Whatever our frequency may be.
