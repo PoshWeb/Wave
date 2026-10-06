@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Gets Wave Bytes Per Block
+    Gets Wave Bytes Per Second
 .DESCRIPTION
     Gets the Wave Bytes Per Second.
     
