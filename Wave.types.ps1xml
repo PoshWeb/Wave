@@ -1745,56 +1745,28 @@ filter timescale {
     foreach ($ahead in $matchNumber | lookAhead) {
         # We can `Multiply`, `Divide`, or use `AtTime` format to scale time
         # If the lookahead is not one of these,
-        if ($ahead.Name -notin 'Multiply', 'Divide', 'AtTime') {
+        if ($ahead.Name -notin 'Multiply', 'Divide', 'AtTime', 'RatioTime') {
             break # break
         }
         # Each timescale operation has a `.Scale`
         $scale = $ahead.Scale -as [double] # which we can cast to a double
-        switch ($ahead.Name) {
-            AtTime {
-                if ($state.Duration) {
-                    # If the format was `@` time, 
-                    # we multiply
-                    $state.Duration *= $scale
-                }
-                else {
-                    foreach ($nested in $state.States) {
-                        if ($nested.Duration) {
-                            $nested.Duration = $BaseTempo * $scale
-                        }
-                    }
-                }
-            }
-            Multiply {
-                if ($state.Duration) {
-                    # If the format was `*` time
-                    # multiply the duration by that scale
-                    $state.Duration *= $scale
-                }
-                else {
-                    foreach ($nested in $state.States) {
-                        if ($nested.Duration) {
-                            $nested.Duration *= $scale
-                        }
-                    }
-                }
 
-            }
-            Divide {
-                if ($state.Duration) {
-                    # If the format was `/` time
-                    # divide the duration by the scale.
-                    $state.Duration /= $scale
-                }
-                else {
-                    foreach ($nested in $state.States) {
-                        if ($nested.Duration) {
-                            $nested.Duration /= $scale
-                        }
-                    }
-                }
-            }
+        # If we are dividing
+        if ($ahead.Name -in 'Divide', 'RatioTime') {
+            # we are really multiplying by the reciprocal
+            $scale = 1/$scale
         }
+        
+        if ($state.Duration -is [TimeSpan]) {
+            $state.Duration *= $scale
+        }
+        else {
+            foreach ($nested in $state.States) {
+                if ($nested.Duration -is [TimeSpan]) {
+                    $nested.Duration *= $scale
+                }
+            }
+        }        
     }
 }
 
@@ -1865,7 +1837,9 @@ for ($matchIndex = 0; $matchIndex -lt $allMatches.Count; $matchIndex++) {
             $state.Name = "Rest"
             $state.Frequency = 0
             $state.Duration = $tempo
-            $state.BaseTemp = $BaseTempo            
+            $state.BaseTemp = $BaseTempo
+            
+            $matchIndex | . timescale
         }
         # Notemoji rests take a similar format to notemoji time.
         '^Rest1_\d+$' {
