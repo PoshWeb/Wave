@@ -76,6 +76,22 @@
             ø             # Notemoji notation
         )
     ','IgnoreCase,IgnorePatternWhitespace')
+    BeepCommand = [Regex]::new('
+        Beep                   # beep
+        (?<beepSequence>
+            (?:-n)?            # Followed by an option -n (new beat)
+            \s{1,}             # and at least one space
+            (?>
+                -f\s{0,}(?<beepFrequency>[\d\.]+)\s{1,}
+                |
+                -l\s{0,}(?<beepDuration>[\d\.]+)\s{1,}
+                |
+                -d\s{0,}(?<beepDelay>[\d\.]+)\s{1,}
+                |
+                -r\s{0,}(?<beepRepeat>\d+)\s{1,}
+            ){1,}
+        ){1,}        
+    ','IgnoreCase,IgnorePatternWhitespace')
     Beep = [Regex]::new(
         '
         Beep                   # Beep
@@ -109,9 +125,10 @@
     # Letter notes are one of the more challenging parts of the grammar
     # We only want to match letters within words that are all notes.
     LetterNote = [Regex]::new('
-    # Do not match if we preceed a letter that is not a-g
+    # Do not match if we preceed a letter 
+    # or punctuation that is not a-g
     # followed by any number of a-g letters
-    (?<![\p{L}-[abcdefg]][abcdefg]{0,})
+    (?<![\p{L}\p{P}-[abcdefg\|]][abcdefg\|]{0,})
     (?<pitch>
         (?>
             (?<flat>[\u266d_])

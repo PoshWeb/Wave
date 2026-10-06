@@ -234,7 +234,48 @@ for ($matchIndex = 0; $matchIndex -lt $allMatches.Count; $matchIndex++) {
 
     # We can use a `switch` to handle most states
     switch -regex ($stateName) {
-        # `Beep` state has a frequency and time
+        BeepCommand {
+            $beeps = @(
+                for (
+                    $beepIndex = 0;
+                    $beepIndex -lt $state.beepSequence.Length;
+                    $beepIndex++
+                ) {
+                    $beep = [Ordered]@{
+                        Frequency = 
+                            $match.Groups['beepFrequency'].Captures[$beepIndex].Value -as [double]
+                        
+                        Duration = [TimeSpan]::FromMilliseconds(
+                            $match.Groups['beepDuration'].Captures[$beepIndex].Value -as [double]
+                        )
+                    }
+
+                    if (-not $beep.Duration.TotalSeconds) {
+                        $beep.Duration = [TimeSpan]::FromMilliseconds(200) 
+                    }
+
+                    $repeat = $match.Groups['beepRepeat'][$beepIndex].Value -as [int]
+                    if (-not $repeat) { $repeat = 1 }
+                    $delay = $match.Groups['beepDelay'].Captures[$beepIndex].Value -as [double]
+                    
+                    foreach ($repeatN in 1..$repeat) {
+                        if ($delay) {
+                            $beep
+                            [Ordered]@{
+                                Name = 'Rest'
+                                Duration = [TimeSpan]::FromMilliseconds($delay)
+                            }
+                        } else {
+                            $beep
+                        }
+                    }                                
+                }
+            )
+            $state.States = $beeps
+            
+            $null = $null
+        }
+        # `Beep` state has a frequency and time        
         Beep {
             # We will cast the frequency to a `[double]`
             $state.Frequency = $state.Frequency -as [double]
@@ -273,7 +314,7 @@ for ($matchIndex = 0; $matchIndex -lt $allMatches.Count; $matchIndex++) {
             $state.Frequency = 0
             $state.Duration = $tempo
             $state.BaseTemp = $BaseTempo
-            
+
             $matchIndex | . timescale
         }
         # Notemoji rests take a similar format to notemoji time.
@@ -464,10 +505,15 @@ for ($matchIndex = 0; $matchIndex -lt $allMatches.Count; $matchIndex++) {
 
 # Now that we have all of our states, 
 # all that is left to do is output the results of our interpreter
-for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex++) {
+$melody = for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex++) {
     $match = $allMatches[$matchIndex]
     # If the state had a frequency or duration
-    if ($match.State.Frequency -or $match.State.Duration) {
+    if ($match.State.Frequency -or $match.State.Duration -gt 0) {
+        # To assist transcription,
+        if ($match.State.Frequency) {
+            # find the closest note and attach it to our state
+            $match.State.ClosestNote = $currentWave.FrequencyToLetter($match.State.Frequency)
+        }
         # it's part of our melody
         $match.State # and we should output it.
     }
@@ -478,11 +524,28 @@ for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex++) {
         foreach ($nested in $match.State.States) {
             # and output any nested state with a frequency or duration.
             if ($nested.Frequency -or $nested.Duration) {
+                # To assist transcription
+                if ($nested.Frequency) {
+                    # find the closest note and attach it to our state
+                    $nested.ClosestNote = $currentWave.FrequencyToLetter($nested.Frequency)
+                }
                 $nested
             }
         }
     }
 }
+
+$null = [Runspace]::DefaultRunspace.Events.GenerateEvent(
+    'Tune', 
+    $currentWave,
+    $args,
+    [Ordered]@{
+        Input = $args
+        Melody = $melody
+    }
+)
+
+$melody
 #endregion Output
 
 return
