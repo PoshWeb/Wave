@@ -4263,8 +4263,9 @@ return $noteFrequency
     Rest1_128 = '𝅂'    
     Multiply = [Regex]::new('\*(?&lt;scale&gt;[\d\.]+)')
     Divide = [Regex]::New('/(?&lt;scale&gt;[\d\.]+)')
+    RatioTime = [Regex]::New('\:(?&lt;scale&gt;[\d\.]+)')
     Repeat = [Regex]::New('!(?&lt;scale&gt;[\d+])')
-    DECPS = [regex]::new('\e\[(?&lt;volume&gt;[0-7]);(?&lt;duration&gt;\d+);(?:(?&lt;decnote&gt;\d+);?){1,},~')
+    DECPS = [regex]::new('\e\[(?&lt;decVolume&gt;[0-7]);(?&lt;decDuration&gt;\d+);(?:(?&lt;decNote&gt;\d+);?){1,},~')
     Emoji = [Regex]::new("[\p{IsHighSurrogates}\p{IsLowSurrogates}\p{IsVariationSelectors}\p{IsCombiningHalfMarks}]+")    
     AtTime = [Regex]::new('\@(?&lt;scale&gt;[\d\.]+)')
     Rest = [Regex]::new('
