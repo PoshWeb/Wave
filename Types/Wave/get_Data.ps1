@@ -12,7 +12,7 @@ if (-not $this.'#data') {
     # read chunks
     $null = $this.Chunk
     # If there is still nothing
-    if (-not $this.'#data') {
+    if (-not $this.'#data') {        
         return # return nothing.
     }
 }
