@@ -20,12 +20,24 @@ if ($currentWave.Melody -and -not $currentWave.Duration) {
     $currentWave = $this.Sound() # render the wave.
 }
 
-if ($IsLinux) {
-    $filePath = $currentWave.Save().FullName
-    $null = aplay $filePath
+if ($IsLinux) {    
+    $aplay = 
+        $ExecutionContext.SessionState.InvokeCommand.GetCommand('aplay','Application')
+    if ($aplay) {
+        $filePath = $currentWave.Save().FullName
+        $null = aplay $filePath
+    } else {
+        Write-Warning "aplay not found, cannot play sound on Linux"        
+    }
 } elseif ($IsMacOS) {
-    $filePath = $currentWave.Save().FullName
-    $null = afplay $filePath
+    $afplay = 
+        $ExecutionContext.SessionState.InvokeCommand.GetCommand('afplay','Application')
+    if ($afplay) {
+        $filePath = $currentWave.Save().FullName
+        $null = afplay $filePath
+    } else {
+        Write-Warning "aplay not found, cannot play sound on MacOS"
+    }    
 } else {
     if (-not ('Media.SoundPlayer' -as [type])) {
         Add-Type -AssemblyName System.Windows.Extensions
