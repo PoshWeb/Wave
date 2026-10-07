@@ -36,7 +36,7 @@ if ($IsLinux) {
         $filePath = $currentWave.Save().FullName
         $null = afplay $filePath
     } else {
-        Write-Warning "aplay not found, cannot play sound on MacOS"
+        Write-Warning "afplay not found, cannot play sound on MacOS"
     }    
 } else {
     if (-not ('Media.SoundPlayer' -as [type])) {
