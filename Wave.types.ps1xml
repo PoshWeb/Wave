@@ -1845,12 +1845,21 @@ filter timescale {
     
     foreach ($ahead in $matchNumber | lookAhead) {
         # We can `Multiply`, `Divide`, or use `AtTime` format to scale time
-        # If the lookahead is not one of these,
-        if ($ahead.Name -notin 'Multiply', 'Divide', 'AtTime', 'RatioTime') {
+        # If the lookahead is not one of these,        
+        if ($ahead.Name -notin 'Multiply', 'Divide', 'AtTime', 
+            'RatioTime', 'Repeat') {
             break # break
         }
+        
         # Each timescale operation has a `.Scale`
         $scale = $ahead.Scale -as [double] # which we can cast to a double
+        if ($ahead.Name -eq 'Repeat') {
+            $scale = $scale -as [int]
+            if ($scale -gt 1) {
+                $ahead.states = @($state) * ($scale -1) 
+            }
+            continue
+        }
 
         # If we are dividing
         if ($ahead.Name -in 'Divide', 'RatioTime') {
@@ -2192,9 +2201,10 @@ $melody = for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex+
             if ($nested.Frequency -or $nested.Duration) {
                 # To assist transcription
                 if ($nested.Frequency) {
-                    # find the closest note and attach it to our state
+                    # find the closest note and attach it to our state.
                     $nested.ClosestNote = $currentWave.FrequencyToLetter($nested.Frequency)
                 }
+                # Emit the nested note.
                 $nested
             }
         }
