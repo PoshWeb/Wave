@@ -1517,6 +1517,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
                     # get some help.
                     $memberInfo.Script | getScriptHelp $memberInfo.Name                            
                 } else {
+                    
                     # otherwise, invoke the method with no parameters.
                     $currentWave.$currentMember.Invoke()
                 }
@@ -1593,21 +1594,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
         elseif ($stepOutput -is [byte[]]) {
             $currentWave.Data += $stepOutput
         }        
-        elseif ($stepOutput -is [object[]] -and $stepOutput.Length) {
-            if ($stepOutput -is [Collections.IDictionary[]]) {
-                $currentWave.Melody += $stepOutput
-                $currentWave = $currentWave.Sound()
-            }
-            elseif ($stepOutput[0] -is [byte]) {
-                $currentWave.Data += $stepOutput
-                $outputWave = $true
-            } elseif ($stepOutput[0] -is [double]) {                
-                $currentWave.Data += (wave @waveSplat -Samples $stepOutput).Data
-            } elseif ($stepOutput[0] -is [Collections.IDictionary]) {
-                $stepOutput
-                $outputWave = $false
-            }            
-        } else {
+        else {
             # Output the step
             $stepOutput
             # and set the output wave to false.
@@ -1615,7 +1602,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
         }        
     } elseif ($stepOutput.pstypenames -contains 'audio/wav') {
         # The step output is our new wave
-        $newWave = $stepOutput        
+        $newWave = $stepOutput
 
         # Set the current wave to the new wave.
         $currentWave = $newWave
@@ -1635,6 +1622,49 @@ if ($outputWave) {
     }
     return $currentWave
 }
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>LetterToFrequency</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Converts Letter Notes to Frequencies
+.DESCRIPTION
+    Converts one or more letter notes into a series of corresponding frequencies.
+.EXAMPLE
+    wave LetterToFrequency "c3", "c#3", "d3", "d#3", "e3", "f3", "f#3", "g3", "g#3", "a3", "a#3"
+#&gt;
+param([string[]]$LetterNote)
+
+$currentWave = $this
+if (-not $currentWave) { $currentWave = wave}
+$noteFrequency = $currentWave.NoteFrequency
+foreach ($letter in $LetterNote) {
+    if ($noteFrequency[$letter]) {
+        $noteFrequency[$letter]
+    }
+    elseif ($noteFrequency[$letter -replace '#', '♯']) {
+        $noteFrequency[$letter -replace '#', '♯']
+    } 
+    elseif ($noteFrequency[$letter -replace 'b(?&lt;n&gt;\d)', '♭${n}']) {
+        $noteFrequency[$letter -replace 'b(?&lt;n&gt;\d)', '♭${n}']
+    } 
+    elseif (
+        $letter -cmatch '^\p{Lu}$' -and 
+        $noteFrequency["${letter}4"]
+    ) {
+        $noteFrequency["${letter}4"]
+    } elseif (
+        $letter -cmatch '^\p{Ll}$' -and 
+        $noteFrequency["${letter}3"]
+    ) {
+        $noteFrequency["${letter}3"]
+    } 
+}
+
+
+
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
