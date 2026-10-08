@@ -4,6 +4,21 @@
     <Name>Frequency</Name>
     <Members>
       <ScriptProperty>
+        <Name>Flat</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets a Frequency's Flat
+.DESCRIPTION
+    Gets the flat of a given frequency.
+#&gt;
+$flatten = $this * [Math]::Pow(2, (-1/12))
+$flatten.pstypenames.add('Frequency')
+return $flatten
+
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Midi</Name>
         <GetScriptBlock>
                         &lt;#
