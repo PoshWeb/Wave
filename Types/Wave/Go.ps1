@@ -282,6 +282,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
                     # get some help.
                     $memberInfo.Script | getScriptHelp $memberInfo.Name                            
                 } else {
+                    
                     # otherwise, invoke the method with no parameters.
                     $currentWave.$currentMember.Invoke()
                 }
@@ -358,21 +359,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
         elseif ($stepOutput -is [byte[]]) {
             $currentWave.Data += $stepOutput
         }        
-        elseif ($stepOutput -is [object[]] -and $stepOutput.Length) {
-            if ($stepOutput -is [Collections.IDictionary[]]) {
-                $currentWave.Melody += $stepOutput
-                $currentWave = $currentWave.Sound()
-            }
-            elseif ($stepOutput[0] -is [byte]) {
-                $currentWave.Data += $stepOutput
-                $outputWave = $true
-            } elseif ($stepOutput[0] -is [double]) {                
-                $currentWave.Data += (wave @waveSplat -Samples $stepOutput).Data
-            } elseif ($stepOutput[0] -is [Collections.IDictionary]) {
-                $stepOutput
-                $outputWave = $false
-            }            
-        } else {
+        else {
             # Output the step
             $stepOutput
             # and set the output wave to false.
@@ -380,7 +367,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
         }        
     } elseif ($stepOutput.pstypenames -contains 'audio/wav') {
         # The step output is our new wave
-        $newWave = $stepOutput        
+        $newWave = $stepOutput
 
         # Set the current wave to the new wave.
         $currentWave = $newWave
