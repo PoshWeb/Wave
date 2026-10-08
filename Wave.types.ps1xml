@@ -87,6 +87,22 @@ return $sharpen
     <Name>MidiNote</Name>
     <Members>
       <ScriptProperty>
+        <Name>Flat</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets a Midi Note's Flat
+.DESCRIPTION
+    Gets the flat of a given midi note.
+#&gt;
+$flatten = $this -1
+$flatten.pstypenames.add('MidiNote')
+return $flatten
+
+
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Frequency</Name>
         <GetScriptBlock>
                         &lt;#
