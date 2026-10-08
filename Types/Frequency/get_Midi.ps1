@@ -8,4 +8,6 @@
 #>
 param()
 
-69 + 12 * [Math]::Log2($this / 440)
+$midi = 69 + 12 * [Math]::Log2($this / 440)
+$midi.pstypenames.add('MidiNote')
+$midi
