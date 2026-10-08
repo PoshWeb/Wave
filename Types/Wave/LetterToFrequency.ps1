@@ -4,14 +4,19 @@
 .DESCRIPTION
     Converts one or more letter notes into a series of corresponding frequencies.
 .EXAMPLE
-    wave LetterToFrequency "c3", "c#3", "d3", "d#3", "e3", "f3", "f#3", "g3", "g#3", "a3", "a#3"
+    wave LetterToFrequency "c3", "c#3", 
+        "d3", "d#3", 
+        "e3", "f3", 
+        "f#3", "g3", 
+        "g#3", "a3", 
+        "a#3","b3"
 #>
 param([string[]]$LetterNote)
 
 $currentWave = $this
 if (-not $currentWave) { $currentWave = wave}
 $noteFrequency = $currentWave.NoteFrequency
-foreach ($letter in $LetterNote) {
+$frequencies = @(foreach ($letter in $LetterNote) {
     if ($noteFrequency[$letter]) {
         $noteFrequency[$letter]
     }
@@ -32,6 +37,10 @@ foreach ($letter in $LetterNote) {
     ) {
         $noteFrequency["${letter}3"]
     } 
+})
+foreach ($frequency in $frequencies) {
+    $frequency.pstypenames.add('Frequency')
+    $frequency
 }
 
 
