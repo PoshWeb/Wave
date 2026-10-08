@@ -34,6 +34,22 @@ param()
 69 + 12 * [Math]::Log2($this / 440)
                     </GetScriptBlock>
       </ScriptProperty>
+      <ScriptProperty>
+        <Name>Sharp</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets a Frequency's Sharp
+.DESCRIPTION
+    Gets the sharp of a given frequency.
+#&gt;
+$sharpen = $this / [Math]::Pow(2, (-1/12))
+$sharpen.pstypenames.add('Frequency')
+return $sharpen
+
+
+                    </GetScriptBlock>
+      </ScriptProperty>
     </Members>
   </Type>
   <Type>
