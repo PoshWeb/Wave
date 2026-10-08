@@ -105,6 +105,22 @@ $frequency.pstypenames.add('Frequency')
 $frequency
                     </GetScriptBlock>
       </ScriptProperty>
+      <ScriptProperty>
+        <Name>Sharp</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets a Midi Note's Sharp
+.DESCRIPTION
+    Gets the sharp of a given midi note.
+#&gt;
+$sharpen = $this + 1
+$sharpen.pstypenames.add('MidiNote')
+return $sharpen
+
+
+                    </GetScriptBlock>
+      </ScriptProperty>
     </Members>
   </Type>
   <Type>
