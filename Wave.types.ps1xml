@@ -5424,50 +5424,87 @@ return ,$this.'#samples'
 
                     </GetScriptBlock>
         <SetScriptBlock>
-                        param(
-[float[]]
+                        &lt;#
+.SYNOPSIS
+    Sets Wave Samples
+.DESCRIPTION
+    Sets the samples in the Wave.
+
+    This changes the wave.
+#&gt;
+param(
+# The new samples
+[double[]]
 $Samples
 )
 
 $BitsPerSample = 
     if ($this.BitsPerSample) { $this.BitsPerSample } 
-    else { 8 }
+    else { 32 }
 
 $audioFormat = 
     if ($this.AudioFormat) { $this.AudioFormat } 
-    else { 1 }
+    else { 3 }
 
-$GetBytes = [BitConverter]::GetBytes
 $sampleNumber = 0
 $progress = [Ordered]@{
     Id = Get-Random
-    Status = "Encoding"
-    Activity = " "
+    Status = " "
+    Activity = "Encoding "
 }
+
+[byte[]]$CurrentData = $this.Data
+[double[]]$CurrentSamples = $this.Samples
+[int]$BlockSize = $BitsPerSample / 8
 
 $This.Data = @(
     foreach ($sample in $samples) {
         #region Encode Sample
 
-        # We _could_ encapsulate the encoding off into it's own procedure.
-
-        # However, callstacks have overhead.
-
-        # Inline code will be quicker.
-        # (hence duplicating it across multiple files)
-        
-        $sampleNumber++
-        if (-not ($sampleNumber % 1kb)) {
+        if ($sampleNumber -and -not ($sampleNumber % 32kb)) {
             $progress.Status = "$sampleNumber / $($Samples.Length)"
             $progress.PercentComplete = ($sampleNumber * 100 / $samples.Length)
             Write-Progress @progress
         }
 
+        # If we already have samples
+        if ($sampleNumber -lt $CurrentSamples.Length -and (
+            # and this sample did not change
+            ($CurrentSamples[$sampleNumber] -eq $sample)
+        )) {
+            # we can skip encoding and just output the original bytes.
+            $CurrentData[
+                ($sampleNumber * $BlockSize)..(
+                    (($sampleNumber + 1) * $BlockSize) - 1
+                )
+            ]
+            # advance our sample number
+            $sampleNumber++
+            continue # and continue.
+        }
+    
+        
+        $sampleNumber++
+        
+
         # If we are using 32-bit floating point audio
         if ($BitsPerSample -eq 32 -and $audioFormat -eq 3) {
             # we are basically done.
-            # No clamping required. # Just cast to float, 
-            $GetBytes.Invoke([float]$sample) # get the bytes,
+            &lt;#
+            
+            No clamping required.
+            
+            Well, not technically speaking.
+            
+            [float] has a max value of `3.402823E+38`.
+            
+            Attempting to play volume at this level will likely be limited physically,
+            and would likely damage speakers and eardrums far before this volume could be achieved.
+            
+            #&gt; 
+            
+            # So we will just cast to float, 
+            [BitConverter]::GetBytes([float]$sample) # get the bytes,
             continue # and continue 
         }
 
@@ -5491,21 +5528,23 @@ $This.Data = @(
         elseif ($BitsPerSample -eq 16) {
             # we just need to scale an `[int16]`
             # Hardcode `[int16]::MaxValue` for speed
-            $GetBytes.Invoke([int16]($sample * 32767))
+            [BitConverter]::GetBytes([int16]($sample * 32767))
         }
 
         # If there are 32 bits per sample
         elseif ($BitsPerSample -eq 32) {
             # we can just scale to an `[int32]`.
             # Hardcode `[int32]::MaxValue` for speed
-            $GetBytes.Invoke([int32]($sample * 2147483647))
+            [BitConverter]::GetBytes([int32]($sample * 2147483647))
         }
         #endregion Encode Sample
     }
 
-    $progress.Remove('PercentComplete')
-    $progress.Completed = $true
-    Write-Progress @progress
+    if ($progress.PercentComplete) {
+        $progress.Remove('PercentComplete')
+        $progress.Completed = $true
+        Write-Progress @progress
+    }    
 )
 
 return
