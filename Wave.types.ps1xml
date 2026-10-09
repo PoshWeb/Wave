@@ -5547,7 +5547,7 @@ $This.Data = @(
     }    
 )
 
-return
+return $this
 
 
                     </SetScriptBlock>
