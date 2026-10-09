@@ -121,5 +121,5 @@ $This.Data = @(
     }    
 )
 
-return
+return $this
 
