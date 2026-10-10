@@ -34,14 +34,6 @@ param(
 ),
 
 # The start time.
-[ValidateScript({
-    if ($_ -is [TimeSpan] -or $_ -is [double] -or $_ -is [int]) {
-        return $true
-    }
-    if ($_ -as [TimeSpan]) { return $true }
-    if ($_ -as [double]) { return $true }
-    throw "Time must be a number of timespan"
-})]
 $Time,
 
 # The sample rate.
