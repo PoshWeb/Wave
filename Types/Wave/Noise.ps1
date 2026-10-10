@@ -6,11 +6,11 @@
 
     Mixes this tone with a `-Signal` and `-Noise` volume.
 #>
-[OutputType([double[]])]
+[OutputType('Wave')]
 param(
 # The frequency
 [Alias('Hz')]
-[float]$Frequency = 440,
+[double]$Frequency = 440,
 
 # The amount of time to generate.
 [Timespan]$Duration = $(
@@ -19,7 +19,10 @@ param(
 ),
 
 # The volume
-[float]$Volume = 0.5,
+[double]$Volume = 0.5,
+
+# The start time
+$Time,
 
 # The volume of the signal (by default 0.6)
 [ValidateRange(0,1)]
@@ -82,7 +85,7 @@ $divisor = ($sampleRate * $channelCount * $step)
 $random = [Random]::new()
 
 # Generate one sample at a time.
-return ,[double[]]@(for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
+[double[]]$Samples = @(for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
 
     # Calculate the envelope
     $envelope = 1.0 - ($i / $numberOfSamples)
@@ -99,3 +102,20 @@ return ,[double[]]@(for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
         ($sample * $Signal) + ($randomNoise * $noise)
     ) * $Volume * $envelope
 })
+
+# If we have not been provided a time
+if (-not $time) {
+    # add it to the end.
+    $time = $this.Duration
+}
+
+if ($Time) {
+    return $this.Add($samples, $time)
+}
+else {
+    $waveFormat = $this.WaveFormat
+    if (-not $waveFormat) {
+        $waveFormat = @{}
+    }
+    return wave @waveFormat -Samples $Samples
+}
