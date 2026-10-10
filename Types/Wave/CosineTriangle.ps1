@@ -4,20 +4,25 @@
 .DESCRIPTION
     Generates a cosine triangular tone of a `-Frequency`, for `-Duration`, at `-Volume`
 .NOTES
-    A triangular wave is calculated given at a given angle using:
+    A cosine triangular wave is calculated given at a given angle using:
 
     ~~~PowerShell
     [Math]::acos([Math]::cos($angle))    
     ~~~
+
+    This will be the opposite of a Triangle tone.
+
+    It will usually sound very similar to a Triangle tone, 
+    but may seem like it is coming from below, not above.
 .LINK
     https://en.wikipedia.org/wiki/Triangle_wave
 #>
-[OutputType([double[]])]
+[OutputType('Wave')]
 param(
 # The frequency.
 # Defaults to A4 (440hz)
 [Alias('Hz')]
-[float]$Frequency = 440,
+[double]$Frequency = 440,
 
 # The amount of time to generate.
 [Timespan]$Duration = $(
@@ -29,9 +34,12 @@ param(
 # If the current wave has set a `volume`, 
 # will use that volume.
 # Otherwise, will default to 0.5
-[float]$Volume = $(
+[double]$Volume = $(
     if ($this.Volume) { $this.Volume } else { 0.5 }
 ),
+
+# The start time.
+$Time,
 
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
@@ -59,7 +67,7 @@ $cycle = 2 * [Math]::PI * $Frequency
 $stepAngle = $cycle/($sampleRate * $channelCount)
 
 # Return a `[double[]]` containing the samples
-return ,[double[]]@(
+[double[]]$Samples = @(
     # generated one at a time
     for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
         # The sample is the arc sin of the sine of the angle
@@ -75,3 +83,19 @@ return ,[double[]]@(
 )
 
 
+# If we have not been provided a time
+if (-not $time) {
+    # add it to the end.
+    $time = $this.Duration
+}
+
+if ($Time) {
+    return $this.Add($samples, $time)
+}
+else {
+    $waveFormat = $this.WaveFormat
+    if (-not $waveFormat) {
+        $waveFormat = @{}
+    }
+    return wave @waveFormat -Samples $Samples
+}
