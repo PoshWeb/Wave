@@ -8,14 +8,14 @@
     
     This gets softer as it approaches the half, then louder as it approaches the end.
 #>
-[OutputType([double[]])]
+[OutputType('Wave')]
 param(
 # The frequency
 [Alias('Hz')]
-[float]$Frequency = 0,
+[double]$Frequency = 0,
 
 [Alias('Hz2')]
-[float]$ToFrequency = 0,
+[double]$ToFrequency = 0,
 
 # The amount of time to generate.
 [Timespan]$Duration = $(
@@ -24,7 +24,11 @@ param(
 ),
 
 # The volume
-[float]$Volume = 0.5,
+[double]$Volume = 0.5,
+
+# The start time
+$Time,
+
 
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
@@ -76,7 +80,7 @@ $divisor = ($sampleRate * $channelCount * $step)
 $half = $numberOfSamples / 2
 
 # Generate one sample at a time.
-return ,[double[]]@(
+[double[]]$Samples = @(
     for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
         
         $t = $i/$numberOfSamples
@@ -103,9 +107,27 @@ return ,[double[]]@(
         $angle = ($cycle * $i) / $divisor    
 
         # The sample at this moment is the sine of that angle
-        $sample = $math::Sinh($math::Sin($angle))
+        $sample = $math::Sin($angle)
 
         # We will scale this by the volume, and then by the envelope.
         $sample * $Volume * $envelope
     }
 )
+
+
+# If we have not been provided a time
+if (-not $time) {
+    # add it to the end.
+    $time = $this.Duration
+}
+
+if ($Time) {
+    return $this.Add($samples, $time)
+}
+else {
+    $waveFormat = $this.WaveFormat
+    if (-not $waveFormat) {
+        $waveFormat = @{}
+    }
+    return wave @waveFormat -Samples $Samples
+}
