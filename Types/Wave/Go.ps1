@@ -264,7 +264,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
                         $this = $currentWave
                         # and call the script, splatting positional parameters
                         # (this allows more complex binding, like ValueFromRemainingArguments).
-                        . $currentWave.$currentMember.Script @argList
+                        & $currentWave.$currentMember.Script @argList
                     }                            
                 } 
                 elseif ($currentWave.$currentMember.Invoke) {
