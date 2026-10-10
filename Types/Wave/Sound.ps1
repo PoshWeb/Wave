@@ -268,6 +268,7 @@ $noteSequence = @(foreach ($note in $Melody) {
             # (we might want this information later)
             $noteStartTime = $noteSequence[$index].Time
             $noteSequence[$index].Remove('Time')
+            $noteSequence[$index].Remove('MatchNumber')
             $cacheKey = @($note | waveID) -join ' '
 
             $noteData = [Ordered]@{} + $noteSequence[$index] + @{
