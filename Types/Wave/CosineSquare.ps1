@@ -15,12 +15,12 @@
 .LINK
     https://en.wikipedia.org/wiki/Square_wave_(waveform)
 #>
-[OutputType([double[]])]
+[OutputType('Wave')]
 param(
 # The frequency.
 # Defaults to A4 (440hz)
 [Alias('Hz')]
-[float]$Frequency = 440,
+[double]$Frequency = 440,
 
 # The amount of time to generate.
 [Timespan]$Duration = $(
@@ -29,9 +29,12 @@ param(
 ),
 
 # The volume
-[float]$Volume = $(
+[double]$Volume = $(
     if ($this.Volume) { $this.Volume } else { 0.5 }
 ),
+
+# The start time.
+$Time,
 
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
@@ -59,7 +62,7 @@ $cycle = 2 * [Math]::PI * $Frequency
 $stepAngle = $cycle/($sampleRate * $channelCount)
 
 # Return a `[double[]]` containing the samples
-return ,[double[]]@(
+[double[]]$Samples = @(
     # generated one at a time
     for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
         # The sample is the arc sin of the sine of the angle
@@ -81,3 +84,20 @@ return ,[double[]]@(
         $sample * $volume/2 * $envelope
     }
 )
+
+# If we have not been provided a time
+if (-not $time) {
+    # add it to the end.
+    $time = $this.Duration
+}
+
+if ($Time) {
+    return $this.Add($samples, $time)
+}
+else {
+    $waveFormat = $this.WaveFormat
+    if (-not $waveFormat) {
+        $waveFormat = @{}
+    }
+    return wave @waveFormat -Samples $Samples
+}
