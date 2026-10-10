@@ -1594,7 +1594,7 @@ $midi88 = @(
 )
 
 # Compute our note
-$midiNote = 69 + 12 * [Math]::Log2($Frequency / 440)
+$midiNote = 69 + 12 * [Math]::Log($Frequency / 440, 2)
 
 # Round it
 $rounded = [Math]::Round($midiNote)
@@ -1622,7 +1622,7 @@ if ($rounded -ge 21 -and $rounded -le (21 + 88)) {
 #&gt;
 param($Frequency)
 
-69 + 12 * [Math]::Log2($Frequency / 440)
+69 + 12 * [Math]::Log($Frequency / 440,2)
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
