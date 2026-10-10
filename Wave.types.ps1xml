@@ -3445,7 +3445,7 @@ $events = [Runspace]::DefaultRunspace.Events
 # Start at the first instrument.
 $InstrumentIndex = 0 
 
-$waveSplat = $this.WaveFormat
+$waveFormat = $this.WaveFormat
 
 # We never need to make the same wave twice,
 # so we want a runspace-wide cache of our waves.
@@ -3528,15 +3528,16 @@ $noteSequence = @(foreach ($note in $Melody) {
     # We want to be able to make multiple sounds at once.
     # Our combined wave is the sum of all of the samples.
     # Start by split our instruments by commas.
-    $AllSamples = @(foreach ($instrument in @($InstrumentList -split ',')) {
-        if (-not $this.$Instrument.Script) {
+    $AllSamples = @(foreach ($instrument in @($InstrumentList -split ',')) {        
+        $newWave = wave @waveFormat
+        if (-not $newWave.$Instrument.Script) {
             throw "Invalid Instrument $Instrument (must be a script method)"
         }
 
         # Then find our instrument parameter names
         $instrumentParameterNames =
             # by walking over the parameters in the script's AST
-            foreach ($param in $this.$Instrument.Script.Ast.ParamBlock.Parameters) {
+            foreach ($param in $newWave.$Instrument.Script.Ast.ParamBlock.Parameters) {
                 "$($param.Name)" -replace '^\$'
                 foreach ($attr in $param.Attributes) {
                     if ($attr.TypeName.Name -eq 'alias') {
@@ -3667,14 +3668,16 @@ $noteSequence = @(foreach ($note in $Melody) {
             
             # We might as well keep this key in a html friendly format.
             # (we might want this information later)
+            $noteStartTime = $noteSequence[$index].Time
+            $noteSequence[$index].Remove('Time')
             $cacheKey = @($note | waveID) -join ' '
 
             $noteData = [Ordered]@{} + $noteSequence[$index] + @{
                 # played with the current instrument
                 Instrument = $Instrument
                 Id = $cacheKey 
-            }
-
+            }            
+            
             $noteData.PSTypeName = 'Note'
                 
             # Generate an event representing a note.
@@ -3688,13 +3691,19 @@ $noteSequence = @(foreach ($note in $Melody) {
                 # Call our instrument script.  
                 # This should output be a `[byte[]]` stream of PCM data
                 # Or a `[double[]]` stream of samples.
-                $samples = . $this.$instrument.Script @instrumentParameters
-                if ($samples.Length) {
+                $sample = . $newWave.$instrument.Script @instrumentParameters
+                if (
+                    $sample.pstypenames -contains 'Wave' -or 
+                    $sample.pstypenames -contains 'audio/wav'
+                ) {
+                    $WaveCache[$cacheKey] = $sample
+                }
+                elseif ($sample.Length) {
                     if ($samples[0] -is [byte]) {
-                        $WaveCache[$cacheKey] = (wave @waveSplat -PCM $samples) 
+                        $WaveCache[$cacheKey] = (wave @waveFormat -PCM $samples) 
                     }
                     elseif ($samples[0] -is [double]) {
-                        $WaveCache[$cacheKey] = (wave @waveSplat -Samples $samples)
+                        $WaveCache[$cacheKey] = (wave @waveFormat -Samples $samples)
                     }
                 }
             }
