@@ -3313,6 +3313,9 @@ param(
     if ($this.Volume) { $this.Volume } else { 0.5 }
 ),
 
+# The start time.
+$Time,
+
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
 # If there is no `$this` wave, will default to 44100
@@ -3338,9 +3341,9 @@ $numberOfSamples = [Math]::Round(
 $cycle = 2 * [Math]::PI * $Frequency
 $stepAngle = $cycle/($sampleRate * $channelCount)
 
-# Return a `[double[]]` containing the samples
-return ,[double[]]@(
-    # generated one at a time
+# Generate our samples
+[double[]]$Samples = @(
+    # one at a time
     for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
         # The sample at this moment is the arc tangent of half that angle
         $sample = [Math]::atan([Math]::Tan($stepAngle * $i/2))        
@@ -3353,6 +3356,23 @@ return ,[double[]]@(
         $sample * $volume/2 * $envelope
     }
 )
+
+# If we have not been provided a time
+if (-not $time) {
+    # add it to the end.
+    $time = $this.Duration
+}
+
+if ($Time) {
+    return $this.Add($samples, $time)
+}
+else {
+    $waveFormat = $this.WaveFormat
+    if (-not $waveFormat) {
+        $waveFormat = @{}
+    }
+    return wave @waveFormat -Samples $Samples
+}
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
