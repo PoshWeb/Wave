@@ -40,7 +40,7 @@ $midi88 = @(
 )
 
 # Compute our note
-$midiNote = 69 + 12 * [Math]::Log2($Frequency / 440)
+$midiNote = 69 + 12 * [Math]::Log($Frequency / 440, 2)
 
 # Round it
 $rounded = [Math]::Round($midiNote)
