@@ -2,13 +2,15 @@
 .SYNOPSIS
     Tone Generator
 .DESCRIPTION
-    Generates a Tone of a `-Frequency`, for `-Time`, at `-Volume`
+    Generates a Tone of a `-Frequency`, for `-Duration`, at `-Volume`
 #>
 [OutputType([double[]])]
+[Reflection.AssemblyMetaData("IsInstrument", $true)]
 param(
 # The frequency
 [Alias('Hz')]
-[float]$Frequency = 440,
+[double]
+$Frequency = 440,
 
 # The duration to generate.
 [Timespan]$Duration = $(
@@ -20,9 +22,12 @@ param(
 # If the current wave has set a `volume`, 
 # will use that volume.
 # Otherwise, will default to 0.5
-[float]$Volume = $(
+[double]$Volume = $(
     if ($this.Volume) { $this.Volume } else { 0.5 }
 ),
+
+# The start time.
+$Time,
 
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
@@ -47,16 +52,34 @@ $numberOfSamples = [Math]::Round(
 # how many circles?  Whatever our frequency may be.
 $cycle = 2 * [Math]::PI * $Frequency
 $stepAngle = $cycle/($sampleRate * $channelCount)
-
 # Return a `[double[]]` containing the samples
-return ,[double[]]@(for ($i = 0; $i -lt $numberOfSamples; $i++) {
+[double[]]$Samples = @(
+    for ($i = 0; $i -lt $numberOfSamples; $i++) {
+        # Calculate the envelope
+        $envelope = 1.0 - ($i / $numberOfSamples)
+        
+        # The sample is the sine of that angle at this moment in time.
+        $sample = [Math]::Sin($stepAngle * $i)
 
-    # Calculate the envelope
-    $envelope = 1.0 - ($i / $numberOfSamples)
-    
-    # The sample is the sine of that angle at this moment in time.
-    $sample = [Math]::Sin($stepAngle * $i)
+        # We will scale this by the volume, and then by the envelope.
+        $sample * $Volume * $envelope
+    }
+)
 
-    # We will scale this by the volume, and then by the envelope.
-    $sample * $Volume * $envelope
-})
+# If we have not been provided a time
+if (-not $time) {
+    # add it to the end.
+    $time = $this.Duration
+}
+
+if ($Time) {
+    return $this.Add($samples, $time)
+}
+else {
+    $waveFormat = $this.WaveFormat
+    if (-not $waveFormat) {
+        $waveFormat = @{}
+    }
+    return wave @waveFormat -Samples $Samples
+}
+
