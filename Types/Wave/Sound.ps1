@@ -296,11 +296,11 @@ $noteSequence = @(foreach ($note in $Melody) {
                     $WaveCache[$cacheKey] = $sample
                 }
                 elseif ($sample.Length) {
-                    if ($samples[0] -is [byte]) {
-                        $WaveCache[$cacheKey] = (wave @waveFormat -PCM $samples) 
+                    if ($sample[0] -is [byte]) {
+                        $WaveCache[$cacheKey] = (wave @waveFormat -PCM $sample) 
                     }
-                    elseif ($samples[0] -is [double]) {
-                        $WaveCache[$cacheKey] = (wave @waveFormat -Samples $samples)
+                    elseif ($sample[0] -is [double]) {
+                        $WaveCache[$cacheKey] = (wave @waveFormat -Samples $sample)
                     }
                 }
             }
