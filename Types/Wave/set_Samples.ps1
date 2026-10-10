@@ -31,7 +31,7 @@ $progress = [Ordered]@{
 [double[]]$CurrentSamples = $this.Samples
 [int]$BlockSize = $BitsPerSample / 8
 
-$This.Data = @(
+[byte[]]$NewData = @(
     foreach ($sample in $samples) {
         #region Encode Sample
 
@@ -112,14 +112,15 @@ $This.Data = @(
             [BitConverter]::GetBytes([int32]($sample * 2147483647))
         }
         #endregion Encode Sample
-    }
-
-    if ($progress.PercentComplete) {
-        $progress.Remove('PercentComplete')
-        $progress.Completed = $true
-        Write-Progress @progress
-    }    
+    }   
 )
+
+
+$progress.Remove('PercentComplete')
+$progress.Completed = $true
+Write-Progress @progress
+
+$This.Data = $newData
 
 return $this
 
