@@ -8,4 +8,4 @@
 #>
 param($Frequency)
 
-69 + 12 * [Math]::Log2($Frequency / 440)
+69 + 12 * [Math]::Log($Frequency / 440,2)
