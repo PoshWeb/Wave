@@ -50,5 +50,6 @@ if ($IsLinux) {
     }    
     $soundPlayer = [Media.SoundPlayer]::new($currentWave)
     $soundPlayer.Play()
-    $currentWave.Position = 0
+    $null = $currentWave.Seek(0, 'Begin')
 }
+return $this
