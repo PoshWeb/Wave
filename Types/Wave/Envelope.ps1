@@ -37,6 +37,7 @@
     ) play
 .EXAMPLE
     # Play A4 switching phase every 100 and 300 amples
+    # and put 100 samples of silence in between
     wave note a4 envelope @(
         @(1) * 100
         @(0) * 100
@@ -69,7 +70,7 @@
     ) play
 .EXAMPLE
     # An attack, decay, sustain, release (ADSR)
-    wave note a envelope @(
+    wave note a4 envelope @(
         # attack
         foreach ($n in 1..50) {
             $n/50
@@ -89,7 +90,7 @@
         }
     ) play
 .EXAMPLE
-    # An attack is an increase in magnitude over a short time
+    # Let's try some stepped attacks
     wave note a4 envelope @(
         foreach ($step in 50, 100, 200) {
             foreach ($n in 1..$step) {
@@ -100,21 +101,22 @@
         
     ) play
 .EXAMPLE
-    wave note a4 envelope @(
-        foreach ($n in 1..100) {
-            $n/100
-        }
-    ) play
+    wave note a4 envelope @(0.5) play
 .EXAMPLE
-    wave note a4 envelope @(            
-        foreach ($n in 100..1) {
-            $n/100
+    # An envelope can be a script block
+    # This turns our a4 into a square
+    wave note a4 envelope {
+        param([double[]]$samples)
+        
+        $sampleNumber = 0;
+        foreach ($sample in $samples) {
+            if ($sample -gt 0) { 0.5 }
+            elseif ($sample -lt 0 ) { -0.5 }
+            $sampleNumber++
         }
-        foreach ($n in 1..100) {
-            $n/100
-        }
-    ) play
+    } play
 .EXAMPLE
+    # This makes our A4 chirp
     wave note a4 envelope {
         param([double[]]$samples)
         $half = $samples.Length / 2
@@ -125,6 +127,100 @@
             } else {
                 $sample * (2 - $sampleNumber/$half)
             }
+            $sampleNumber++
+        }
+    } play
+.EXAMPLE
+    # Things get more interesting when we make a custom envelope
+    # Let's make a envelope that takes A4 mono and mixes it with a sine wave
+    wave note a4 envelope {
+        param(
+            [double[]]$samples, 
+            [double]$Angle = (220 * [Math]::PI * 2)/(44100 * 1)
+        )
+        
+        $sampleNumber = 0
+        foreach ($sample in $samples) {
+            $sample + [Math]::Sin($sampleNumber * $angle)
+            $sampleNumber++
+        }
+        $sampleNumber
+    } play
+.EXAMPLE
+    # Compare the enveloped sound to 
+    wave note a4 | wave add (wave note a3) play
+
+    # There are many ways to describe this difference.
+    # We might call it "cleaner".
+
+    # Why?  You're listening to rounding errors.
+
+    # A `[float]` has less precision than a `[double]`
+
+    # When we encode the wave, we lose some decimal places of a (probably) irrational number.
+
+    # When we're adding samples together, we're encoding and re-encoding our audio.
+
+    # By using a custom envelope, we can harmonize without losing any data.    
+.EXAMPLE
+    # Let's make an even fancier envelope, 
+    # one that mixes in a few lower frequencies
+    wave note a4 envelope {
+        param([double[]]$samples, [double[]]$Angle = @(
+            ((220 * [Math]::PI * 2)/(44100 * 1)),
+            ((110 * [Math]::PI * 2)/(44100 * 1))
+            ((55 * [Math]::PI * 2)/(44100 * 1))
+        ))
+        $sampleNumber = 0;
+        foreach ($sample in $samples) {
+            $newSample = $sample
+            foreach ($a in $angle) {
+                $newSample+=[Math]::Sin($sampleNumber * $a)
+            }
+            $newSample 
+            $sampleNumber++
+        }
+    } play    
+.EXAMPLE
+    # Let's make an even fancier envelope, 
+    # one that mixes in even lower frequencies
+    wave note a4 envelope {
+        param([double[]]$samples, [double[]]$Angle = @(            
+            ((440/2 * [Math]::PI * 2)/(44100 * 1)),
+            ((440/4 * [Math]::PI * 2)/(44100 * 1))
+            ((440/8 * [Math]::PI * 2)/(44100 * 1))
+            ((440/16 * [Math]::PI * 2)/(44100 * 1))
+            ((440/32 * [Math]::PI * 2)/(44100 * 1))
+        ))
+        $sampleNumber = 0;
+        foreach ($sample in $samples) {
+            $newSample = $sample
+            foreach ($a in $angle) {
+                $newSample+=[Math]::Sin($sampleNumber * $a)
+            }
+            $newSample 
+            $sampleNumber++
+        }
+    } play
+.EXAMPLE
+    # Let's make an even fancier envelope, 
+    # one that mixes in a few lower and higher frequencies    
+    wave note a4 envelope {
+        param([double[]]$samples, [double[]]$Angle = @(
+            ((440 * [Math]::PI * 2)/(44100 * 1))
+            ((440/2 * [Math]::PI * 2)/(44100 * 1)),
+            ((440/4 * [Math]::PI * 2)/(44100 * 1))
+            ((440/8 * [Math]::PI * 2)/(44100 * 1))
+            ((440/16 * [Math]::PI * 2)/(44100 * 1))
+            ((440/32 * [Math]::PI * 2)/(44100 * 1))
+        ))
+        $sampleNumber = 0;
+        foreach ($sample in $samples) {
+            $newSample = $sample
+            foreach ($a in $angle) {
+                $newSample+=[Math]::Sin($sampleNumber * $a)
+            }
+            $newSample 
             $sampleNumber++
         }
     } play
