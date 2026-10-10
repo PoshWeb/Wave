@@ -5453,7 +5453,15 @@ return $noteFrequency
     * `[]` (Open/Close Divide) only supports some partial syntax
     * `𝆱𝆲` (GlissandoUp/Down) are not yet implemented
     * `𝆒𝆓` (Crescendo/Decrescendo) are not yet implemented
+
+    For additional bonus points:
+    
+    In order to remain compatible with PowerShell 5.1, 
+    some parts of this grammar must be encoded as bytes.
+    
+    (sorry)
 #&gt;
+
 
 [Ordered]@{
     OpenPhrase = '&lt;'
@@ -5472,21 +5480,33 @@ return $noteFrequency
     Time1_128 = '𝅘𝅥𝅲'
     GlissandoUp = '𝆱'
     GlissandoDown = '𝆲'
-    Crescendo = '𝆒'
-    Decrescendo = '𝆓'
+    Crescendo = [byte[]]240,157,134,146 # '𝆒'
+    Decrescendo = [byte[]]240,157,134,146 # '𝆓'
     Rest1_1 = '𝄻'
     Rest1_2 = '𝄼'
     Rest1_4 = '𝄽'
     Rest1_8 = '𝄾'
     Rest1_16 = '𝄿'
-    Rest1_32 = '𝅀'
+    Rest1_32 = '𝅀'    
     Rest1_64 = '𝅁'
-    Rest1_128 = '𝅂'    
+    Rest1_128 = [byte[]]240,157,133, 130  # '𝅂'    
     Multiply = [Regex]::new('\*(?&lt;scale&gt;[\d\.]+)')
     Divide = [Regex]::New('/(?&lt;scale&gt;[\d\.]+)')
     RatioTime = [Regex]::New('\:(?&lt;scale&gt;[\d\.]+)')
     Repeat = [Regex]::New('!(?&lt;scale&gt;[\d+])')
-    DECPS = [regex]::new('\e\[(?&lt;decVolume&gt;[0-7]);(?&lt;decDuration&gt;\d+);(?:(?&lt;decNote&gt;\d+);?){1,},~')
+    DECPS = [regex]::new('
+        (?&lt;decSequence&gt;
+            \e\[
+            (?&lt;decVolume&gt;[0-7]);
+            (?&lt;decDuration&gt;\d+);
+            (?:
+                (?&lt;decNote&gt;\d+
+            );?){1,}
+            ,~
+            [\s\r\n]{0,}
+        ){1,}',
+        'IgnoreCase,IgnorePatternWhitespace'
+    )
     Emoji = [Regex]::new("[\p{IsHighSurrogates}\p{IsLowSurrogates}\p{IsVariationSelectors}\p{IsCombiningHalfMarks}]+")    
     AtTime = [Regex]::new('\@(?&lt;scale&gt;[\d\.]+)')
     Rest = [Regex]::new('
@@ -5549,7 +5569,7 @@ return $noteFrequency
     # Do not match if we preceed a letter 
     # or punctuation that is not a-g
     # followed by any number of a-g letters
-    (?&lt;![\p{L}\p{P}-[abcdefg\|]][abcdefg\|]{0,})
+    (?&lt;![\p{L}\p{P}-[abcdefg\|\,]][abcdefg\|]{0,})
     (?&lt;pitch&gt;
         (?&gt;
             (?&lt;flat&gt;[\u266d_])
@@ -5586,6 +5606,7 @@ return $noteFrequency
      # an optional octave
     ', 'IgnoreCase, IgnorePatternWhitespace'        
     )
+    Combine = [Regex]::New(',')
     Decimal = [Regex]::new(
         '
 (?&lt;IsNegative&gt;\-)?                # It might be start with a -
@@ -5677,8 +5698,15 @@ $patterns = @(
         $pattern = # Each pattern is in a named capture group
             "(?&lt;$key&gt;",
             $(
-            # If the grammar was a string literal
-            if ($grammar[$key] -isnot [Regex]) { 
+            # If the grammar was a byte literal
+            if ($grammar[$key] -is [byte[]]) {
+                [Regex]::new(
+                    [Regex]::Escape(
+                        [Text.Encoding]::UTF8.GetString($grammar[$key])
+                    )
+                )
+            }
+            elseif ($grammar[$key] -isnot [Regex]) { 
                 # make it a pattern that matches any of the supplied values
                 [Regex]::new($(                
                     @(foreach ($const in $grammar[$key]) {
