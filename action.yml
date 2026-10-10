@@ -36,12 +36,12 @@ runs:
       id: WaveAction
       shell: pwsh
       env: 
+        ActionScript: ${{inputs.ActionScript}}
+        GitHubToken: ${{inputs.GitHubToken}}
+        InstallModule: ${{inputs.InstallModule}}
+        Run: ${{inputs.Run}}
         SkipScriptFile: ${{inputs.SkipScriptFile}}
         ScriptFilePattern: ${{inputs.ScriptFilePattern}}
-        InstallModule: ${{inputs.InstallModule}}
-        GitHubToken: ${{inputs.GitHubToken}}
-        Run: ${{inputs.Run}}
-        ActionScript: ${{inputs.ActionScript}}
       run: |
         $Parameters = @{}
         $Parameters.Run = ${env:Run}
@@ -220,6 +220,8 @@ runs:
                     $myScriptList += $_.FullName.Replace($env:GITHUB_WORKSPACE, '').TrimStart('/')
                     $myScriptCount++
                     $scriptFile = $_
+                    
+        
                     if ($env:GITHUB_STEP_SUMMARY) {
                         "### $($scriptFile.Fullname -replace [Regex]::Escape($env:GITHUB_WORKSPACE))" |
                             Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
@@ -233,11 +235,13 @@ runs:
                             InstallActionModule $requiredModule.Name
                         }
                     }
+                    "::group::$($scriptFile.FullName.Replace($env:GITHUB_WORKSPACE, '').TrimStart('/'))" | Out-Host
                     Push-Location $scriptFile.Directory.Fullname
                     $scriptFileOutputs = . $scriptCmd
                     $scriptFileOutputs |                
                         Out-Host
                     Pop-Location
+                    "::endgroup::"
                 }    
             
             $MyScriptFilesTook = [Datetime]::Now - $MyScriptFilesStart

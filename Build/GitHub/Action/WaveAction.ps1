@@ -159,6 +159,8 @@ function InvokeActionModule {
             $myScriptList += $_.FullName.Replace($env:GITHUB_WORKSPACE, '').TrimStart('/')
             $myScriptCount++
             $scriptFile = $_
+            
+
             if ($env:GITHUB_STEP_SUMMARY) {
                 "### $($scriptFile.Fullname -replace [Regex]::Escape($env:GITHUB_WORKSPACE))" |
                     Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
@@ -172,11 +174,13 @@ function InvokeActionModule {
                     InstallActionModule $requiredModule.Name
                 }
             }
+            "::group::$($scriptFile.FullName.Replace($env:GITHUB_WORKSPACE, '').TrimStart('/'))" | Out-Host
             Push-Location $scriptFile.Directory.Fullname
             $scriptFileOutputs = . $scriptCmd
             $scriptFileOutputs |                
                 Out-Host
             Pop-Location
+            "::endgroup::"
         }    
     
     $MyScriptFilesTook = [Datetime]::Now - $MyScriptFilesStart
