@@ -4,6 +4,9 @@
 .DESCRIPTION
     Plays the notes in the current Melody, using any number of Instruments.
 #>
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+    'PSAvoidAssignmentToAutomaticVariable', '', Justification='We need $this to work'
+)]
 param()
 
 # Replace angle brackets and periods,
@@ -14,17 +17,22 @@ $Instruments = @(
     }
 )
 
+$currentWave = $this
+if (-not $currentWave) {
+    $currentWave = wave
+}
+
 # If we could not detect instruments
 if (-not $Instruments) {
-    $Instruments = @(if ($this.Instrument) {
-        $this.Instrument -replace '[\.<>]' -split '\s+'
+    $Instruments = @(if ($currentWave.Instrument) {
+        $currentWave.Instrument -replace '[\.<>]' -split '\s+'
     } else {
         'sine'
     })
 }
 
 # If we have no melody
-if (-not $this.Melody) { 
+if (-not $currentWave.Melody) { 
     # warn and return
     Write-Warning "No Melody Defined"
     return
@@ -43,7 +51,7 @@ $events = [Runspace]::DefaultRunspace.Events
 # Start at the first instrument.
 $InstrumentIndex = 0 
 
-$waveFormat = $this.WaveFormat
+$waveFormat = $currentWave.WaveFormat
 
 # We never need to make the same wave twice,
 # so we want a runspace-wide cache of our waves.
@@ -65,10 +73,10 @@ $waveCache = $waveTable.WaveCache
 
 filter waveID {
     $note = $_
-    "data-audio-format='$($this.AudioFormat)'"
-    "data-channel-count='$($this.ChannelCount)'"
-    "data-sample-rate='$($this.SampleRate)'"
-    "data-bits-per-sample='$($this.BitsPerSample)'"
+    "data-audio-format='$($currentWave.AudioFormat)'"
+    "data-channel-count='$($currentWave.ChannelCount)'"
+    "data-sample-rate='$($currentWave.SampleRate)'"
+    "data-bits-per-sample='$($currentWave.BitsPerSample)'"
     "data-instrument='$($Instrument -replace "'", "''")'"
     foreach ($key in $note.Keys) {
         "data-$key='$($note[$key] -replace "'","''")'"
@@ -81,7 +89,7 @@ filter waveID {
 }
 
 # Unroll the notes in the melody
-$melody = @(foreach ($note in $this.Melody) {
+$melody = @(foreach ($note in $currentWave.Melody) {
     $note
 })
 
@@ -183,9 +191,9 @@ $noteSequence = @(foreach ($note in $Melody) {
                         $note.Strings
                     } 
                     # Or on this object
-                    elseif($this.Strings)
+                    elseif($currentWave.Strings)
                     {    
-                        $this.Strings
+                        $currentWave.Strings
                     }
 
                 # If no strings are defined,
@@ -283,14 +291,17 @@ $noteSequence = @(foreach ($note in $Melody) {
             # Even if we have already cached the note, 
             # we still want to log that we want to play it.
             $null = $events.GenerateEvent(
-                'Note', $this, @($friendly), [PSCustomObject]$noteData
-            )
+                'Note', $currentWave, @($friendly), [PSCustomObject]$noteData
+            )            
+            
             
             if (-not $WaveCache[$cacheKey]) {
                 # Call our instrument script.  
                 # This should output be a `[byte[]]` stream of PCM data
-                # Or a `[double[]]` stream of samples.
-                $sample = . $newWave.$instrument.Script @instrumentParameters
+                # Or a `[double[]]` stream of samples.                
+                $newWave = wave @waveFormat
+                $this = $newWave
+                $sample = & $newWave.$instrument.Script @instrumentParameters
                 if (
                     $sample.pstypenames -contains 'Wave'
                 ) {
@@ -357,6 +368,6 @@ $progress.Completed = $true
 Write-Progress @progress
 
 $newWave = wave @waveSplat -PCM $wavaData
-$newWave.Melody = $this.Melody
+$newWave.Melody = $currentWave.Melody
 $NewWave.Instrument = $Instruments
 return $newWave
