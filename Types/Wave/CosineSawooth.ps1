@@ -1,18 +1,34 @@
 <#
 .SYNOPSIS
-    Sawtooth tone Generator
+    Cosine Sawtooth tone Generator
 .DESCRIPTION
-    Generates a sawtooth tone of a `-Frequency`, for `-Duration`, at `-Volume`
+    Generates a cosine sawtooth tone of a `-Frequency`, for `-Duration`, at `-Volume`
 .NOTES
     A sawtooth wave is calculated given at a given angle using:
 
     ~~~PowerShell
     [Math]::atan([Math]::Tan($angle/2))
     ~~~
+
+    A tangent is always relative to a sine wave.
+
+    Luckily, 
+    the opposite value of that tangent is it's point along a cosine wave.
+
+    To make a cosine sawtooth wave, we need to simply negate the value
+
+    ~~~PowerShell
+    [Math]::atan([Math]::Tan($angle/-2))
+    ~~~
+
+    Cosine based waves are the opposite of a sine based wave.
+
+    They often sound very similar to a sine based wave, 
+    but seem like they are coming from below, not above.
 .LINK
     https://en.wikipedia.org/wiki/Sawtooth_wave
 #>
-[OutputType([double[]])]
+[OutputType('Wave')]
 param(
 # The frequency.
 # Defaults to A4 (440hz)
@@ -32,6 +48,9 @@ param(
 [float]$Volume = $(
     if ($this.Volume) { $this.Volume } else { 0.5 }
 ),
+
+# The start time
+$Time,
 
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
@@ -59,7 +78,7 @@ $cycle = 2 * [Math]::PI * $Frequency
 $stepAngle = $cycle/($sampleRate * $channelCount)
 
 # Return a `[double[]]` containing the samples
-return ,[double[]]@(
+[double[]]$Samples = @(
     # generated one at a time
     for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
         # The sample at this moment is the arc tangent of half that angle
@@ -73,3 +92,20 @@ return ,[double[]]@(
         $sample * $volume/2 * $envelope
     }
 )
+
+# If we have not been provided a time
+if (-not $time) {
+    # add it to the end.
+    $time = $this.Duration
+}
+
+if ($Time) {
+    return $this.Add($samples, $time)
+}
+else {
+    $waveFormat = $this.WaveFormat
+    if (-not $waveFormat) {
+        $waveFormat = @{}
+    }
+    return wave @waveFormat -Samples $Samples
+}
