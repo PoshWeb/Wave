@@ -4,20 +4,20 @@
 .DESCRIPTION
     Generates a Wave that sweeps between two frequencies.    
 #>
-[OutputType([double[]])]
+[OutputType('Wave')]
 param(
 # The frequency.
 # If no frequency is provided, it will be 440hz (A4)
 [Alias('Hz')]
-[float]$Frequency = 0,
+[double]$Frequency = 0,
 
 # The destination frequency.  
 # If not provided, will be half of the frequency
 [Alias('Hz2')]
-[float]$ToFrequency = 0,
+[double]$ToFrequency = 0,
 
 # The number of steps in the sweep
-# If none are provided, the frequencies will change continously
+# If none are provided, the frequencies will change continuously 
 [int]$StepCount = 0,
 
 # The duration to generate.
@@ -30,7 +30,7 @@ param(
 # If the current wave has set a `volume`, 
 # will use that volume.
 # Otherwise, will default to 0.5
-[float]$Volume = $(
+[double]$Volume = $(
     if ($this.Volume) { $this.Volume } else { 0.5 }
 ),
 
@@ -67,7 +67,7 @@ $divisor = ($sampleRate * $channelCount)
 
 # We will return the wave as a `[double[]]`,
 # and preceeed it by a comma so that we return all samples at once.
-return ,[double[]]@(
+$Samples = [double[]]@(
     # Generate one sample at a time.
     for ($i = 0; $i -lt $numberOfSamples; $i++) {
     
@@ -97,3 +97,20 @@ return ,[double[]]@(
         $sample * $Volume * $envelope
     }
 )
+
+# If we have not been provided a time
+if (-not $time) {
+    # add it to the end.
+    $time = $this.Duration
+}
+
+if ($Time) {
+    return $this.Add($samples, $time)
+}
+else {
+    $waveFormat = $this.WaveFormat
+    if (-not $waveFormat) {
+        $waveFormat = @{}
+    }
+    return wave @waveFormat -Samples $Samples
+}
