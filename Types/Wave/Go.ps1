@@ -375,7 +375,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
     }
 }
 
-$progress.Remove('PercentComplete')
+$progress.PercentComplete = 100
 $progress.Completed = $true
 Write-Progress @progress
 
