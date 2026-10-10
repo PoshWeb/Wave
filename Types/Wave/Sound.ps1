@@ -291,8 +291,7 @@ $noteSequence = @(foreach ($note in $Melody) {
                 # Or a `[double[]]` stream of samples.
                 $sample = . $newWave.$instrument.Script @instrumentParameters
                 if (
-                    $sample.pstypenames -contains 'Wave' -or 
-                    $sample.pstypenames -contains 'audio/wav'
+                    $sample.pstypenames -contains 'Wave'
                 ) {
                     $WaveCache[$cacheKey] = $sample
                 }

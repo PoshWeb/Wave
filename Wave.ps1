@@ -52,6 +52,12 @@
     # then another tone at 220hz (A3)
     wave tone 440 tone 220
 .EXAMPLE
+    # Let's play some triangle tones
+    wave triangle 440 triangle 220 play
+.EXAMPLE
+    # It's hip to be square
+    wave bpm 256 square 311.1269 square 440 square 261.62 square 261.62 play
+.EXAMPLE
     # Play a series of notes
     wave note abba play
 .EXAMPLE
@@ -78,6 +84,11 @@
 .EXAMPLE
     # Add rests
     wave bpm 256 note a2a3~~b2b3~~ play
+.EXAMPLE
+    # We can play notes using different instruments.
+    # Each instrument is a wave function that makes a tone.
+    # Let's hear cafe with a triangle tone
+    wave note cafe sound '<triangle>'    
 #>
 [Alias('wav', '.wav','〜','🌊')]
 [CmdletBinding(PositionalBinding=$false)]
@@ -230,16 +241,17 @@ if ($AsJob) {
 filter makeWave {
     # Take the input object.
     $WaveStream = $_
-    # If it is not yet a `Wave`
-    if ($WaveStream.pstypenames -notcontains 'Wave') { 
-        # make it a `Wave`.
-        $WaveStream.pstypenames.insert(0,'Wave')
-    }
     # If it is not yet an `audio/wav`
     if ($WaveStream.pstypenames -notcontains 'audio/wav') {
         # make it an `audio/wav`
         $WaveStream.pstypenames.insert(0,'audio/wav')
-    }       
+    }
+
+    # If it is not yet a `Wave`
+    if ($WaveStream.pstypenames -notcontains 'Wave') { 
+        # make it a `Wave`.
+        $WaveStream.pstypenames.insert(0,'Wave')
+    }           
 
     # If we have no arguments
     if (-not $ArgumentList.Length) {
@@ -298,13 +310,14 @@ if ($allInput.Length) {
                 $in.Extension -eq '.wav'
             ) {
                 # Create a new memory stream,
-                $memoryStream = [IO.MemoryStream]::new()
+                $waveStream = [IO.MemoryStream]::new()
+                    
                 # read our file bytes,
                 $fileBytes = [IO.File]::ReadAllBytes($in.FullName)
                 # write our file bytes to our stream,
-                $memoryStream.Write($fileBytes, 0,$fileBytes.Length)
+                $waveStream.Write($fileBytes, 0,$fileBytes.Length)
                 # and make waves.
-                $memoryStream | makeWave
+                $waveStream | makeWave
                 continue nextInput
             }
 
@@ -336,13 +349,14 @@ if ($allInput.Length -and -not $allInput -as [double[]]) {
             $in.Extension -eq '.wav'
         ) {
             # Create a new memory stream,
-            $memoryStream = [IO.MemoryStream]::new()
+            $waveStream = [IO.MemoryStream]::new()            
+            
             # read our file bytes,
             $fileBytes = [IO.File]::ReadAllBytes($in.FullName)
             # write our file bytes to our stream,
-            $memoryStream.Write($fileBytes, 0,$fileBytes.Length)
+            $waveStream.Write($fileBytes, 0,$fileBytes.Length)
             # and make waves.
-            $memoryStream | makeWave
+            $waveStream | makeWave
             continue nextInput
         }
 
@@ -376,13 +390,14 @@ if ($Path) {
         # let's do things a little differently.
 
         # Create a new memory stream,
-        $memoryStream = [IO.MemoryStream]::new()
+        $waveStream = [IO.MemoryStream]::new()        
+        
         # read our file bytes,
         $fileBytes = [IO.File]::ReadAllBytes($unresolvedPath)
         # write our file bytes to our stream,
-        $memoryStream.Write($fileBytes, 0,$fileBytes.Length)
+        $waveStream.Write($fileBytes, 0,$fileBytes.Length)
         # and make waves.
-        $memoryStream | makeWave
+        $waveStream | makeWave
     }
     # Return after all paths have been become waves.
     return
@@ -392,7 +407,8 @@ if ($Path) {
 # we are going to create a wave from scratch.
 
 # Create a new memory stream.
-$memoryStream = [IO.MemoryStream]::new()
+
+$waveStream = [IO.MemoryStream]::new()
 
 # If the audio format is `3` (IEEE float), 
 # and the bits per sample is less than 32
@@ -424,6 +440,7 @@ if ($samples -and -not $PCM) {
     }
 
     # We will reassign our PCM data to the encoded samples
+    $ProgressThreshold = 64kb
     $PCM = @(foreach ($sample in $samples) {
         #region Encode Sample
 
@@ -441,7 +458,11 @@ if ($samples -and -not $PCM) {
 
         # So we will only write progress once every 64kb samples
         # (or about every 1.5 seconds worth of CD quality audio in mono)
-        if (-not ($sampleNumber % 64kb)) {
+        if (
+            -not ($sampleNumber % $ProgressThreshold) -and 
+            # but we will not write progress if we are only going to do so once.
+            ($samples.Length -gt $ProgressThreshold)
+        ) {
             # Our status is simply the ratio of progress.
             $progress.Status = "$sampleNumber / $($Samples.Length)"
             # Our percentage complete is that ratio times 100.
@@ -499,18 +520,20 @@ if ($samples -and -not $PCM) {
         }
         #endregion Encode Sample
     })
-    $memoryStream | 
+    $waveStream | 
         Add-Member NoteProperty '#Samples' $Samples -Force
 
-    $progress.Remove('PercentComplete')
-    $progress.Completed = $true
-    Write-Progress @progress
+    if ($samples.Length -gt ($ProgressThreshold * 2)) {
+        $progress.Remove('PercentComplete')
+        $progress.Completed = $true
+        Write-Progress @progress
+    }    
 }
 
 #region Make Wave
 
 # Create a binary writer for our stream
-$binaryWriter = [IO.BinaryWriter]::new($memoryStream)
+$binaryWriter = [IO.BinaryWriter]::new($waveStream)
 
 # Wave Files are `RIFF` files,
 
@@ -591,7 +614,7 @@ if ($PCM.Length) {
 }
 
 # Seek the stream back to 0.
-$memoryStream.Position = 0
+$null = $waveStream.Seek(0, 'Begin')
 
 # and make it a wave.
-return $memoryStream | makeWave
+return $waveStream | makeWave

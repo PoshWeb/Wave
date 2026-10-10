@@ -19,7 +19,7 @@ $ArgumentList = @($args)
 
 if (-not $ArgumentList) { return $currentWave }
 
-$waveType = $(Get-TypeData -TypeName audio/wav)
+$waveType = $(Get-TypeData -TypeName Wave)
 
 $waveSplat = [Ordered]@{
     AudioFormat = $currentWave.AudioFormat
@@ -92,7 +92,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
 
     $progress.PercentComplete = $argIndex * 100 / $wordsAndArguments.Length
     $arg = $wordsAndArguments[$argIndex]
-    if ($arg.pstypenames -contains 'audio/wav') {
+    if ($arg.pstypenames -contains 'Wave') {
         $currentWave.Data += $arg.Data
         continue 
     }
@@ -110,7 +110,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
                     )
                 }
             }
-            elseif ($stepOutput.pstypenames -contains 'audio/wav') {
+            elseif ($stepOutput.pstypenames -contains 'Wave') {
                 $newWave = $stepOutput
                 $currentWave = $newWave
                 continue
@@ -322,8 +322,7 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
                             Write-Error -ErrorRecord $ex
                         }                        
                     }
-                }
-                
+                }                
             } else {
                 # otherwise, lets get the property
                 # If we are getting a script and we want help
@@ -365,14 +364,14 @@ for ($argIndex =0; $argIndex -lt $wordsAndArguments.Length; $argIndex++) {
             # and set the output wave to false.
             $outputWave = $false
         }        
-    } elseif ($stepOutput.pstypenames -contains 'audio/wav') {
+    } elseif ($stepOutput.pstypenames -contains 'Wave') {        
         # The step output is our new wave
         $newWave = $stepOutput
 
         # Set the current wave to the new wave.
         $currentWave = $newWave
         # and output it later (presumably).
-        $outputWave = $true
+        $outputWave = $true    
     }
 }
 
