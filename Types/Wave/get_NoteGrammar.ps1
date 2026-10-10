@@ -32,7 +32,15 @@
     * `[]` (Open/Close Divide) only supports some partial syntax
     * `𝆱𝆲` (GlissandoUp/Down) are not yet implemented
     * `𝆒𝆓` (Crescendo/Decrescendo) are not yet implemented
+
+    For additional bonus points:
+    
+    In order to remain compatible with PowerShell 5.1, 
+    some parts of this grammar must be encoded as bytes.
+    
+    (sorry)
 #>
+
 
 [Ordered]@{
     OpenPhrase = '<'
@@ -51,21 +59,33 @@
     Time1_128 = '𝅘𝅥𝅲'
     GlissandoUp = '𝆱'
     GlissandoDown = '𝆲'
-    Crescendo = '𝆒'
-    Decrescendo = '𝆓'
+    Crescendo = [byte[]]240,157,134,146 # '𝆒'
+    Decrescendo = [byte[]]240,157,134,146 # '𝆓'
     Rest1_1 = '𝄻'
     Rest1_2 = '𝄼'
     Rest1_4 = '𝄽'
     Rest1_8 = '𝄾'
     Rest1_16 = '𝄿'
-    Rest1_32 = '𝅀'
+    Rest1_32 = '𝅀'    
     Rest1_64 = '𝅁'
-    Rest1_128 = '𝅂'    
+    Rest1_128 = [byte[]]240,157,133, 130  # '𝅂'    
     Multiply = [Regex]::new('\*(?<scale>[\d\.]+)')
     Divide = [Regex]::New('/(?<scale>[\d\.]+)')
     RatioTime = [Regex]::New('\:(?<scale>[\d\.]+)')
     Repeat = [Regex]::New('!(?<scale>[\d+])')
-    DECPS = [regex]::new('\e\[(?<decVolume>[0-7]);(?<decDuration>\d+);(?:(?<decNote>\d+);?){1,},~')
+    DECPS = [regex]::new('
+        (?<decSequence>
+            \e\[
+            (?<decVolume>[0-7]);
+            (?<decDuration>\d+);
+            (?:
+                (?<decNote>\d+
+            );?){1,}
+            ,~
+            [\s\r\n]{0,}
+        ){1,}',
+        'IgnoreCase,IgnorePatternWhitespace'
+    )
     Emoji = [Regex]::new("[\p{IsHighSurrogates}\p{IsLowSurrogates}\p{IsVariationSelectors}\p{IsCombiningHalfMarks}]+")    
     AtTime = [Regex]::new('\@(?<scale>[\d\.]+)')
     Rest = [Regex]::new('
@@ -128,7 +148,7 @@
     # Do not match if we preceed a letter 
     # or punctuation that is not a-g
     # followed by any number of a-g letters
-    (?<![\p{L}\p{P}-[abcdefg\|]][abcdefg\|]{0,})
+    (?<![\p{L}\p{P}-[abcdefg\|\,]][abcdefg\|]{0,})
     (?<pitch>
         (?>
             (?<flat>[\u266d_])
@@ -165,6 +185,7 @@
      # an optional octave
     ', 'IgnoreCase, IgnorePatternWhitespace'        
     )
+    Combine = [Regex]::New(',')
     Decimal = [Regex]::new(
         '
 (?<IsNegative>\-)?                # It might be start with a -

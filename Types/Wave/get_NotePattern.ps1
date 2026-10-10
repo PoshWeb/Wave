@@ -28,8 +28,15 @@ $patterns = @(
         $pattern = # Each pattern is in a named capture group
             "(?<$key>",
             $(
-            # If the grammar was a string literal
-            if ($grammar[$key] -isnot [Regex]) { 
+            # If the grammar was a byte literal
+            if ($grammar[$key] -is [byte[]]) {
+                [Regex]::new(
+                    [Regex]::Escape(
+                        [Text.Encoding]::UTF8.GetString($grammar[$key])
+                    )
+                )
+            }
+            elseif ($grammar[$key] -isnot [Regex]) { 
                 # make it a pattern that matches any of the supplied values
                 [Regex]::new($(                
                     @(foreach ($const in $grammar[$key]) {
