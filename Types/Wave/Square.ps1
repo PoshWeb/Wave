@@ -30,6 +30,17 @@ param(
     if ($this.Volume) { $this.Volume } else { 0.5 }
 ),
 
+# The start time.
+[ValidateScript({
+    if ($_ -is [TimeSpan] -or $_ -is [double] -or $_ -is [int]) {
+        return $true
+    }
+    if ($_ -as [TimeSpan]) { return $true }
+    if ($_ -as [double]) { return $true }
+    throw "Time must be a number of timespan"
+})]
+$Time,
+
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
 # If there is no `$this` wave, will default to 44100
@@ -55,9 +66,9 @@ $numberOfSamples = [Math]::Round(
 $cycle = 2 * [Math]::PI * $Frequency
 $stepAngle = $cycle/($sampleRate * $channelCount)
 
-# Return a `[double[]]` containing the samples
-return ,[double[]]@(
-    # generated one at a time
+# Generate our samples
+[double[]]$Samples = @(
+    # one at a time
     for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
         # The sample is the arc sin of the sine of the angle
         $sample = [Math]::sin($stepAngle * $i)
@@ -78,3 +89,20 @@ return ,[double[]]@(
         $sample * $volume/2 * $envelope
     }
 )
+
+# If we have not been provided a time
+if (-not $time) {
+    # add it to the end.
+    $time = $this.Duration
+}
+
+if ($Time) {
+    return $this.Add($samples, $time)
+}
+else {
+    $waveFormat = $this.WaveFormat
+    if (-not $waveFormat) {
+        $waveFormat = @{}
+    }
+    return wave @waveFormat -Samples $Samples
+}
