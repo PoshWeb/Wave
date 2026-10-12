@@ -13,6 +13,7 @@
 
     # Plural property names
     Peaks = 'Peak'
+    Troughs = 'Trough'
 
     Invert = 'Negate'
     InvertPolarity = 'Negate'
