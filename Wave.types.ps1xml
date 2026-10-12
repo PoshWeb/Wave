@@ -229,6 +229,14 @@ return $sharpen
         <ReferencedMemberName>Peak</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
+        <Name>PeaksAndTroughs</Name>
+        <ReferencedMemberName>PeakTrough</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>PeaksTroughs</Name>
+        <ReferencedMemberName>PeakTrough</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
         <Name>Rest</Name>
         <ReferencedMemberName>Silence</ReferencedMemberName>
       </AliasProperty>
@@ -6053,6 +6061,39 @@ for ($sampleNumber = 1 ; $sampleNumber -lt ($samples.Length - 1); $sampleNumber+
             $samples[$sampleNumber]
         )
     }
+}
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>PeakTrough</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets Wave Peaks and Troughs    
+.DESCRIPTION
+    Gets the points in a wave that are peaks or troughs.
+#&gt;
+[double[]]$samples = $this.Samples
+for ($sampleNumber = 1 ; $sampleNumber -lt ($samples.Length - 1); $sampleNumber++) {
+
+    $isPeak = 
+        $samples[$sampleNumber] -gt $samples[$sampleNumber - 1] -and 
+        $samples[$sampleNumber] -gt $samples[$sampleNumber + 1]
+
+    if ($isPeak) {
+        [Numerics.Vector2]::new($sampleNumber, $samples[$sampleNumber])
+        
+        continue
+    }
+    
+    $isThrough =
+        $samples[$sampleNumber] -lt $samples[$sampleNumber - 1] -and 
+        $samples[$sampleNumber] -lt $samples[$sampleNumber + 1]        
+
+    if ($isThrough) {
+        [Numerics.Vector2]::new($sampleNumber, $samples[$sampleNumber])
+        continue
+    }         
 }
                     </GetScriptBlock>
       </ScriptProperty>
