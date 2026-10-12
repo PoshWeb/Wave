@@ -74,7 +74,7 @@ if (-not $listStart) {
 # Create a writer
 $writer = [IO.BinaryWriter]::new($this)
 # and seek to the list start
-$this.Position = $listStart
+$null = $this.Seek($listStart, 'Begin')
 # Then write the list
 $writer.Write([Text.Encoding]::ASCII.GetBytes("LIST"))
 
@@ -135,12 +135,12 @@ foreach ($after in $afterList) {
     $writer.Write([byte[]]$after.data)
 }
 
-$this.Position = 4
+$null = $this.Seek(4, 'Begin')
 # Then write our stream length, minus 8 bytes
 $writer.Write([uint32]($this.Length - 8))
 
 # and set our position back to the start.
-$this.Position = 0
+$null = $this.Seek(0, 'Begin')
 
 foreach ($prop in $this.psobject.properties) {
     if ($prop.Name -match '^#') {
@@ -149,37 +149,3 @@ foreach ($prop in $this.psobject.properties) {
 }
 
 return $this
-
-# Everything in metadata is encoded in ASCII
-# (Wave file predate UTF-8 encoding by about a decade)
-
-# We want to return metadata as a dictionary
-$metadata = [Ordered]@{}
-
-# Get our list bytes
-$list = $this.'#list'
-
-# Walk over our list, starting at 4 and incrementing as we read 
-for ($index = 4; $index -lt $list.Length; ) {
-    # Get the ID
-    $metaDataId = [Text.Encoding]::ASCII.GetString($list, $index, 4) 
-    # and advance four bytes.
-    $index +=4
-    # Get the chunk length 
-    $metadataLength = [BitConverter]::ToUInt32($list,$index)
-    # and advance four bytes
-    $index +=4
-    # Get the string
-    $metadata[$metaDataId] = [Text.Encoding]::ASCII.GetString($list, $index, $metadataLength)
-    # and advance by the string length.
-    $index += $metadataLength
-    # If our index was odd
-    if ($index % 2) {
-        $index++ # advance one more byte.
-    }
-}
-
-
-# Return our metadata.
-return $metadata
-

@@ -7,4 +7,4 @@
 [BitConverter]::ToString(
     [Security.Cryptography.SHA256]::Create().ComputeHash($this)
 ) -replace '-'
-$this.Position = 0
+$null = $this.Seek('0', 'Begin')

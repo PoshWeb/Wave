@@ -26,7 +26,7 @@ if (-not $this.'#data.start') {
 }
 
 # Seek to our data start plus 4
-$this.Position = $this.'#data.start' + 4
+$null = $this.Seek($this.'#data.start' + 4, 'Begin')
 # and prepare a writer
 $writer = [IO.BinaryWriter]::new($this)
 # Write our new data length
@@ -39,12 +39,12 @@ $this.Write($data, 0, $data.Length)
 $this.'#data' = $data
 
 # and seek to near the start of the file.
-$this.Position = 4
+$null = $this.Seek(4, 'Begin')
 # Then write our stream length, minus 8 bytes
 $writer.Write([uint32]($this.Length - 8))
 
 # and set our position back to the start.
-$this.Position = 0
+$null = $this.Seek(0, 'Begin')
 
 # Nullify any cached values we may have
 $this | Add-Member NoteProperty '#Samples' $null -Force
