@@ -14,6 +14,8 @@
     # Plural property names
     Peaks = 'Peak'
     Troughs = 'Trough'
+    PeaksTroughs = 'PeakTrough'
+    PeaksAndTroughs = 'PeakTrough'
 
     Invert = 'Negate'
     InvertPolarity = 'Negate'
