@@ -11,6 +11,9 @@
     CosSawtooth = 'CosineSawtooth'
     CosSaw = 'CosineSawtooth'
 
+    # Plural property names
+    Peaks = 'Peak'
+
     Invert = 'Negate'
     InvertPolarity = 'Negate'
     Antinoise = 'Negate'
