@@ -12,7 +12,9 @@ param(
 $midiNote
 )
 
-440.0 * [Math]::Pow(
+$frequency = 440.0 * [Math]::Pow(
     2,
     (($MidiNote - 69)/12)
 )
+$frequency.pstypenames.add('Frequency')
+$frequency
