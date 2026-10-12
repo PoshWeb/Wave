@@ -148,9 +148,9 @@ return $sharpen
           <PropertySet>
             <Name>DefaultDisplayPropertySet</Name>
             <ReferencedProperties>
+              <Name>Channels</Name>
               <Name>SampleRate</Name>
               <Name>BitsPerSample</Name>
-              <Name>Channels</Name>
               <Name>Duration</Name>
             </ReferencedProperties>
           </PropertySet>
@@ -6728,9 +6728,9 @@ $this.Position = 4
       </ScriptProperty>
       <NoteProperty>
         <Name>DefaultDisplay</Name>
-        <Value>SampleRate
+        <Value>Channels
+SampleRate
 BitsPerSample
-Channels
 Duration</Value>
       </NoteProperty>
     </Members>
