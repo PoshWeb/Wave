@@ -5815,7 +5815,7 @@ $noteFrequency = [Ordered]@{
     "G1" = 48.99942949771866
     "G♯1" = 51.91308719749314
     'A♭1' = 51.9130871974931
-    "A1" = 55
+    "A1" = 55.0
     "A♯1" = 58.27047018976124
     "B♭1" = 58.2704701897612
     "B1" = 61.73541265701551    
@@ -5836,6 +5836,10 @@ for ($octave = 2; $octave -le $MaxOctave; $octave++) {
 
 # Add one more note for the final C
 $noteFrequency["C$($MaxOctave + 1)"] = $noteFrequency."C$($MaxOctave)" * 2
+
+foreach ($key in @($noteFrequency.Keys)) {
+    $noteFrequency[$key].pstypenames.add('Frequency')
+}
 
 $this | Add-Member NoteProperty '#NoteFrequency' $noteFrequency -Force
 
