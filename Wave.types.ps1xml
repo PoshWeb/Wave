@@ -27,7 +27,7 @@ return $flatten
 .DESCRIPTION
     Gets the approximate letter note for a frequency
 #&gt;
-$this.Midi.Frequency
+$this.Midi.Letter
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
