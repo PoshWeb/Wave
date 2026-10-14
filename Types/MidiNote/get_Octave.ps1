@@ -9,6 +9,6 @@ if ($abs -lt 24) {
     0
 } else {    
     [Math]::Ceiling(
-        ($abs - 24) / 12
+        ($abs - 12) / 12
     )
 }
