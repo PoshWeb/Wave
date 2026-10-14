@@ -12,12 +12,12 @@
 .LINK
     https://en.wikipedia.org/wiki/Sawtooth_wave
 #>
-[OutputType([double[]])]
+[OutputType('Wave')]
 param(
 # The frequency.
 # Defaults to A4 (440hz)
 [Alias('Hz')]
-[float]$Frequency = 440,
+$Frequency = 440,
 
 # The amount of time to generate.
 [Timespan]$Duration = $(
@@ -29,7 +29,7 @@ param(
 # If the current wave has set a `volume`, 
 # will use that volume.
 # Otherwise, will default to 0.5
-[float]$Volume = $(
+[double]$Volume = $(
     if ($this.Volume) { $this.Volume } else { 0.5 }
 ),
 
@@ -56,25 +56,61 @@ $numberOfSamples = [Math]::Round(
     $Duration.TotalSeconds * $SampleRate * $channelCount
 ) 
 
-# We can imagine each cycle as a series of circles
-# how many circles?  Whatever our frequency may be.
-$cycle = 2 * [Math]::PI * $Frequency
-$stepAngle = $cycle/($sampleRate * $channelCount)
+# Measure our angles
+$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 
-# Generate our samples
-[double[]]$Samples = @(
-    # one at a time
-    for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
-        # The sample at this moment is the arc tangent of half that angle
-        $sample = [Math]::atan([Math]::Tan($stepAngle * $i/2))        
+# Our object pipeline will consist of two steps:
 
-        # Our envelope is how we want to enclose the sound.
-        # This will fade the sound over the `-Duration`
-        $envelope = 1.0 - ($i / $numberOfSamples)
+# 1. A polysaw 
+# 2. An envelope
 
-        # We scale our sample by the volume and the envelope
-        $sample * $volume/2 * $envelope
+# For our polysaw triangle, we want to process each input time.
+$PolySaw = {
+    process {
+        # Given an input time, we want to make a sample
+        $t = $_
+
+        # Start it at zero
+        [double]$Sample = 0.0
+        # Each successive angle will have a weighted volume
+        # starting at full volume
+        $angleWeight = 1.0
+        # Take each of our angles and Add it Up
+        foreach ($angle in $angles) {
+            # The sample at this moment is the arc tangent of half the time.
+            $sample += [Math]::atan([Math]::Tan($t/2 * $angle)) * $angleWeight
+            # Then half the weight so the next frequency does not overpower this one.
+            $angleWeight/=2
+        }
+        # Output the sum of all samples
+        $sample                
+    }            
+}
+
+# For our envelope, we want to scale by volume and hush over time
+$Envelope = {
+    process {
+        # Our sample is our input
+        [double]$Sample = $_
+        # Our envelope is 1 - $t as a fraction of the number of samples
+        $envelope = 1.0 - ($t / $numberOfSamples)
+        $sample * $Volume * $envelope    
     }
+}
+
+
+# Now let's make our samples
+[double[]]$Samples = @(
+    # in the object pipeline
+
+    # Starting at zero, go up to the number of samples we want
+    # This will be `$t`
+    $t = 0    
+    
+    # We will pipe in a series of times
+    0..($numberOfSamples - 1) |
+        . $PolySaw | # and get our polysaw
+        . $Envelope # and then put it in an envelope.
 )
 
 # If we have not been provided a time
