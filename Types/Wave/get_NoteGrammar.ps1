@@ -127,10 +127,22 @@
         ',
         'IgnoreCase,IgnorePatternWhitespace'
     )
-    MidiNote = [Regex]::New('m(?:idi)?\s{0,}(?<midiNumber>[\d\.]+)','IgnoreCase')
-    <#ExactFrequency = [Regex]::new(
-        '(?<frequency>[\d\.]+)(?<scale>(?>hz|㎐|㎑|㎒|㎓))'
-    )#>
+    MidiNote = [Regex]::New(
+        '
+        (?>
+            # Prefixed midi note
+            m(?:idi)?\s{0,}(?<midiNumber>\-?[\d\.]+)
+            |
+            # Suffixed midi note
+            (?<midiNumber>\-?[\d\.]+)m(?:idi)?\s{0,}
+        )
+        ',
+        'IgnoreCase,IgnorePatternWhitespace'
+    )    
+    ExactFrequency = [Regex]::new(
+        '(?<frequency>\-?\d+(\.\d+)?)(?<scale>(?>hz|㎐|㎑|㎒|㎓))',
+        'IgnoreCase,IgnorePatternWhitespace'
+    )
     Sleep = [Regex]::new(
         '
         Sleep                  # Sleep
