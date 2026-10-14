@@ -4251,6 +4251,18 @@ return $newWave
     Speed can be any number.  
     
     Providing negative speeds will reverse the audio.
+.EXAMPLE
+    # Speeds a4 up by 1.05, roughly turning it into a#4
+    wave note a4 speed 1.05 play
+.EXAMPLE
+    # Plays a4 backward
+    wave note a4 speed -1 play
+.EXAMPLE
+    # Speeds cafe up by 1.10, roughly going up a tone
+    wave note cafe speed 1.10 play
+.EXAMPLE
+    # Backmasks cafe
+    wave note cafe speed -1 play
 #&gt;
 param(
 # The new speed
