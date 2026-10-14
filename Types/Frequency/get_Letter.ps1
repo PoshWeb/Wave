@@ -4,4 +4,4 @@
 .DESCRIPTION
     Gets the approximate letter note for a frequency
 #>
-$this.Midi.Frequency
+$this.Midi.Letter
