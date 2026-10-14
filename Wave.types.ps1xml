@@ -146,7 +146,7 @@ $abs = [Math]::Abs($this)
 if ($abs -lt 24) {
     0
 } else {    
-    [Math]::Ceiling(
+    [Math]::Floor(
         ($abs - 12) / 12
     )
 }
