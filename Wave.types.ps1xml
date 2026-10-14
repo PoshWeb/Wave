@@ -66,6 +66,18 @@ $midi
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>Octave</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the Octave
+.DESCRIPTION
+    Gets the Octave for a frequency
+#&gt;
+$this.Midi.Octave
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Sharp</Name>
         <GetScriptBlock>
                         &lt;#
