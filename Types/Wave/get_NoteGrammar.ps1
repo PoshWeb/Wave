@@ -148,7 +148,7 @@
     # Do not match if we preceed a letter 
     # or punctuation that is not a-g
     # followed by any number of a-g letters
-    (?<![\p{L}\p{P}-[abcdefg\|\,]][abcdefg\|]{0,})
+    (?<![\p{L}\p{P}-[abcdefg\|\,\.]][abcdefg\|]{0,})
     (?<pitch>
         (?>
             (?<flat>[\u266d_])
@@ -157,8 +157,8 @@
         )
     )?
     (?<letter>[a-g]) # a letter between a and g
-    # as long as the next character is not a letter and not a-g.
-    (?![\p{L}-[abcdefg]])
+    # as long as the next character is not a letter and not a-g or s.
+    (?![\p{L}-[abcdefgs]])
     (?: 
         # Then an optional flat/sharp alter
         # and a number
@@ -167,14 +167,14 @@
             # it has to be followed by an octave.
             (?<flat>b)
                 (?<octave>[1-8])
-            |
+            |            
             # If it is a notemoji flat or underscore
             (?<flat>[\u266d_])
                 # the octave is optional
                 (?<octave>[1-8])?
             |
-            # If it is a notemoji sharp, pound sign, or caret
-            (?<sharp>[\#\u266f\^])
+            # If it is a notemoji sharp, pound sign, caret, or s
+            (?<sharp>[\#\u266f\^s])
                 # the octave is optional
                 (?<octave>[1-8])?
             |
@@ -185,6 +185,9 @@
      # an optional octave
     ', 'IgnoreCase, IgnorePatternWhitespace'        
     )
+
+    Range = [Regex]::New('\.\.')
+
     Combine = [Regex]::New(',')
     Decimal = [Regex]::new(
         '
