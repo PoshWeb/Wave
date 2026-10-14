@@ -23,6 +23,14 @@
 .EXAMPLE
     # Backmasks cafe
     wave note cafe speed -1 play
+.EXAMPLE    
+    # Plays cafe at twice the speed
+    # Halves the time and goes up an octave
+    wave note cafe speed 2 play
+.EXAMPLE
+    # Plays cafe at -2x speed
+    # Halves the time, goes up an octave, and backmasks
+    wave note cafe speed 2 play
 #>
 param(
 # The new speed
