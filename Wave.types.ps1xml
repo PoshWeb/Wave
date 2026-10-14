@@ -4152,20 +4152,24 @@ return $newWave
 .DESCRIPTION
     Generates a square tone of a `-Frequency`, for `-Time`, at `-Volume`
 .NOTES
-    A square wave is calculated by taking the sin of a given angle and using:
+    A square wave is calculated by taking the sine of a given angle 
+    and turning it into squares:
 
     ~~~PowerShell
-    [Math]::atan([Math]::Tan($angle/2))
+    $sample = [Math]::Sin($t * $angle)
+    if ($sample -gt 0) { 1 }
+    elseif ($sample -lt 0) { -1 }
+    else { 0 }
     ~~~
 .LINK
     https://en.wikipedia.org/wiki/Square_wave_(waveform)
 #&gt;
-[OutputType([double[]])]
+[OutputType('Wave')]
 param(
 # The frequency.
 # Defaults to A4 (440hz)
 [Alias('Hz')]
-[float]$Frequency = 440,
+$Frequency = 440.0,
 
 # The amount of time to generate.
 [Timespan]$Duration = $(
@@ -4174,7 +4178,7 @@ param(
 ),
 
 # The volume
-[float]$Volume = $(
+[double]$Volume = $(
     if ($this.Volume) { $this.Volume } else { 0.5 }
 ),
 
@@ -4201,33 +4205,72 @@ $numberOfSamples = [Math]::Round(
     $Duration.TotalSeconds * $SampleRate * $channelCount
 ) 
 
-# We can imagine each cycle as a series of circles
-# how many circles?  Whatever our frequency may be.
-$cycle = 2 * [Math]::PI * $Frequency
-$stepAngle = $cycle/($sampleRate * $channelCount)
 
-# Generate our samples
-[double[]]$Samples = @(
-    # one at a time
-    for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
-        # The sample is the arc sin of the sine of the angle
-        $sample = [Math]::sin($stepAngle * $i)
+# Measure our angles
+$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 
-        # For a square wave, 
-        # we simply check the sign of the sample.
-        if ($sample -gt 0) {
-            $sample = 1 # and use either 1
-        } elseif ($sample -lt 0) {
-            $sample = -1 # or negative 1.
+# Our object pipeline will consist of three steps:
+
+# 1. A polysine
+# 2. A square 
+# 3. An envelope
+
+# For our polysine, we want to process each input time.
+$PolySine = {
+    process {
+        # Given an input time, we want to make a sample
+        $t = $_
+
+        # Start it at zero
+        [double]$Sample = 0.0
+        # Each successive angle will have a weighted volume
+        # starting at full volume
+        $angleWeight = 1.0
+        # Take each of our angles and Add it Up
+        foreach ($angle in $angles) {
+            # Get the sine of the times and multiply by the weight.
+            $Sine = [Math]::Sin($angle * $t)
+            $Sample += $sine * $angleWeight
+            # Then half the weight               
+            $angleWeight/=2
         }
+        # Output the sum of all samples
+        $sample                
+    }            
+}
 
-        # Our envelope is how we want to enclose the sound.
-        # This will fade the sound over the `-Duration`
-        $envelope = 1.0 - ($i / $numberOfSamples)
-
-        # We scale our sample by the volume and the envelope
-        $sample * $volume/2 * $envelope
+$Square = {
+    process {
+        if ($Sample -gt 0) { 1 }
+        elseif ($sample -lt 0) { -1 }
+        else { $sample }
     }
+}
+
+# For our envelope, we want to scale by volume and hush over time
+$Envelope = {
+    process {
+        # Our sample is our input
+        [double]$Sample = $_
+        # Our envelope is 1 - $t as a fraction of the number of samples
+        $envelope = 1.0 - ($t / $numberOfSamples)
+        $sample * $Volume * $envelope    
+    }
+}
+
+# Now let's make our samples
+[double[]]$Samples = @(
+    # in the object pipeline
+
+    # Starting at zero, go up to the number of samples we want
+    # This will be `$t`
+    $t = 0    
+    
+    # We will pipe in a series of times
+    0..($numberOfSamples - 1) |
+        . $PolySine | # and get our polysine
+        . $Square | # square it
+        . $Envelope # and then put it in an envelope.
 )
 
 # If we have not been provided a time
