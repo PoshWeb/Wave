@@ -6068,7 +6068,7 @@ return $noteFrequency
     # Do not match if we preceed a letter 
     # or punctuation that is not a-g
     # followed by any number of a-g letters
-    (?&lt;![\p{L}\p{P}-[abcdefg\|\,]][abcdefg\|]{0,})
+    (?&lt;![\p{L}\p{P}-[abcdefg\|\,\.]][abcdefg\|]{0,})
     (?&lt;pitch&gt;
         (?&gt;
             (?&lt;flat&gt;[\u266d_])
@@ -6077,8 +6077,8 @@ return $noteFrequency
         )
     )?
     (?&lt;letter&gt;[a-g]) # a letter between a and g
-    # as long as the next character is not a letter and not a-g.
-    (?![\p{L}-[abcdefg]])
+    # as long as the next character is not a letter and not a-g or s.
+    (?![\p{L}-[abcdefgs]])
     (?: 
         # Then an optional flat/sharp alter
         # and a number
@@ -6087,14 +6087,14 @@ return $noteFrequency
             # it has to be followed by an octave.
             (?&lt;flat&gt;b)
                 (?&lt;octave&gt;[1-8])
-            |
+            |            
             # If it is a notemoji flat or underscore
             (?&lt;flat&gt;[\u266d_])
                 # the octave is optional
                 (?&lt;octave&gt;[1-8])?
             |
-            # If it is a notemoji sharp, pound sign, or caret
-            (?&lt;sharp&gt;[\#\u266f\^])
+            # If it is a notemoji sharp, pound sign, caret, or s
+            (?&lt;sharp&gt;[\#\u266f\^s])
                 # the octave is optional
                 (?&lt;octave&gt;[1-8])?
             |
@@ -6105,6 +6105,9 @@ return $noteFrequency
      # an optional octave
     ', 'IgnoreCase, IgnorePatternWhitespace'        
     )
+
+    Range = [Regex]::New('\.\.')
+
     Combine = [Regex]::New(',')
     Decimal = [Regex]::new(
         '
