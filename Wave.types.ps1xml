@@ -122,6 +122,26 @@ $frequency
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>Octave</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the Octave
+.DESCRIPTION
+    Gets the Octave for a midi note
+#&gt;
+$abs = [Math]::Abs($this)
+if ($abs -lt 24) {
+    0
+} else {    
+    [Math]::Ceiling(
+        ($abs - 24) / 12
+    )
+}
+
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Sharp</Name>
         <GetScriptBlock>
                         &lt;#
