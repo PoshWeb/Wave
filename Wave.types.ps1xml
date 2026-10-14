@@ -2764,6 +2764,7 @@ else {
 #&gt;
 param()
 
+
 $tune = @(
     foreach ($arg in $args) {
         $arg
@@ -2885,6 +2886,14 @@ if ($this.BPM -is [TimeSpan]) {
     $BaseTempo = [TimeSpan]::FromSeconds(60/128)
 }
 
+$volumeDivisor = 1
+
+if ($this.Volume) {
+    $baseVolume = $this.Volume
+} else {
+    $baseVolume = 0.5
+}
+
 # We will want to be able to scan back and forth through our tokens,
 # and we want to avoid a recursive parser if we can.
 
@@ -2937,7 +2946,7 @@ filter timescale {
                 $ahead.states = @($state) * ($scale -1) 
             }
             continue
-        }
+        }            
 
         # If we are dividing
         if ($ahead.Name -in 'Divide', 'RatioTime') {
@@ -2958,35 +2967,32 @@ filter timescale {
     }
 }
 
-#region Interpreter
+filter flat { $_ * [Math]::Pow(2, (-1/12)) }
 
-# Now that we've set everything up, we just need to interpret each instruction
-for ($matchIndex = 0; $matchIndex -lt $allMatches.Count; $matchIndex++) {
-    # get our match
-    $match = $allMatches[$matchIndex]    
-    # and it's state
-    $state = $match.State
-    # and the name of the state.
-    $stateName = $state.Name
+# Formula for a sharp note, given a frequency
+filter sharp { $_ / [Math]::Pow(2, (-1/12))}
 
-    # Determine our tempo at the moment.
-    # If the divisor was positive
-    if ($divisor -gt 1) {
-        # our tempo at the moment is the base time divided by our divisor
-        $Tempo = [TimeSpan]::FromSeconds($BaseTempo.TotalSeconds / $divisor)
-    } 
-    # If the divisor was negative
-    elseif ($divisor -le -2) {
-        # multiply our base tempo by our absolute divisor
-        $tempo = [TimeSpan]::FromSeconds($BaseTempo.TotalSeconds * ([Math]::Abs($divisor)))
-    }
-    else {
-        # otherwise it is the base time.
-        $Tempo = [TimeSpan]::FromSeconds($BaseTempo.TotalSeconds)
-    }
+filter midiToFrequency {
+    $midiNote = $_
+    $Frequency = 440.0 * [Math]::Pow(
+        2,
+        (($midiNote - 69)/12)
+    )
+    $Frequency.pstypenames.add('Frequency')
+    $Frequency
+}
 
-    # We can use a `switch` to handle most states
-    switch -regex ($stateName) {
+filter frequencyToMidi {
+    $Frequency = $_
+    $midiNote = 69 + 12 * [Math]::Log($Frequency / 440,2)
+    $midiNote.pstypenames.add('MidiNote')
+    $midiNote
+}
+
+
+filter switchState {
+    $state = $_
+    switch -regex ($state.Name) {
         BeepCommand {
             $beeps = @(
                 for (
@@ -3066,7 +3072,7 @@ for ($matchIndex = 0; $matchIndex -lt $allMatches.Count; $matchIndex++) {
             $state.Name = "Rest"
             $state.Frequency = 0
             $state.Duration = $tempo
-            $state.BaseTemp = $BaseTempo
+            $state.BaseTempo = $BaseTempo
 
             $matchIndex | . timescale
         }
@@ -3076,7 +3082,67 @@ for ($matchIndex = 0; $matchIndex -lt $allMatches.Count; $matchIndex++) {
             $state.Name = "Rest"
             $state.Frequency = 0
             $state.Duration = $BaseTempo / $restTime
-            $state.BaseTempo = $BaseTempo                        
+            $state.BaseTempo = $BaseTempo
+        }
+        '^Range$' {
+            $previous = $state.MatchNumber | lookBehind | select -First 1
+            $next = $state.MatchNumber | lookAhead | select -First 1
+            $current = $state
+            if (-not $next.Frequency) {
+                $next | . switchState
+            }
+            if ($next.Frequency) {
+                $previousMidi = $previous.Frequency | frequencyToMidi
+                $nextMidi = $next.Frequency | frequencyToMidi
+                
+                $midiDelta = $nextMidi - $previousMidi
+
+                $current.States = if ($midiDelta -gt 0) {
+                    for ($midiNote = $previousMidi + 1; $midiNote -lt $nextMidi; $midiNote++) {
+                        [Ordered]@{
+                            Frequency = $midiNote | midiToFrequency
+                            Duration = $Tempo
+                            BaseTempo = $BaseTempo
+                        }
+                    }
+                } elseif ($midiDelta -lt 0) {
+                    for ($midiNote = $previousMidi - 1; $midiNote -gt $nextMidi; $midiNote--) {
+                        [Ordered]@{
+                            Frequency = $midiNote | midiToFrequency
+                            Duration = $Tempo
+                            BaseTempo = $BaseTempo
+                        }
+                    }
+                }                                
+            }            
+            $null = $next
+        }
+        '^Decimal$' {
+            $number = $state.decimal -as [double]
+            # If the number is in the midi keyboard range
+            if (
+                ($number -le 108) -and 
+                ($number -ge -108)
+            ) {                
+                if ($number -ge 21 -or $number -le -21) {
+                    # We can convert midi notes to frequencies with this formula:
+                    $state.Frequency = $number | midiToFrequency
+                    $state.Duration = $tempo
+                    $state.BaseTempo = $BaseTempo
+                } else {
+                                        
+                }
+            
+            } else {
+                $state.Frequency = $number
+                $state.Duration = $tempo
+                $state.BaseTempo = $BaseTempo
+            }
+        }
+        ExactFrequency {
+            $state.Frequency = $state.Frequency -as [double]
+            $state.Duration = $tempo
+            $state.BaseTempo = $BaseTempo
         }
         MidiNote {
             # Midi notes have a midi number, which should be a double
@@ -3250,7 +3316,38 @@ for ($matchIndex = 0; $matchIndex -lt $allMatches.Count; $matchIndex++) {
                 $divisor--
             }            
         }
-    }    
+    }
+}
+
+#region Interpreter
+
+# Now that we've set everything up, we just need to interpret each instruction
+for ($matchIndex = 0; $matchIndex -lt $allMatches.Count; $matchIndex++) {
+    # get our match
+    $match = $allMatches[$matchIndex]    
+    # and it's state
+    $state = $match.State
+    # and the name of the state.
+    $stateName = $state.Name
+
+    # Determine our tempo at the moment.
+    # If the divisor was positive
+    if ($divisor -gt 1) {
+        # our tempo at the moment is the base time divided by our divisor
+        $Tempo = [TimeSpan]::FromSeconds($BaseTempo.TotalSeconds / $divisor)
+    } 
+    # If the divisor was negative
+    elseif ($divisor -le -2) {
+        # multiply our base tempo by our absolute divisor
+        $tempo = [TimeSpan]::FromSeconds($BaseTempo.TotalSeconds * ([Math]::Abs($divisor)))
+    }
+    else {
+        # otherwise it is the base time.
+        $Tempo = [TimeSpan]::FromSeconds($BaseTempo.TotalSeconds)
+    }
+
+    # We can use a `switch` to handle most states
+    $state | . switchState    
 }
 #endregion Interpreter
 
@@ -3264,8 +3361,12 @@ $melody = for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex+
     if ($match.State.Frequency -or $match.State.Duration -gt 0) {
         # To assist transcription,
         if ($match.State.Frequency) {
-            # find the closest note and attach it to our state
-            $match.State.ClosestNote = $currentWave.FrequencyToLetter($match.State.Frequency)
+            # Decorate the frequency
+            if ($match.State.Frequency.pstypeanes -notcontains 'Frequency') {
+                $match.State.Frequency.pstypenames.add('Frequency')
+            }
+            # and find the closest note and attach it to our state
+            $match.State.ClosestNote = $currentWave.State.Frequency
         }
         # it's part of our melody
         $match.State # and we should output it.
@@ -3279,6 +3380,10 @@ $melody = for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex+
             if ($nested.Frequency -or $nested.Duration) {
                 # To assist transcription
                 if ($nested.Frequency) {
+                    # Decorate the frequency
+                    if ($nested.Frequency.pstypeanes -notcontains 'Frequency') {
+                        $nested.Frequency.pstypenames.add('Frequency')
+                    }
                     # find the closest note and attach it to our state.
                     $nested.ClosestNote = $currentWave.FrequencyToLetter($nested.Frequency)
                 }
@@ -6193,10 +6298,22 @@ return $noteFrequency
         ',
         'IgnoreCase,IgnorePatternWhitespace'
     )
-    MidiNote = [Regex]::New('m(?:idi)?\s{0,}(?&lt;midiNumber&gt;[\d\.]+)','IgnoreCase')
-    &lt;#ExactFrequency = [Regex]::new(
-        '(?&lt;frequency&gt;[\d\.]+)(?&lt;scale&gt;(?&gt;hz|㎐|㎑|㎒|㎓))'
-    )#&gt;
+    MidiNote = [Regex]::New(
+        '
+        (?&gt;
+            # Prefixed midi note
+            m(?:idi)?\s{0,}(?&lt;midiNumber&gt;\-?[\d\.]+)
+            |
+            # Suffixed midi note
+            (?&lt;midiNumber&gt;\-?[\d\.]+)m(?:idi)?\s{0,}
+        )
+        ',
+        'IgnoreCase,IgnorePatternWhitespace'
+    )    
+    ExactFrequency = [Regex]::new(
+        '(?&lt;frequency&gt;\-?\d+(\.\d+)?)(?&lt;scale&gt;(?&gt;hz|㎐|㎑|㎒|㎓))',
+        'IgnoreCase,IgnorePatternWhitespace'
+    )
     Sleep = [Regex]::new(
         '
         Sleep                  # Sleep
