@@ -51,10 +51,15 @@ $Time,
 )
 )
 
+$currentWave = $this
+if (-not $currentWave) {
+    $currentWave = wave
+}
+
 # Calculate the number of samples
 $numberOfSamples = [Math]::Round(    
     $Duration.TotalSeconds * $SampleRate * $channelCount
-) 
+)
 
 # Measure our angles
 $angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
@@ -64,12 +69,18 @@ $angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 # 1. A polysine triangle
 # 2. An envelope
 
-# For our polysine triangle, we want to process each input time.
-$PolySineTriangle = {
-    process {
-        # Given an input time, we want to make a sample
-        $t = $_
+# Now let's make our samples
+[double[]]$Samples = @(
+    # in the object pipeline
 
+    # Starting at zero, go up to the number of samples we want
+    # This will be `$t`
+    $t = 0    
+    
+    # We will pipe in a series of times
+    foreach ($t in 0..($numberOfSamples - 1)) {
+        
+        #region Polytriangle
         # Start it at zero
         [double]$Sample = 0.0
         # Each successive angle will have a weighted volume
@@ -85,34 +96,15 @@ $PolySineTriangle = {
             # Then half the weight so the next frequency does not overpower this one.
             $angleWeight/=2
         }
-        # Output the sum of all samples
-        $sample                
-    }            
-}
+        
+        #endregion Polytriangle
 
-# For our envelope, we want to scale by volume and hush over time
-$Envelope = {
-    process {
-        # Our sample is our input
-        [double]$Sample = $_
+        #region Envelope
         # Our envelope is 1 - $t as a fraction of the number of samples
         $envelope = 1.0 - ($t / $numberOfSamples)
-        $sample * $Volume * $envelope    
+        $sample * $Volume * $envelope
+        #endregion Envelope
     }
-}
-
-# Now let's make our samples
-[double[]]$Samples = @(
-    # in the object pipeline
-
-    # Starting at zero, go up to the number of samples we want
-    # This will be `$t`
-    $t = 0    
-    
-    # We will pipe in a series of times
-    0..($numberOfSamples - 1) |
-        . $PolySineTriangle | # and get our polysine
-        . $Envelope # and then put it in an envelope.
 )
 
 # If we have not been provided a time
