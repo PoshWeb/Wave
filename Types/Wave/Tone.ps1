@@ -21,7 +21,7 @@ $Frequency = 440.0,
 # will use that volume.
 # Otherwise, will default to 0.5
 [double]$Volume = $(
-    if ($this.Volume) { $this.Volume } else { 0.5 }
+    if ($this.Volume) { $this.Volume } else { 1/[Math]::PI }
 ),
 
 # The start time.

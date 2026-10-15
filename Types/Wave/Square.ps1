@@ -32,7 +32,7 @@ $Frequency = 440.0,
 
 # The volume
 [double]$Volume = $(
-    if ($this.Volume) { $this.Volume } else { 0.5 }
+    if ($this.Volume) { $this.Volume } else { 1/[Math]::PI }
 ),
 
 # The start time.
@@ -69,6 +69,7 @@ $angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 # 1. A polysine
 # 2. A square 
 # 3. An envelope
+$volume/=2
 
 # Now let's make our samples
 [double[]]$Samples = @(
