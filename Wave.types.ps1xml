@@ -3107,7 +3107,10 @@ filter switchState {
             # DECPS has a method that can process it
             $decSequence = "$($state.Match.Value)"
             # so simply set our states to the output of that method            
-            $newWave = wave @waveFormat            
+            $newWave = wave @waveFormat
+            if ($currentWave.Instrument) {
+                $newWave.Instrument = $currentWave.Instrument
+            }
             $state.States = $newWave.DECPS($decSequence, -1, $BaseTempo).Melody
         }
         # Notemoji time signatures are captured into a state named Time1_N
