@@ -4,6 +4,9 @@
 .DESCRIPTION
     Gains volume in a wave.
 
+    A positive gain will multiply each sample by that number
+    A negative gain will divide each sample by that number
+
     A gain multiplies each sample in the wave by a ratio, 
     increasing overall loudness.
 
@@ -27,6 +30,11 @@ $Gain = 1.05
 
 # Collect our samples
 [double[]]$Samples = $this.Samples
+
+# If gain is negative, make it the reciprocal
+if ($gain -lt 0) {
+    $gain = 1/[Math]::Abs($Gain)
+}
 
 # Apply the gain
 [double[]]$Gained = for ($index = 0 ; $index -lt $samples.Length; $index++) {
