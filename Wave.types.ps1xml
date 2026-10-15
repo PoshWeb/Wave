@@ -2811,6 +2811,7 @@ $depth = 0
 $openDepth = @()
 $closeDepth = @()
 
+$waveFormat = $currentWave.WaveFormat
 
 # Go over our matches and populate the state
 $allMatches = @(foreach ($match in $matchEnumerator) {
@@ -3059,7 +3060,8 @@ filter switchState {
             # DECPS has a method that can process it
             $decSequence = "$($state.Match.Value)"
             # so simply set our states to the output of that method            
-            $state.States = $currentWave.DECPS($decSequence)
+            $newWave = wave @waveFormat            
+            $state.States = $newWave.DECPS($decSequence, -1, $BaseTempo).Melody
         }
         # Notemoji time signatures are captured into a state named Time1_N
         '^Time1_\d+$' {
@@ -3366,7 +3368,10 @@ $melody = for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex+
                 $match.State.Frequency.pstypenames.add('Frequency')
             }
             # and find the closest note and attach it to our state
-            $match.State.ClosestNote = $currentWave.State.Frequency
+            $match.State.ClosestNote = $currentWave.State.Frequency.Letter
+            if (-not $match.State.Volume) {
+                $match.State.Volume = $baseVolume
+            }
         }
         # it's part of our melody
         $match.State # and we should output it.
@@ -3383,9 +3388,12 @@ $melody = for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex+
                     # Decorate the frequency
                     if ($nested.Frequency.pstypeanes -notcontains 'Frequency') {
                         $nested.Frequency.pstypenames.add('Frequency')
-                    }
+                    }                    
                     # find the closest note and attach it to our state.
-                    $nested.ClosestNote = $currentWave.FrequencyToLetter($nested.Frequency)
+                    $nested.ClosestNote = $nested.Frequency.Letter
+                    if (-not $nested.Volume) {
+                        $nested.Volume = $baseVolume
+                    }
                 }
                 # Emit the nested note.
                 $nested
