@@ -32,7 +32,7 @@ $Frequency = 440.0,
 
 # The volume
 [double]$Volume = $(
-    if ($this.Volume) { $this.Volume } else { 1/[Math]::PI }
+    if ($this.Volume) { $this.Volume } else { 1/([Math]::PI * 2) }
 ),
 
 # The start time.
@@ -86,17 +86,20 @@ $volume/=2
         foreach ($angle in $angles) {
             # Get the sine of the times and multiply by the weight.
             $Sine = [Math]::Sin($angle * $t)
-            $Sample += $sine * $angleWeight
+
+            $square = 
+                if ($Sine -gt 0) { 1 }
+                elseif ($Sine -lt 0) { -1 }
+                else { $Sine }
+                
+            $Sample += $square * $angleWeight
             # Then half the weight               
             $angleWeight/=2
         }
         #endregion Polysine
 
         #region Square
-        $sample = 
-            if ($Sample -gt 0) { 1 }
-            elseif ($sample -lt 0) { -1 }
-            else { $sample }
+        
         #endregion Square            
 
         #region Envelope
