@@ -10,7 +10,7 @@
 param(
 # The frequency
 [Alias('Hz')]
-[double]$Frequency = 440,
+$Frequency = 440,
 
 # The amount of time to generate.
 [Timespan]$Duration = $(
@@ -19,20 +19,21 @@ param(
 ),
 
 # The volume
-[double]$Volume = 0.5,
+[double]$Volume = $(
+    if ($this.Volume) {
+        $this.Volume
+    } else {
+        1/([Math]::PI*2)
+    }
+),
 
 # The start time
 $Time,
 
-# The volume of the signal (by default 0.6)
+# The signal to noise ratio (by default 0.6)
 [ValidateRange(0,1)]
 [double]
-$Signal = 0.60,
-
-# The volume of the noise (by default 0.4)
-[ValidateRange(0,1)]
-[double]
-$Noise = 0.40,
+$SignalToNoise = @(0.6),
 
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
@@ -42,78 +43,76 @@ $Noise = 0.40,
 ),
 
 
-# The bits per sample.
-# Will default to the `.BitsPerSample` of `$this` wave.
-# If there is no `$this` wave, will default to 4.
-[uint16]$BitsPerSample = $(
-    if ($this.BitsPerSample) { $this.BitsPerSample } else { 4 }
-),
-
 # The channel count.
 # Will default to the `.ChannelCount` of `$this` wave.
 # If there is no `$this` wave, will default to 1 (mono).
 [uint16]$channelCount = $(
     if ($this.ChannelCount) { $this.ChannelCount } else { 1 }
-),
-
-# The audio format.
-# Will default to the `.AudioFormat` of `$this` wave.
-# If there is no `$this` wave, will default to 3 (IEEE floating point).
-[uint16]$AudioFormat = $(
-    if ($this.AudioFormat) { $this.AudioFormat } else { 3 }
 )
 )
 
-$BytesPerSecond = $SampleRate * $channelCount * $BitsPerSample/8
-
-# Cache our references, for the minor speed boost it may give us.
-$math = [Math]
+$CurrentWave = $this
+if (-not $CurrentWave) { $CurrentWave = wave }
 
 # Calculate the number of samples
-$numberOfSamples = $math::Round($Duration.TotalSeconds * $BytesPerSecond) 
+$numberOfSamples = [Math]::Round($Duration.TotalSeconds * $SampleRate * $channelCount) 
 
-# Our step size is the bits per sample / 8
-$step = $BitsPerSample/8
+# Measure our angles
+$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 
-# We can imagine each cycle as a series of circles
-# how many circles?  Whatever our frequency may be.
-$cycle = 2 * $math::PI * $Frequency
+# Our object pipeline will consist of three steps:
 
-# The divisor will remain the same, so compute it now.
-$divisor = ($sampleRate * $channelCount * $step)
+# 1. Make a polysine
+# 2. Inject noise
+# 3. Stuff it in an envelope
 
-$random = [Random]::new()
+$Random = [Random]::new()
 
-# Generate one sample at a time.
-[double[]]$Samples = @(for ($i = 0; $i -lt $numberOfSamples; $i+=$step) {
-
-    # Calculate the envelope
-    $envelope = 1.0 - ($i / $numberOfSamples)
+# Now let's make our samples
+[double[]]$Samples = @(
+    # Start $t at zero
+    foreach ($t in 0..($numberOfSamples - 1)) {
+        
+        #region Polycosine
+        [double]$Sample = 0.0
+        # Each successive angle will have a weighted volume
+        # starting at full volume
+        $angleWeight = 1.0
+        # Take each of our angles and Add it Up
+        foreach ($angle in $angles) {
+            # Get the cosine of the times and multiply by the weight.
+            $Sample += [Math]::Sin($angle * $t) * $angleWeight
+            # Then half the weight               
+            $angleWeight/=2
+        }
+        #endregion Polysine
     
-    # Calculate the angle at this point in time (in radians)
-    $angle = ($cycle * $i) / $divisor    
+        #region Noise
+        $randomNoise = ($random.NextDouble() * 2) - 1
+        $sample = 
+            ($sample * $SignalToNoise) + 
+            ($randomNoise * (1 - $SignalToNoise))        
+        #endregion Noise
 
-    # The sample at this moment is the sine of that angle
-    $sample = $math::Sin($angle)
-            
-    $randomNoise = ($random.NextDouble() * 2) - 1
-
-    (
-        ($sample * $Signal) + ($randomNoise * $noise)
-    ) * $Volume * $envelope
-})
+        #region Envelope        
+        # Output the sum of all samples
+        $envelope = 1.0 - ($t / $numberOfSamples)
+        $sample * $Volume * $envelope    
+        #endregion Envelope
+    }    
+)
 
 # If we have not been provided a time
 if (-not $time) {
     # add it to the end.
-    $time = $this.Duration
+    $time = $currentWave.Duration
 }
 
 if ($Time) {
-    return $this.Add($samples, $time)
+    return $currentWave.Add($samples, $time)
 }
 else {
-    $waveFormat = $this.WaveFormat
+    $waveFormat = $currentWave.WaveFormat
     if (-not $waveFormat) {
         $waveFormat = @{}
     }
