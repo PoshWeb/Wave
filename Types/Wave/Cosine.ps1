@@ -15,7 +15,6 @@
 param(
 # The frequency
 [Alias('Hz')]
-[double]
 $Frequency = 440,
 
 # The duration to generate.
@@ -29,7 +28,7 @@ $Frequency = 440,
 # will use that volume.
 # Otherwise, will default to 0.5
 [double]$Volume = $(
-    if ($this.Volume) { $this.Volume } else { 0.5 }
+    if ($this.Volume) { $this.Volume } else { 1/([Math]::PI * 2) }
 ),
 
 # The start time
@@ -50,38 +49,61 @@ $Time,
 )
 )
 
+$CurrentWave = $this
+if (-not $CurrentWave) { $CurrentWave = wave }
+
 # Calculate the number of samples
 $numberOfSamples = [Math]::Round(
     $Duration.TotalSeconds * $SampleRate * $channelCount
 )
-# We can imagine each cycle as a series of circles
-# how many circles?  Whatever our frequency may be.
-$cycle = 2 * [Math]::PI * $Frequency
-$stepAngle = $cycle/($sampleRate * $channelCount)
-# Generate our samples
-[double[]]$Samples = @(for ($i = 0; $i -lt $numberOfSamples; $i++) {
 
-    # Calculate the envelope
-    $envelope = 1.0 - ($i / $numberOfSamples)
-    
-    # The sample is the sine of that angle at this moment in time.
-    $sample = [Math]::Cos($stepAngle * $i)
+# Measure our angles
+$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 
-    # We will scale this by the volume, and then by the envelope.
-    $sample * $Volume * $envelope
-})
+# Our object pipeline will consist of two steps:
+
+# 1. A polycosine
+# 2. An envelope
+
+# Now let's make our samples
+[double[]]$Samples = @(
+    # Start $t at zero
+    foreach ($t in 0..($numberOfSamples - 1)) {
+        
+        #region Polycosine
+        [double]$Sample = 0.0
+        # Each successive angle will have a weighted volume
+        # starting at full volume
+        $angleWeight = 1.0
+        # Take each of our angles and Add it Up
+        foreach ($angle in $angles) {
+            # Get the cosine of the times and multiply by the weight.
+            $Sample += [Math]::Cos($angle * $t) * $angleWeight
+            # Then half the weight               
+            $angleWeight/=2
+        }
+        #endregion Polysine
+        
+        #region Envelope
+        # Output the sum of all samples
+        $envelope = 1.0 - ($t / $numberOfSamples)
+        $sample * $Volume * $envelope    
+        #endregion Envelope
+    }
+)
+
 
 # If we have not been provided a time
 if (-not $time) {
     # add it to the end.
-    $time = $this.Duration
+    $time = $CurrentWave.Duration
 }
 
 if ($Time) {
-    return $this.Add($samples, $time)
+    return $CurrentWave.Add($samples, $time)
 }
 else {
-    $waveFormat = $this.WaveFormat
+    $waveFormat = $CurrentWave.WaveFormat
     if (-not $waveFormat) {
         $waveFormat = @{}
     }
