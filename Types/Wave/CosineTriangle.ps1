@@ -22,7 +22,7 @@ param(
 # The frequency.
 # Defaults to A4 (440hz)
 [Alias('Hz')]
-[double]$Frequency = 440,
+$Frequency = 440,
 
 # The amount of time to generate.
 [Timespan]$Duration = $(
@@ -33,9 +33,9 @@ param(
 # The volume.
 # If the current wave has set a `volume`, 
 # will use that volume.
-# Otherwise, will default to 0.5
+# Otherwise, will default to 1/([Math]::PI * 2)
 [double]$Volume = $(
-    if ($this.Volume) { $this.Volume } else { 0.5 }
+    if ($this.Volume) { $this.Volume } else { 1/([Math]::PI * 2) }
 ),
 
 # The start time.
@@ -46,42 +46,64 @@ $Time,
 # If there is no `$this` wave, will default to 44100
 [uint32]$SampleRate = $(
     if ($this.SampleRate) { $this.SampleRate } else { 44100 }
-),
+)
+)
 
-# The channel count.
-# Will default to the `.ChannelCount` of `$this` wave.
-# If there is no `$this` wave, will default to 1 (mono).
-[uint16]$channelCount = $(
-    if ($this.ChannelCount) { $this.ChannelCount } else { 1 }
-)
-)
+$currentWave = $this
+if (-not $currentWave) {
+    $currentWave = wave
+}
 
 # Calculate the number of samples
 $numberOfSamples = [Math]::Round(    
     $Duration.TotalSeconds * $SampleRate * $channelCount
-) 
-
-# We can imagine each cycle as a series of circles
-# how many circles?  Whatever our frequency may be.
-$cycle = 2 * [Math]::PI * $Frequency
-$stepAngle = $cycle/($sampleRate * $channelCount)
-
-# Return a `[double[]]` containing the samples
-[double[]]$Samples = @(
-    # generated one at a time
-    for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
-        # The sample is the arc sin of the sine of the angle
-        $sample = [Math]::acos([Math]::cos($stepAngle * $i)) 
-
-        # Our envelope is how we want to enclose the sound.
-        # This will fade the sound over the `-Duration`
-        $envelope = 1.0 - ($i / $numberOfSamples)
-
-        # We scale our sample by the volume and the envelope
-        $sample * $volume * $envelope
-    }
 )
 
+# Measure our angles
+$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
+
+# Our object pipeline will consist of two steps:
+
+# 1. A polycosine triangle
+# 2. An envelope
+
+# Now let's make our samples
+[double[]]$Samples = @(
+    # in the object pipeline
+
+    # Starting at zero, go up to the number of samples we want
+    # This will be `$t`
+    $t = 0    
+    
+    # We will pipe in a series of times
+    foreach ($t in 0..($numberOfSamples - 1)) {
+        
+        #region Polycosinetriangle
+        # Start it at zero
+        [double]$Sample = 0.0
+        # Each successive angle will have a weighted volume
+        # starting at full volume
+        $angleWeight = 1.0
+        # Take each of our angles and Add it Up
+        foreach ($angle in $angles) {
+            
+            # Get the cosine of the times and multiply by the weight.
+            # Make sure to get the arccosine right this second 
+            # so we don't end up in "not a number" NaN land.
+            $Sample += [Math]::acos([Math]::Cos($angle * $t)) * $angleWeight
+            # Then half the weight so the next frequency does not overpower this one.
+            $angleWeight/=2
+        }
+        
+        #endregion Polycosinetriangle
+
+        #region Envelope
+        # Our envelope is 1 - $t as a fraction of the number of samples
+        $envelope = 1.0 - ($t / $numberOfSamples)
+        $sample * $Volume * $envelope
+        #endregion Envelope
+    }
+)
 
 # If we have not been provided a time
 if (-not $time) {
