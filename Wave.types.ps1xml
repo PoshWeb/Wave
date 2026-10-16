@@ -6312,7 +6312,7 @@ return $noteFrequency
         '(?&gt;
             (?&lt;frequency&gt;\-?\d+(\.\d+)?)(?&lt;unit&gt;(?&gt;hz|㎐))
             |
-            (?&lt;unit&gt;(?&gt;hz|㎐)(?&lt;frequency&gt;\-?\d+(\.\d+)?)
+            (?&lt;unit&gt;(?&gt;hz|㎐))(?&lt;frequency&gt;\-?\d+(\.\d+)?)
         )',        
         'IgnoreCase,IgnorePatternWhitespace'
     )
