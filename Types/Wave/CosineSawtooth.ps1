@@ -33,7 +33,7 @@ param(
 # The frequency.
 # Defaults to A4 (440hz)
 [Alias('Hz')]
-[float]$Frequency = 440,
+$Frequency = 440,
 
 # The amount of time to generate.
 [Timespan]$Duration = $(
@@ -44,9 +44,9 @@ param(
 # The volume.
 # If the current wave has set a `volume`, 
 # will use that volume.
-# Otherwise, will default to 0.5
-[float]$Volume = $(
-    if ($this.Volume) { $this.Volume } else { 0.5 }
+# Otherwise, will default to 1/([Math]::PI*2)
+[double]$Volume = $(
+    if ($this.Volume) { $this.Volume } else { 1/([Math]::PI * 2) }
 ),
 
 # The start time
@@ -67,43 +67,73 @@ $Time,
 )
 )
 
+$currentWave = $this
+if (-not $currentWave) { $currentWave = wave }
+
+# Measure our angles
+$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
+
 # Calculate the number of samples
 $numberOfSamples = [Math]::Round(    
     $Duration.TotalSeconds * $SampleRate * $channelCount
-) 
+)
 
-# We can imagine each cycle as a series of circles
-# how many circles?  Whatever our frequency may be.
-$cycle = 2 * [Math]::PI * $Frequency
-$stepAngle = $cycle/($sampleRate * $channelCount)
+# Our audio pipeline will consist of two steps:
 
-# Return a `[double[]]` containing the samples
+# 1. A polysaw 
+# 2. An envelope
+
+# Saws peak sharply, so adjust volume accordingly
+$Volume /= [Math]::PI
+
+# Now let's make our samples
 [double[]]$Samples = @(
-    # generated one at a time
-    for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
-        # The sample at this moment is the arc tangent of half that angle
-        $sample = [Math]::atan([Math]::Tan($stepAngle * $i/-2))
+    # in the object pipeline
 
-        # Our envelope is how we want to enclose the sound.
-        # This will fade the sound over the `-Duration`
-        $envelope = 1.0 - ($i / $numberOfSamples)
+    # Starting at zero, go up to the number of samples we want
+    # This will be `$t`
+    $t = 0    
+    foreach ($t in 0..($numberOfSamples - 1)) {
+        #region Polysaw
+        # Start it at zero
+        [double]$Sample = 0.0
+        # Each successive angle will have a weighted volume
+        # starting at full volume
+        $angleWeight = 1.0
+        # Take each of our angles and Add it Up
+        foreach ($angle in $angles) {
+            # The sample at this moment is the arc tangent of half the time.            
+            $sample += [Math]::atan(
+                [Math]::Tan($t/2 * $angle)
+            ) * 
+                # weighted appropriately
+                $angleWeight *       
+                # Since atan and tan are based off of sine
+                # We will make a cosine sawtooth by flipping the sign            
+                -1                
+            # Then half the weight so the next frequency does not overpower this one.
+            $angleWeight/=2
+        }
+        #endregion Polysaw
 
-        # We scale our sample by the volume and the envelope
-        $sample * $volume/2 * $envelope
+        #region Envelope
+        $envelope = 1.0 - ($t / $numberOfSamples)
+        $sample * $Volume * $envelope
+        #endregion Envelope
     }
 )
 
 # If we have not been provided a time
 if (-not $time) {
     # add it to the end.
-    $time = $this.Duration
+    $time = $currentWave.Duration
 }
 
 if ($Time) {
-    return $this.Add($samples, $time)
+    return $currentWave.Add($samples, $time)
 }
 else {
-    $waveFormat = $this.WaveFormat
+    $waveFormat = $currentWave.WaveFormat
     if (-not $waveFormat) {
         $waveFormat = @{}
     }
