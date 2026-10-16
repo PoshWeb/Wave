@@ -6309,7 +6309,11 @@ return $noteFrequency
         'IgnoreCase,IgnorePatternWhitespace'
     )    
     ExactFrequency = [Regex]::new(
-        '(?&lt;frequency&gt;\-?\d+(\.\d+)?)(?&lt;scale&gt;(?&gt;hz|㎐|㎑|㎒|㎓))',
+        '(?&gt;
+            (?&lt;frequency&gt;\-?\d+(\.\d+)?)(?&lt;unit&gt;(?&gt;hz|㎐))
+            |
+            (?&lt;unit&gt;(?&gt;hz|㎐)(?&lt;frequency&gt;\-?\d+(\.\d+)?)
+        )',        
         'IgnoreCase,IgnorePatternWhitespace'
     )
     Sleep = [Regex]::new(
