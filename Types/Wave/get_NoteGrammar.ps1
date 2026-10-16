@@ -143,7 +143,7 @@
         '(?>
             (?<frequency>\-?\d+(\.\d+)?)(?<unit>(?>hz|㎐))
             |
-            (?<unit>(?>hz|㎐)(?<frequency>\-?\d+(\.\d+)?)
+            (?<unit>(?>hz|㎐))(?<frequency>\-?\d+(\.\d+)?)
         )',        
         'IgnoreCase,IgnorePatternWhitespace'
     )
