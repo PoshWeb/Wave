@@ -28,9 +28,9 @@ $Frequency = 440,
 # The volume.
 # If the current wave has set a `volume`, 
 # will use that volume.
-# Otherwise, will default to 0.5
+# Otherwise, will default to 1/([Math]::PI * 2)
 [double]$Volume = $(
-    if ($this.Volume) { $this.Volume } else { 1/[Math]::PI }    
+    if ($this.Volume) { $this.Volume } else { 1/([Math]::PI * 2) }    
 ),
 
 # The start time.
@@ -51,15 +51,18 @@ $Time,
 )
 )
 
-# Calculate the number of samples
-$numberOfSamples = [Math]::Round(    
-    $Duration.TotalSeconds * $SampleRate * $channelCount
-) 
+$currentWave = $this
+if (-not $currentWave) { $currentWave = wave }
 
 # Measure our angles
 $angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 
-# Our object pipeline will consist of two steps:
+# Calculate the number of samples
+$numberOfSamples = [Math]::Round(    
+    $Duration.TotalSeconds * $SampleRate * $channelCount
+)
+
+# Our audio pipeline will consist of two steps:
 
 # 1. A polysaw 
 # 2. An envelope
@@ -100,14 +103,14 @@ $Volume /= [Math]::PI
 # If we have not been provided a time
 if (-not $time) {
     # add it to the end.
-    $time = $this.Duration
+    $time = $currentWave.Duration
 }
 
 if ($Time) {
-    return $this.Add($samples, $time)
+    return $currentWave.Add($samples, $time)
 }
 else {
-    $waveFormat = $this.WaveFormat
+    $waveFormat = $currentWave.WaveFormat
     if (-not $waveFormat) {
         $waveFormat = @{}
     }
