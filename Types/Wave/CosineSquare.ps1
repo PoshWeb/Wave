@@ -20,7 +20,7 @@ param(
 # The frequency.
 # Defaults to A4 (440hz)
 [Alias('Hz')]
-[double]$Frequency = 440,
+$Frequency = 440,
 
 # The amount of time to generate.
 [Timespan]$Duration = $(
@@ -30,7 +30,7 @@ param(
 
 # The volume
 [double]$Volume = $(
-    if ($this.Volume) { $this.Volume } else { 0.5 }
+    if ($this.Volume) { $this.Volume } else { 1/([Math]::pi * 2) }
 ),
 
 # The start time.
@@ -51,51 +51,71 @@ $Time,
 )
 )
 
+$currentWave = $this
+if (-not $currentWave) { $currentWave = wave }
+
 # Calculate the number of samples
 $numberOfSamples = [Math]::Round(    
     $Duration.TotalSeconds * $SampleRate * $channelCount
-) 
+)
 
-# We can imagine each cycle as a series of circles
-# how many circles?  Whatever our frequency may be.
-$cycle = 2 * [Math]::PI * $Frequency
-$stepAngle = $cycle/($sampleRate * $channelCount)
+# Measure our angles
+$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 
-# Return a `[double[]]` containing the samples
+# Our audio pipeline will consist of three steps:
+
+# 1. A polysine
+# 2. A square 
+# 3. An envelope
+$volume/=2
+
+# Now let's make our samples
 [double[]]$Samples = @(
-    # generated one at a time
-    for ($i = 0; $i -lt $numberOfSamples; $i++) {                        
-        # The sample is the arc sin of the sine of the angle
-        $sample = [Math]::cos($stepAngle * $i)
+    # Starting at zero, go up to the number of samples we want         
+    foreach ($t in 0..($numberOfSamples - 1)) {
 
-        # For a square wave, 
-        # we simply check the sign of the sample.
-        if ($sample -gt 0) {
-            $sample = 1 # and use either 1
-        } elseif ($sample -lt 0) {
-            $sample = -1 # or negative 1.
+        #region Polysine
+        # Start each sample at zero
+        [double]$Sample = 0.0
+        # Each successive angle will have a weighted volume
+        # starting at full volume
+        $angleWeight = 1.0
+        # Take each of our angles and Add it Up
+        foreach ($angle in $angles) {
+            # Get the cosine of the times and multiply by the weight.
+            $Cosine = [Math]::Cos($angle * $t)
+            $Sample += $Cosine * $angleWeight
+            # Then half the weight               
+            $angleWeight/=2
         }
+        #endregion Polysine
 
-        # Our envelope is how we want to enclose the sound.
-        # This will fade the sound over the `-Duration`
-        $envelope = 1.0 - ($i / $numberOfSamples)
+        #region Square
+        $sample = 
+            if ($Sample -gt 0) { 1 }
+            elseif ($sample -lt 0) { -1 }
+            else { $sample }
+        #endregion Square            
 
-        # We scale our sample by half the volume and the envelope
-        $sample * $volume/2 * $envelope
+        #region Envelope
+        # Our envelope is 1 - $t as a fraction of the number of samples
+        $envelope = 1.0 - ($t / $numberOfSamples)
+        $sample * $Volume * $envelope
+        #endregion Envelope
     }
 )
 
 # If we have not been provided a time
 if (-not $time) {
     # add it to the end.
-    $time = $this.Duration
+    $time = $currentWave.Duration
 }
 
 if ($Time) {
-    return $this.Add($samples, $time)
+    return $currentWave.Add($samples, $time)
 }
 else {
-    $waveFormat = $this.WaveFormat
+    $waveFormat = $currentWave.WaveFormat
     if (-not $waveFormat) {
         $waveFormat = @{}
     }
