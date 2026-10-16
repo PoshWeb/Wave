@@ -140,7 +140,11 @@
         'IgnoreCase,IgnorePatternWhitespace'
     )    
     ExactFrequency = [Regex]::new(
-        '(?<frequency>\-?\d+(\.\d+)?)(?<scale>(?>hz|㎐|㎑|㎒|㎓))',
+        '(?>
+            (?<frequency>\-?\d+(\.\d+)?)(?<unit>(?>hz|㎐))
+            |
+            (?<unit>(?>hz|㎐)(?<frequency>\-?\d+(\.\d+)?)
+        )',        
         'IgnoreCase,IgnorePatternWhitespace'
     )
     Sleep = [Regex]::new(
