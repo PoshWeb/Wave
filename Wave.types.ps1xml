@@ -981,17 +981,18 @@ $volume/=2
         foreach ($angle in $angles) {
             # Get the cosine of the times and multiply by the weight.
             $Cosine = [Math]::Cos($angle * $t)
-            $Sample += $Cosine * $angleWeight
+            $square = 
+                if ($Cosine -gt 0) { 1 }
+                elseif ($Cosine -lt 0) { -1 }
+                else { $Cosine }
+            $Sample += $square * $angleWeight
             # Then half the weight               
             $angleWeight/=2
         }
         #endregion Polysine
 
         #region Square
-        $sample = 
-            if ($Sample -gt 0) { 1 }
-            elseif ($sample -lt 0) { -1 }
-            else { $sample }
+        
         #endregion Square            
 
         #region Envelope
