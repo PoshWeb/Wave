@@ -1,11 +1,14 @@
 <#
 .SYNOPSIS
-    Full Unattenuated Sine Generator
+    Full Sine Generator
 .DESCRIPTION
-    Generates a Full Unattenuated Sine Wave of a `-Frequency`, for `-Duration`, at `-Volume`
+    Generates a Polyphinic Full Sine Wave of a `-Frequency`, for `-Duration`, at `-Volume`
+
+    This sound does not have a normal envelope, 
+    and will sound quite strong because it does not slope over time.
 .EXAMPLE
     # Generates a full sine wave of A4.
-    # This would be loud
+    # This will be louder than A4 in an envelope.
     wave fullsine 440 
 .EXAMPLE
     # Generates a full sine wave of A4
@@ -16,7 +19,7 @@
 param(
 # The frequency
 [Alias('Hz')]
-[double]$Frequency = 440,
+$Frequency = 440,
 
 # The duration to generate.
 [Timespan]$Duration = $(
@@ -27,9 +30,9 @@ param(
 # The volume.
 # If the current wave has set a `volume`, 
 # will use that volume.
-# Otherwise, will default to 0.5
+# Otherwise, will default to 1/([Math]::pi * 2)
 [double]$Volume = $(
-    if ($this.Volume) { $this.Volume } else { 0.5 }
+    if ($this.Volume) { $this.Volume } else { 1/([Math]::pi * 2) }
 ),
 
 # The start time.
@@ -50,24 +53,36 @@ $Time,
 )
 )
 
+$currentWave = $this
+if (-not $currentWave) { $currentWave = wave }
+
 # Calculate the number of samples
 $numberOfSamples = [Math]::Round(
     $Duration.TotalSeconds * $SampleRate * $channelCount
 )
-# We can imagine each cycle as a series of circles
-# how many circles?  Whatever our frequency may be.
-$cycle = 2 * [Math]::PI * $Frequency
 
-$stepAngle = $cycle/($sampleRate * $channelCount)
-
-filter sine {
-    param([double]$stepAngle = 0)
-    [Math]::Sin($_ * $stepAngle)
-}
+$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 
 $waveFormat = $wave.WaveFormat
 
-[double[]]$Samples =@(0..($numberOfSamples - 1) | sine $stepAngle)
+[double[]]$Samples =@(
+    foreach ($t in 0..($numberOfSamples - 1)) {
+        #region Polysine
+        [double]$Sample = 0.0
+        # Each successive angle will have a weighted volume
+        # starting at full volume
+        $angleWeight = 1.0
+        # Take each of our angles and Add it Up
+        foreach ($angle in $angles) {
+            # Get the sine of the times and multiply by the weight.
+            $Sample += [Math]::Sin($angle * $t) * $angleWeight
+            # Then half the weight               
+            $angleWeight/=2
+        }
+        $sample * $volume
+        #endregion Polysine
+    }        
+)
 
 # If we have not been provided a time
 if (-not $time) {
