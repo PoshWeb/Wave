@@ -523,7 +523,7 @@ if ($samples -and -not $PCM) {
     $waveStream | 
         Add-Member NoteProperty '#Samples' $Samples -Force
 
-    if ($samples.Length -gt ($ProgressThreshold * 2)) {
+    if ($samples.Length -gt $ProgressThreshold) {
         $progress.Remove('PercentComplete')
         $progress.Completed = $true
         Write-Progress @progress
