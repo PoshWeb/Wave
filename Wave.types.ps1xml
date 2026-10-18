@@ -2654,12 +2654,6 @@ $channelCount = $(
 
 # Convert each frequency into an angle 
 foreach ($freq in $Frequency) {
-    # If the frequency was an integer between 21 and 108
-    if ($freq -is [int] -and ($freq -ge 21 -and $freq -le 108)) {
-        # make it a midi note
-        $freq.pstypenames.add('MidiNote')
-    }
-
     # If the frequency is a midi note
     if ($freq.pstypenames -contains 'MidiNote') {
         $freq = $freq.Frequency # get it's actual frequency
