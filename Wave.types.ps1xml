@@ -52,6 +52,13 @@ $Altered
 
                     </Script>
       </ScriptMethod>
+      <ScriptMethod>
+        <Name>ToString</Name>
+        <Script>
+                        "$($this -as [double])hz"
+
+                    </Script>
+      </ScriptMethod>
       <ScriptProperty>
         <Name>Flat</Name>
         <GetScriptBlock>
@@ -130,6 +137,12 @@ return $sharpen
   <Type>
     <Name>MidiNote</Name>
     <Members>
+      <ScriptMethod>
+        <Name>ToString</Name>
+        <Script>
+                        "midi$($this -as [double])"
+                    </Script>
+      </ScriptMethod>
       <ScriptProperty>
         <Name>Flat</Name>
         <GetScriptBlock>
