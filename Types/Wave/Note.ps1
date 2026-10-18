@@ -21,13 +21,11 @@
 param()
 
 
-$Tune = $Args
-
-<#$tune = @(
+$tune = @(
     foreach ($arg in $args) {
         $arg
     }
-) -join ' '#>
+) -join ' '
 
 # The current wave is `$this`
 $currentWave = $this
