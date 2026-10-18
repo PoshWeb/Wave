@@ -21,17 +21,39 @@
 param()
 
 
-$tune = @(
+$Tune = $Args
+
+<#$tune = @(
     foreach ($arg in $args) {
         $arg
     }
-) -join ' '
+) -join ' '#>
 
 # The current wave is `$this`
 $currentWave = $this
 # unless there is no current wave, 
 # in which case it is an empty wave.
 if (-not $currentWave) { $currentWave = wave }
+
+# We want to start off with whole beats
+$divisor = 1
+
+# And we need to determine a base tempo to do so.
+# If we have a BPM timespan
+if ($this.BPM -is [TimeSpan]) {
+    $BaseTempo = $this.BPM # this is our base temp
+} else {
+    # Otherwise, default to 128 bpm.    
+    $BaseTempo = [TimeSpan]::FromSeconds(60/128)
+}
+
+$volumeDivisor = 1
+
+$baseVolume = if ($this.Volume) {
+    $this.Volume
+} else {
+    1/([Math]::PI * 2)
+}
 
 # Collect our list of letter note frequencies  
 $noteFrequency = $currentWave.NoteFrequency
@@ -44,7 +66,7 @@ $Grammar = $currentWave.NoteGrammar
 # we want to use some formal language concepts.
 
 # But let us start by finding all matches for our note pattern
-$matchEnumerator = $currentWave.NotePattern.Matches($tune)
+$matchEnumerator = $currentWave.NotePattern.Matches("$tune")
 
 # From here on our we are making a finite state machine.
 # This sounds more complicated than it might need to be.
@@ -131,25 +153,6 @@ $allMatches = @(foreach ($match in $matchEnumerator) {
 
 # Prepare our interpreter
 
-# We want to start off with whole beats
-$divisor = 1
-
-# And we need to determine a base tempo to do so.
-# If we have a BPM timespan
-if ($this.BPM -is [TimeSpan]) {
-    $BaseTempo = $this.BPM # this is our base temp
-} else {
-    # Otherwise, default to 128 bpm.    
-    $BaseTempo = [TimeSpan]::FromSeconds(60/128)
-}
-
-$volumeDivisor = 1
-
-if ($this.Volume) {
-    $baseVolume = $this.Volume
-} else {
-    $baseVolume = 0.5
-}
 
 # We will want to be able to scan back and forth through our tokens,
 # and we want to avoid a recursive parser if we can.
@@ -249,6 +252,12 @@ filter frequencyToMidi {
 
 filter switchState {
     $state = $_
+    # If we have already processed this entry
+    # and determined we should skip it, return.
+
+    # (This will happen when notes are combined)
+    if ($state.Skip) { return }
+    
     switch -regex ($state.Name) {
         BeepCommand {
             $beeps = @(
@@ -344,6 +353,33 @@ filter switchState {
             $state.Frequency = 0
             $state.Duration = $BaseTempo / $restTime
             $state.BaseTempo = $BaseTempo
+        }
+        '^Combine$' {
+            $current = $state
+            $lastNote = 
+                foreach ($last in $state.MatchNumber | lookBehind) {
+                    if ($last.Frequency) {
+                        $last
+                        break
+                    }
+                }
+            $nextNote =
+                foreach ($next in $current.MatchNumber | lookAhead) {                    
+                    if (-not $next.Frequency) {
+                        $next | . switchState
+                    }
+                    if ($next.Frequency) {
+                        $next
+                        break
+                    }
+                }
+
+            if ($lastNote -and $nextNote) {
+                $lastNote.Frequency = @($lastNote.Frequency) + @($nextNote.Frequency)
+                $nextNote.Skip = $true
+                $nextNote.Frequency = 0
+                $nextNote.Duration = [TimeSpan]::FromSeconds(0)
+            }
         }
         '^Range$' {
             $previous = $state.MatchNumber | lookBehind | select -First 1
