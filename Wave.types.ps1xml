@@ -3168,13 +3168,11 @@ else {
 param()
 
 
-$Tune = $Args
-
-&lt;#$tune = @(
+$tune = @(
     foreach ($arg in $args) {
         $arg
     }
-) -join ' '#&gt;
+) -join ' '
 
 # The current wave is `$this`
 $currentWave = $this
