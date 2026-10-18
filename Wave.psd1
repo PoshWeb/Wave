@@ -69,13 +69,31 @@ TypesToProcess = @('Wave.types.ps1xml')
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @('Wave', 'Get-Wave')
+FunctionsToExport = @(
+    'Wave', 'Get-Wave'
+    'Frequency', 'Get-Frequency'
+    'MidiNote', 'Get-MidiNote'
+)
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
 
 # Variables to export from this module
-VariablesToExport = @('Wave')
+VariablesToExport = @(
+
+    'Wave'
+
+    'A0','As0','B0',
+    'C1','Cs1','D1','Ds1','E1','F1','Fs1','G1','Gs1','A1','As1','B1',
+    'C2','Cs2','D2','Ds2','E2','F2','Fs2','G2','Gs2','A2','As2','B2',
+    'C3','Cs3','D3','Ds3','E3','F3','Fs3','G3','Gs3','A3','As3','B3',
+    'C4','Cs4','D4','Ds4','E4','F4','Fs4','G4','Gs4','A4','As4','B4',
+    'C5','Cs5','D5','Ds5','E5','F5','Fs5','G5','Gs5','A5','As5','B5',
+    'C6','Cs6','D6','Ds6','E6','F6','Fs6','G6','Gs6','A6','As6','B6',
+    'C7','Cs7','D7','Ds7','E7','F7','Fs7','G7','Gs7','A7','As7','B7',
+    'C8'
+    
+)
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @('wav', '.wav', '〜','🌊')
@@ -98,7 +116,7 @@ PrivateData = @{
         Tags = @()
 
         # A URL to the license for this module.
-        LicenseUri = ''
+        LicenseUri = 'https://github.com/PoshWeb/Wave/blob/main/LICENSE'
 
         # A URL to the main website for this project.
         ProjectUri = 'https://github.com/PoshWeb/Wave'
