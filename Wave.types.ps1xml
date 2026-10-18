@@ -4,6 +4,30 @@
     <Name>Frequency</Name>
     <Members>
       <ScriptMethod>
+        <Name>Flatten</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Flattens a frequency
+.DESCRIPTION
+    Flattens a frequency by a distance in semitones.
+
+    This will return a lower frequency.
+
+    The distance defaults to 1, which is equivalent to `.Flat`
+#&gt;
+param(
+[double]$Distance=1
+)
+
+$Altered =  ($this * [Math]::Pow(2, (($Distance * -1.0)/12)))
+$Altered.pstypenames.add('Frequency')
+$Altered
+
+
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
         <Name>Sharpen</Name>
         <Script>
                         &lt;#
