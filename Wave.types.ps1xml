@@ -5137,21 +5137,21 @@ param(
 # The frequency.
 # If no frequency is provided, it will be 440hz (A4)
 [Alias('Hz')]
-[double]$Frequency = 0,
+$Frequency = 0,
 
-# The destination frequency.  
-# If not provided, will be half of the frequency
-[Alias('Hz2')]
-[double]$ToFrequency = 0,
+# The distance to sweep, in semitones  
+[double]
+$Distance = 3,
 
 # The number of steps in the sweep
-# If none are provided, the frequencies will change continuously 
-[int]$StepCount = 0,
+# If none are provided, the frequencies will change continuously.
+[int]
+$StepCount = 0,
 
 # The duration to generate.
 [Timespan]$Duration = $(
     if ($this.BPM -is [TimeSpan]) {$this.BPM} 
-    else { [TimeSpan]::FromSeconds(60/128) }
+    else { [TimeSpan]::FromSeconds(60/128/4) }
 ),
 
 # The volume.
@@ -5159,7 +5159,7 @@ param(
 # will use that volume.
 # Otherwise, will default to 0.5
 [double]$Volume = $(
-    if ($this.Volume) { $this.Volume } else { 0.5 }
+    if ($this.Volume) { $this.Volume } else { 1/([Math]::PI * 2) }
 ),
 
 # The sample rate.
@@ -5177,66 +5177,70 @@ param(
 )
 )
 
-if ($Frequency -eq 0) { $Frequency = 440 }
-if ($ToFrequency -eq 0) { $ToFrequency = $Frequency / 2 }
+$currentWave = $this
+if (-not $currentWave) { $currentWave = wave }
+if (-not $PSBoundParameters['Frequency']) { $Frequency = 440 }
+
+$fromAngles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
+
+$toAngles = foreach ($from in $fromAngles) {
+    $from * [Math]::Pow(2, (($Distance * -1.0)/12))    
+}
 
 # Calculate the number of samples
 $numberOfSamples = [Math]::Round($Duration.TotalSeconds * $SampleRate * $channelCount) 
 
-$stepFrequency = 
-    if ($stepCount) {
-        ($ToFrequency-$Frequency)/$StepCount
-    } else {
-        0
-    }
-
-# The divisor will remain the same, so compute it now.
-$divisor = ($sampleRate * $channelCount)
-
-# We will return the wave as a `[double[]]`,
-# and preceeed it by a comma so that we return all samples at once.
-$Samples = [double[]]@(
-    # Generate one sample at a time.
-    for ($i = 0; $i -lt $numberOfSamples; $i++) {
-    
-        $t = $i/$numberOfSamples
-
-        # Calculate the envelope
-        $envelope = 1.0 - $t
-
-        $currentFrequency = 
-            if ($StepCount) {
-                $Frequency + ($stepFrequency * [Math]::Floor($t * $StepCount))
-            } else {
-                $Frequency + ($ToFrequency - $Frequency) * $t
+# Now let's make our samples
+[double[]]$Samples = @(
+    # Start $t at zero
+    foreach ($t in 0..($numberOfSamples - 1)) {
+        $ft = $t/$numberOfSamples
+        #region Polysweep
+        [double]$Sample = 0.0
+        # Each successive angle will have a weighted volume
+        # starting at full volume
+        $angleWeight = 1.0
+        # Take each of our angles and Add it Up
+        $angles = @(
+            $angleNumber = 0 
+            foreach ($angle in $fromAngles) {
+                $toAngle = $toAngles[$angleNumber]                
+                if ($StepCount) {
+                    $stepSize = ($angle - $toAngle)/$StepCount
+                    $angle + ($stepSize * [Math]::Floor($ft * $StepCount))
+                } else {                    
+                    $angle + ($angle - $toAngle) * $ft
+                }
+                $angleNumber
             }
+        )
 
-        # We can imagine each cycle as a series of circles
-        # how many circles?  Whatever our frequency may be.
-        $cycle = 2 * [math]::pi * $currentFrequency
+        foreach ($angle in $angles) {
+            # Get the sine of the times and multiply by the weight.
+            $Sample += [Math]::Sin($angle * $t) * $angleWeight
+            # Then half the weight               
+            $angleWeight/=2
+        }
+        #endregion Polysweep
         
-        # Calculate the angle at this point in time (in radians)
-        $angle = ($cycle * $i) / $divisor
-
-        # The sample at this moment is the sine of that angle
-        $sample = [Math]::Sin($angle)
-
-        # We will scale this by the volume, and then by the envelope.
-        $sample * $Volume * $envelope
+        #region Envelope        
+        $envelope = 1.0 - ($t / $numberOfSamples)                        
+        $sample * $Volume * $envelope    
+        #endregion Envelope
     }
 )
 
 # If we have not been provided a time
 if (-not $time) {
     # add it to the end.
-    $time = $this.Duration
+    $time = $currentWave.Duration
 }
 
 if ($Time) {
-    return $this.Add($samples, $time)
+    return $currentWave.Add($samples, $time)
 }
 else {
-    $waveFormat = $this.WaveFormat
+    $waveFormat = $currentWave.WaveFormat
     if (-not $waveFormat) {
         $waveFormat = @{}
     }
