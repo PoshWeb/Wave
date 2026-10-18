@@ -206,7 +206,7 @@ filter timescale {
                 $ahead.states = @($state) * ($scale -1) 
             }
             continue
-        }            
+        }
 
         # If we are dividing
         if ($ahead.Name -in 'Divide', 'RatioTime') {
@@ -415,26 +415,10 @@ filter switchState {
             $null = $next
         }
         '^Decimal$' {
-            $number = $state.decimal -as [double]
-            # If the number is in the midi keyboard range
-            if (
-                ($number -le 108) -and 
-                ($number -ge -108)
-            ) {                
-                if ($number -ge 21 -or $number -le -21) {
-                    # We can convert midi notes to frequencies with this formula:
-                    $state.Frequency = $number | midiToFrequency
-                    $state.Duration = $tempo
-                    $state.BaseTempo = $BaseTempo
-                } else {
-                                        
-                }
-            
-            } else {
-                $state.Frequency = $number
-                $state.Duration = $tempo
-                $state.BaseTempo = $BaseTempo
-            }
+            $number = $state.decimal -as [double]        
+            $state.Frequency = $number
+            $state.Duration = $tempo
+            $state.BaseTempo = $BaseTempo        
         }
         ExactFrequency {
             $state.Frequency = $state.Frequency -as [double]
