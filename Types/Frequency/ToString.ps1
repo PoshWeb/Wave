@@ -1,0 +1,1 @@
+"$($this -as [double])hz"
