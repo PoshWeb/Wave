@@ -28,9 +28,9 @@ $Frequency = 440,
 # The volume.
 # If the current wave has set a `volume`, 
 # will use that volume.
-# Otherwise, will default to 0.5
+# Otherwise, will default to 1/([Math]::PI * 2)
 [double]$Volume = $(
-    if ($this.Volume) { $this.Volume } else { 1/[Math]::PI }
+    if ($this.Volume) { $this.Volume } else { 1/([Math]::PI * 2) }
 ),
 
 # The start time.
