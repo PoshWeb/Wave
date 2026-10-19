@@ -13,7 +13,7 @@ $Frequency = 0,
 
 # The distance to sweep, in semitones  
 [double]
-$Distance = 6,
+$Distance = -12,
 
 # The number of steps in the sweep
 # If none are provided, the frequencies will change continuously.
