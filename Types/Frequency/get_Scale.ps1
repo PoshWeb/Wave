@@ -6,7 +6,7 @@
 #>
 param()
 
-if ($this.'#Scale') { return $this.'#Scale '}
+if ($this.'#Scale') { return $this.'#Scale'}
 
 # Arraylists maintain underlying psuedotypes, 
 # so we can construct our scales from `$this`
