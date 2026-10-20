@@ -6659,8 +6659,7 @@ return $noteFrequency
 
     * `&lt;&gt;` (Open/Close Phrase) support is not yet implemented
     * `[]` (Open/Close Divide) only supports some partial syntax
-    * `𝆱𝆲` (GlissandoUp/Down) are not yet implemented
-    * `𝆒𝆓` (Crescendo/Decrescendo) are not yet implemented
+    * `𝆱𝆲` (GlissandoUp/Down) are not yet implemented    
 
     For additional bonus points:
     
@@ -6687,9 +6686,7 @@ return $noteFrequency
     Time1_64 = '𝅘𝅥𝅲'
     Time1_128 = '𝅘𝅥𝅲'
     GlissandoUp = '𝆱'
-    GlissandoDown = '𝆲'
-    Crescendo = [byte[]]240,157,134,146 # '𝆒'
-    Decrescendo = [byte[]]240,157,134,146 # '𝆓'
+    GlissandoDown = '𝆲'    
     Rest1_1 = '𝄻'
     Rest1_2 = '𝄼'
     Rest1_4 = '𝄽'
@@ -6714,13 +6711,13 @@ return $noteFrequency
             [\s\r\n]{0,}
         ){1,}',
         'IgnoreCase,IgnorePatternWhitespace'
-    )
+    )    
     Emoji = [Regex]::new("[\p{IsHighSurrogates}\p{IsLowSurrogates}\p{IsVariationSelectors}\p{IsCombiningHalfMarks}]+")    
     AtTime = [Regex]::new('\@(?&lt;scale&gt;[\d\.]+)')
     Rest = [Regex]::new('
         (?&gt;
             ~|            # Strudel notation            
-            rest|silence| # Common english                                     
+            rest|silence| # Common english
             [xz]|         # ABC notation
             ø             # Notemoji notation
         )
@@ -6835,22 +6832,11 @@ return $noteFrequency
 
     Combine = [Regex]::New(',')
     Decimal = [Regex]::new(
-        '
-(?&lt;IsNegative&gt;\-)?                # It might be start with a -
-(?:(?&gt;                            # Then it can be either: 
-    (?&lt;Characteristic&gt;\d+)        # One or more digits (the Characteristic)
-    (?:\.(?&lt;Mantissa&gt;\d+)){0,1}   # followed by a period and one or more digits (the Mantissa)
-    |                             # Or it can be
-    (?:\.(?&lt;Mantissa&gt;\d+))        # just a Mantissa      
-))
-(?:
-    E
-    (?&lt;Exponent&gt;
-        [+-]\d+
-    )
-)?
-    '        
-    )
+    '
+-?[\d\.]+(?:E[\+\-]\d+)?
+    ', 'IgnoreCase')
+
+    
 }
 
                     </GetScriptBlock>
