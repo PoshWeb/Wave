@@ -4,9 +4,14 @@
 .DESCRIPTION
 	Constructs a hashtable of the major and minor scales stemming from the current note.
 #>
-$majorScale = New-Object System.Collections.ArrayList
+param()
 
-$majorScale.Add($this) > $null
+if ($this.'#Scale') { return $this.'#Scale '}
+
+# Arraylists maintain underlying psuedotypes, 
+# so we can construct our scales from `$this`
+$majorScale = [Collections.ArrayList]::new()
+$null = $majorScale.Add($this)
 
 $currentNote = $this
 
@@ -14,13 +19,16 @@ $currentNote = $this
 foreach ($step in ("WWHWWWH".ToCharArray())) { #Standard major scale step pattern
 	$stepCount = if ($step -eq "W") { 2 } else { 1 }
 	$currentNote = $currentNote.Sharpen($stepCount)
-	$majorScale.Add($currentNote) > $null
+	$null = $majorScale.Add($currentNote)
 }
 
 $scaleTable = [Ordered]@{
 	Major = $majorScale.Clone()
+	'MajorDescending' = $majorScale.Clone()
 	Minor = $majorScale.Clone()
+	'MinorDescending' = $majorScale.Clone()
 	HarmonicMinor = $majorScale.Clone()
+	HarmonicMinorDescending = $majorScale.Clone()
 	MelodicMinor = $majorScale.Clone()
 }
 
@@ -36,13 +44,14 @@ $scaleTable["HarmonicMinor"][5] = $flat6th
 
 $scaleTable["Minor"][6] = $majorScale[6].Flatten(1)
 
-$scaleTable["Major-Descending"]= $scaleTable["Major"].Clone()
-$scaleTable["Major-Descending"].Reverse()
+$scaleTable["MajorDescending"]= $scaleTable["Major"].Clone()
+$scaleTable["MajorDescending"].Reverse()
 
-$scaleTable["Minor-Descending"]= $scaleTable["Minor"].Clone()
-$scaleTable["Minor-Descending"].Reverse()
+$scaleTable["MinorDescending"]= $scaleTable["Minor"].Clone()
+$scaleTable["MinorDescending"].Reverse()
 
-$scaleTable["HarmonicMinor-Descending"]= $scaleTable["HarmonicMinor"].Clone()
-$scaleTable["HarmonicMinor-Descending"].Reverse()
+$scaleTable["HarmonicMinorDescending"]= $scaleTable["HarmonicMinor"].Clone()
+$scaleTable["HarmonicMinorDescending"].Reverse()
 
-$scaleTable
+$this | Add-Member NoteProperty '#Scale' $scaleTable -Force
+return $scaleTable
