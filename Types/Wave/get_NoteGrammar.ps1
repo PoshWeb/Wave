@@ -30,8 +30,7 @@
 
     * `<>` (Open/Close Phrase) support is not yet implemented
     * `[]` (Open/Close Divide) only supports some partial syntax
-    * `𝆱𝆲` (GlissandoUp/Down) are not yet implemented
-    * `𝆒𝆓` (Crescendo/Decrescendo) are not yet implemented
+    * `𝆱𝆲` (GlissandoUp/Down) are not yet implemented    
 
     For additional bonus points:
     
@@ -58,9 +57,7 @@
     Time1_64 = '𝅘𝅥𝅲'
     Time1_128 = '𝅘𝅥𝅲'
     GlissandoUp = '𝆱'
-    GlissandoDown = '𝆲'
-    Crescendo = [byte[]]240,157,134,146 # '𝆒'
-    Decrescendo = [byte[]]240,157,134,146 # '𝆓'
+    GlissandoDown = '𝆲'    
     Rest1_1 = '𝄻'
     Rest1_2 = '𝄼'
     Rest1_4 = '𝄽'
@@ -85,13 +82,13 @@
             [\s\r\n]{0,}
         ){1,}',
         'IgnoreCase,IgnorePatternWhitespace'
-    )
+    )    
     Emoji = [Regex]::new("[\p{IsHighSurrogates}\p{IsLowSurrogates}\p{IsVariationSelectors}\p{IsCombiningHalfMarks}]+")    
     AtTime = [Regex]::new('\@(?<scale>[\d\.]+)')
     Rest = [Regex]::new('
         (?>
             ~|            # Strudel notation            
-            rest|silence| # Common english                                     
+            rest|silence| # Common english
             [xz]|         # ABC notation
             ø             # Notemoji notation
         )
@@ -206,20 +203,9 @@
 
     Combine = [Regex]::New(',')
     Decimal = [Regex]::new(
-        '
-(?<IsNegative>\-)?                # It might be start with a -
-(?:(?>                            # Then it can be either: 
-    (?<Characteristic>\d+)        # One or more digits (the Characteristic)
-    (?:\.(?<Mantissa>\d+)){0,1}   # followed by a period and one or more digits (the Mantissa)
-    |                             # Or it can be
-    (?:\.(?<Mantissa>\d+))        # just a Mantissa      
-))
-(?:
-    E
-    (?<Exponent>
-        [+-]\d+
-    )
-)?
-    '        
-    )
+    '
+-?[\d\.]+(?:E[\+\-]\d+)?
+    ', 'IgnoreCase')
+
+    
 }
