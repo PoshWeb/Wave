@@ -4,7 +4,8 @@
 .DESCRIPTION
     Gets the melody played by the wave, if one has been set.
 
-    Each step in the melody will be returned as a `Note` object.
+    Each step in the melody is effectively
+    an instruction for what frequency to play and when.
 .NOTES
     At present, this stores a melody in memory.
     
