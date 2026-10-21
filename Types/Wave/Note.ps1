@@ -33,7 +33,7 @@ $currentWave = $this
 # in which case it is an empty wave.
 if (-not $currentWave) { $currentWave = wave }
 
-# We want to start off with whole beats
+# We want to start off with quarter beats
 $divisor = 1
 
 # And we need to determine a base tempo to do so.
@@ -689,7 +689,8 @@ $null = [Runspace]::DefaultRunspace.Events.GenerateEvent(
     }
 )
 
-$melody
+$currentWave.Melody = $melody
+return $currentWave.Sound()
 #endregion Output
 
 return
