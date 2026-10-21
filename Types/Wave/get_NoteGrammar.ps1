@@ -30,14 +30,7 @@
 
     * `<>` (Open/Close Phrase) support is not yet implemented
     * `[]` (Open/Close Divide) only supports some partial syntax
-    * `𝆱𝆲` (GlissandoUp/Down) are not yet implemented    
-
-    For additional bonus points:
-    
-    In order to remain compatible with PowerShell 5.1, 
-    some parts of this grammar must be encoded as bytes.
-    
-    (sorry)
+    * `𝆱𝆲` (GlissandoUp/Down) are not yet implemented
 #>
 
 
@@ -65,7 +58,6 @@
     Rest1_16 = '𝄿'
     Rest1_32 = '𝅀'    
     Rest1_64 = '𝅁'
-    Rest1_128 = [byte[]]240,157,133, 130  # '𝅂'    
     Multiply = [Regex]::new('\*(?<scale>[\d\.]+)')
     Divide = [Regex]::New('/(?<scale>[\d\.]+)')
     RatioTime = [Regex]::New('\:(?<scale>[\d\.]+)')
