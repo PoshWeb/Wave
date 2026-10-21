@@ -8,4 +8,6 @@
 #>
 param($Frequency)
 
-69 + 12 * [Math]::Log($Frequency / 440,2)
+$midiNote = 69 + 12 * [Math]::Log($Frequency / 440,2)
+$midiNote.pstypenames.add('MidiNote')
+$midiNote
