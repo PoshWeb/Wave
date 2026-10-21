@@ -30,7 +30,7 @@ if (-not ($this.CanRead -or $this.CanSeek)) { return }
 # Create a binary reader
 $binaryReader = [IO.BinaryReader]::new($this)
 # seek to zero
-$this.Position = 0
+$null = $this.Seek(0, 'begin')
 
 # RIFF should be the first four characters
 $riff = $binaryReader.ReadChars(4) -join ''
@@ -47,7 +47,6 @@ $fileFormatId = $binaryReader.ReadChars(4) -join ''
 
 # Which must be `WAVE`
 if ($fileFormatId -cne 'WAVE') { throw "Not a Wave (incorrect file format id: $fileFormatID)" }
-
 # While we have no reached the end of the stream
 $chunks = @(while ($this.Position -lt $this.Length) {
     # Note the chunk start
@@ -76,7 +75,7 @@ $chunks = @(while ($this.Position -lt $this.Length) {
 })
 
 # Reset our position to zero.
-$this.Position = 0
+$null = $this.Seek('0','Begin')
 # cache the chunks
 $this | Add-Member NoteProperty '#Chunk' $chunks -Force
 # and return the chunks.
