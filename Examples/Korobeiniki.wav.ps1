@@ -72,4 +72,4 @@ $KorobeinikiRandom =
     $KorobeinikiAtTime, $KorobeinikiMultiply, $KorobeinikiDivide | 
         Get-Random
 
-wav volume 0.50 note $KorobeinikiRandom play save ./Korobeiniki.wav
+wav note $KorobeinikiRandom play save ./Korobeiniki.wav
