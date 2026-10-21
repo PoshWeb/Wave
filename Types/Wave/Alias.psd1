@@ -4,12 +4,13 @@
     Sin = 'Tone'
     Sine = 'Tone'
     Saw = 'Sawtooth'
+    SuperSaw = 'SuperSawtooth'
     Tri = 'Triangle'
     Cos = 'Cosine'
     CosSquare = 'CosineSquare'
     CosTriangle = 'CosineTriangle'
     CosSawtooth = 'CosineSawtooth'
-    CosSaw = 'CosineSawtooth'
+    CosSaw = 'CosineSawtooth'    
 
     # Plural property names
     Peaks = 'Peak'
