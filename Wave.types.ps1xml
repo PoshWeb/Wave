@@ -5858,11 +5858,12 @@ return $this
 
     A supersaw is made of multiple sawtooth waves, deviating by small frequencies.
 
-    The number of blades in the saw is called the `-BladeCount`.
+    The number of blades in the saw is called the `-Count`.
     
-    By default it will be 4.
+    By default it will be 8.
 
-    The distance between each blade is the `-BladeLength`, and is measured in semitones.
+    The total `-Distance` between frequencies is measured in semitones, 
+    and spread evenly across all blades.
 
     It defaults to 1/([Math]::PI / 2)
 
@@ -5882,20 +5883,20 @@ param(
 [Alias('Hz')]
 $Frequency = 440,
 
+# The number of blades in the supersaw
+[int]
+$Count = 8,
+
+# The distance between each blade, in semitones.
+# By default, -1/([Math]::PI * 2)
+[double]
+$Distance = -1/([Math]::pi * 2),
+
 # The amount of time to generate.
 [Timespan]$Duration = $(
     if ($this.BPM -is [TimeSpan]) {$this.BPM} 
     else { [TimeSpan]::FromSeconds(60/128) }
 ),
-
-# The number of blades in the supersaw
-[int]
-$BladeCount = 4,
-
-# The distance between each blade, in semitones.
-# By default, 1/([Math]::PI * 2)
-[double]
-$BladeLength = 1/([Math]::pi * 2),
 
 # The volume.
 # If the current wave has set a `volume`, 
@@ -5923,79 +5924,36 @@ $Time,
 )
 )
 
+$Params = [Ordered]@{} + $PSBoundParameters
+
+$frequency = 
+    foreach ($freq in $Frequency) {
+        if ($freq.pstypenames -contains 'MidiNote') {
+            $freq.Frequency
+        } else {
+            $freq -as [double]
+        }
+    }
+
+$stepLength = $distance/$Count
+$frequency =
+    foreach ($freq in $Frequency) {        
+        foreach ($saw in 1..[Math]::Abs($Count)) {
+            $freq * [Math]::Pow(2, ((
+                $stepLength * (
+                    $saw - 1
+                ) * -1.0)/12
+            ))        
+        }
+    }
+
+$params.Remove('Count')
+$params.Remove('Distance')
+$params['Frequency'] = $Frequency
+
 $currentWave = $this
 if (-not $currentWave) { $currentWave = wave }
-
-# Measure our angles
-$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
-
-$angles = foreach ($angle in $angles) {    
-    $distance = 0 
-    foreach ($blade in 1..[Math]::Abs($bladeCount)) {
-        $angle * [Math]::Pow(2, (($Distance * -1.0)/12))
-        $distance += $bladeLength
-    }
-}
-
-# Calculate the number of samples
-$numberOfSamples = [Math]::Round(    
-    $Duration.TotalSeconds * $SampleRate * $channelCount
-)
-
-# Our audio pipeline will consist of two steps:
-
-# 1. A polysaw 
-# 2. An envelope
-
-# Saws peak sharply, so adjust volume accordingly
-$Volume /= 2
-
-# Now let's make our samples
-[double[]]$Samples = @(
-    # in the object pipeline
-
-    # Starting at zero, go up to the number of samples we want
-    # This will be `$t`
-    $t = 0    
-    foreach ($t in 0..($numberOfSamples - 1)) {
-        #region Polysaw
-        # Start it at zero
-        [double]$Sample = 0.0
-        # Each successive angle will have a weighted volume
-        # starting at full volume
-        $angleWeight = 1.0
-        # Take each of our angles and Add it Up
-        foreach ($angle in $angles) {
-            # The sample at this moment is the arc tangent of half the time.
-            $sample += [Math]::atan([Math]::Tan($t/2 * $angle)) * $angleWeight
-            # Then half the weight so the next frequency does not overpower this one.
-            $angleWeight/=2
-        }
-        #endregion Polysaw
-
-        #region Envelope
-        $envelope = 1.0 - ($t / $numberOfSamples)
-        $sample * $Volume * $envelope
-        #endregion Envelope
-    }
-)
-
-# If we have not been provided a time
-if (-not $time) {
-    # add it to the end.
-    $time = $currentWave.Duration
-}
-
-if ($Time) {
-    return $currentWave.Add($samples, $time)
-}
-else {
-    $waveFormat = $currentWave.WaveFormat
-    if (-not $waveFormat) {
-        $waveFormat = @{}
-    }
-    return wave @waveFormat -Samples $Samples
-}
+return &amp; $currentWave.Sawtooth.Script @params
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
