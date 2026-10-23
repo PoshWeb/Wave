@@ -36,12 +36,12 @@ $Frequency = 440,
 
 # The number of squares in the supersquare
 [int]
-$Count = 4,
+$Count = 8,
 
-# The distance between each square, in semitones.
-# By default, 1/([Math]::PI * 2)
+# The distance between the frequency and the last square, in semitones.
+# By default, -1/([Math]::PI * 2)
 [double]
-$Length = 1/([Math]::pi * 2),
+$Distance = -1/([Math]::pi * 2),
 
 # The amount of time to generate.
 [Timespan]$Duration = $(
@@ -86,17 +86,20 @@ $frequency =
         }
     }
 
+$stepLength = $distance/$Count
 $frequency =
-    foreach ($freq in $Frequency) {
-        $distance = 0
+    foreach ($freq in $Frequency) {        
         foreach ($square in 1..[Math]::Abs($Count)) {
-            $freq * [Math]::Pow(2, (($Distance * -1.0)/12))
-            $distance += $Length
+            $freq * [Math]::Pow(2, ((
+                $stepLength * (
+                    $square - 1
+                ) * -1.0)/12
+            ))        
         }
     }
 
 $params.Remove('Count')
-$params.Remove('Length')
+$params.Remove('Distance')
 $params['Frequency'] = $Frequency
 
 $currentWave = $this
