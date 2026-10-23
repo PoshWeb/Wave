@@ -41,7 +41,7 @@ $Count = 4,
 # The distance between each square, in semitones.
 # By default, 1/([Math]::PI * 2)
 [double]
-$Length = 1/([Math]::pi * 6),
+$Length = 1/([Math]::pi * 2),
 
 # The amount of time to generate.
 [Timespan]$Duration = $(
@@ -89,9 +89,9 @@ $frequency =
 $frequency =
     foreach ($freq in $Frequency) {
         $distance = 0
-        foreach ($square in 1..[Math]::Abs($SquareCount)) {
+        foreach ($square in 1..[Math]::Abs($Count)) {
             $freq * [Math]::Pow(2, (($Distance * -1.0)/12))
-            $distance += $SquareLength
+            $distance += $Length
         }
     }
 
