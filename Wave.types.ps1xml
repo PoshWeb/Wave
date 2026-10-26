@@ -4811,15 +4811,15 @@ $Frequency = 440,
     if ($this.Volume) { $this.Volume } else { 1/([Math]::PI * 2) }    
 ),
 
+# The start time.
+$Time,
+
 # The weights for each frequency.
 # If multiple frequencies are played, 
 # each wave will be scaled by the weight.
 # If fewered weights are provided than frequencies, 
 # all remaining frequencies will be half of the previous weight.
 [double[]]$Weights = @(1.0),
-
-# The start time.
-$Time,
 
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
