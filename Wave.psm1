@@ -129,6 +129,9 @@ foreach ($n in 21..108) {
     $VariableName = $midi88Variables[$n - 21]
     $ExecutionContext.SessionState.PSVariable.Set("$VariableName", $nf)    
 }
+
+$waveLinq = [PSCustomObject]@{PSTypeName='WaveLinq'}
+Add-Type -TypeDefinition $waveLinq.TypeDefinition
 #endregion Additional Exports
 
 # All that's left to do is explicitly export just these functions.
