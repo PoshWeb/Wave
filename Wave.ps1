@@ -429,105 +429,21 @@ if (-not $BytesPerSecond) {
 
 # If we have been provided samples, but not PCM data
 if ($samples -and -not $PCM) {
-    # now would be the time to encode it.
-    $sampleNumber = 0
-
-    # Since this may take a bit, let's write progress as we go.
-    $progress = [Ordered]@{
-        Id = Get-Random
-        Status = " "
-        Activity = "Encoding"    
-    }
-
     # We will reassign our PCM data to the encoded samples
-    $ProgressThreshold = 64kb
-    $PCM = @(foreach ($sample in $samples) {
-        #region Encode Sample
-
-        # We _could_ encapsulate the encoding off into it's own procedure.
-
-        # However, callstacks have overhead.
-
-        # Wave samples should only be encoded two places:
-        # here, and in Wave.Type.set_Samples.
-
-        #region Encoding Progress
-        # Progress bars also have overhead, 
-        # and we _really_ don't want to generate a progress bar per sample.
-        # (that would generate more overhead from progress than encoding)
-
-        # So we will only write progress once every 64kb samples
-        # (or about every 1.5 seconds worth of CD quality audio in mono)
-        if (
-            -not ($sampleNumber % $ProgressThreshold) -and 
-            # but we will not write progress if we are only going to do so once.
-            ($samples.Length -gt $ProgressThreshold)
-        ) {
-            # Our status is simply the ratio of progress.
-            $progress.Status = "$sampleNumber / $($Samples.Length)"
-            # Our percentage complete is that ratio times 100.
-            $progress.PercentComplete = ($sampleNumber * 100 / $samples.Length)
-            # Our seconds remaining is the number of remaining seconds to process
-            $progress.SecondsRemaining = (
-                # We can determine this based off of the number of samples left                
-                ($Samples.Length - $sampleNumber) * 
-                    # multiplied by the 1/SampleRate*ChannelCount.
-                    (1 / ($SampleRate * $ChannelCount))
-            )
-            Write-Progress @progress
+    $PCM =
+        if ($audioFormat -eq 1) {
+            switch ($BitsPerSample) {
+                8 {[Wave.WaveLinq]::EncodeByte($samples)}
+                16 {[Wave.WaveLinq]::EncodeInt16($samples)}
+                32 {[Wave.WaveLinq]::EncodeInt32($samples)}
+            }
+        }
+        elseif ($audioFormat -eq 3) {
+            [Wave.WaveLinq]::EncodeFloat($samples)
         }
 
-        # Increment our sample number.
-        $sampleNumber++
-        #endregion Encoding Progress
-
-        # If we are using 32-bit floating point audio
-        if ($BitsPerSample -eq 32 -and $audioFormat -eq 3) {
-            # we are basically done.
-            # No clamping required. # Just cast to float, 
-            [BitConverter]::GetBytes([float]$sample) # get the bytes,
-            continue # and continue 
-        }
-
-        # If we are dealing with whole number audio formats,
-        # We've got to clamp it down to an amplitude between -1 and 1.
-
-        # Unfortunately, `Clamp` is not part of older .NET framework versions
-        # So we will clamp the old-fashioned way, with an `if`
-        if ($sample -gt 1) { $sample = 1 }
-        elseif ($sample -lt -1) { $sample = -1 }
-
-        # If there are 8 bits per sample
-        if ($BitsPerSample -eq 8) {
-            # round each sample into bytes, with 127 as the zero point.
-            [byte][Math]::Floor(
-                127 + $sample * 127
-            )
-        }
-
-        # If there are 16 bits per sample
-        elseif ($BitsPerSample -eq 16) {
-            # we just need to scale an `[int16]`
-            # Hardcode `[int16]::MaxValue` for speed
-            [BitConverter]::GetBytes([int16]($sample * 32767))
-        }
-
-        # If there are 32 bits per sample
-        elseif ($BitsPerSample -eq 32) {
-            # we can just scale to an `[int32]`.
-            # Hardcode `[int32]::MaxValue` for speed
-            [BitConverter]::GetBytes([int32]($sample * 2147483647))
-        }
-        #endregion Encode Sample
-    })
-    $waveStream | 
+    $waveStream |
         Add-Member NoteProperty '#Samples' $Samples -Force
-
-    if ($samples.Length -gt $ProgressThreshold) {
-        $progress.Remove('PercentComplete')
-        $progress.Completed = $true
-        Write-Progress @progress
-    }    
 }
 
 #region Make Wave
