@@ -13,7 +13,7 @@
     CosSaw = 'CosineSawtooth'
     
     # Chords to Strings
-    Chords = 'Strings'
+    Strings = 'Chords'
 
     # Plural property names
     Peaks = 'Peak'
