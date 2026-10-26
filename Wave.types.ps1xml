@@ -8694,7 +8694,7 @@ Duration</Value>
     </Members>
   </Type>
   <Type>
-    <Name>Wave.Linq</Name>
+    <Name>WaveLinq</Name>
     <Members>
       <ScriptMethod>
         <Name>Arithmetic.cs</Name>
