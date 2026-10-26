@@ -69,7 +69,7 @@ $numberOfSamples = [Math]::Round(
 )
 
 # Measure our angles
-$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
+[double[]]$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 
 # Our audio pipeline will consist of three steps:
 
