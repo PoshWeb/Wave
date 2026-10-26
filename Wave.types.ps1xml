@@ -6247,11 +6247,18 @@ $Frequency = 440.0,
 # will use that volume.
 # Otherwise, will default to 0.5
 [double]$Volume = $(
-    if ($this.Volume) { $this.Volume } else { 1/[Math]::PI }
+    if ($this.Volume) { $this.Volume } else { 1/([Math]::PI * 2) }
 ),
 
 # The start time.
 $Time,
+
+# The weights for each frequency.
+# If multiple frequencies are played, 
+# each wave will be scaled by the weight.
+# If fewered weights are provided than frequencies, 
+# all remaining frequencies will be half of the previous weight.
+[double[]]$Weights = @(1.0),
 
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
@@ -6283,38 +6290,31 @@ $numberOfSamples = [Math]::Round(
 )
 
 # Measure our angles
-$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
+[double[]]$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 
-# Our wave will consist of two steps:
+# Our wave will consist of three steps:
 
 # 1. A polysine
 # 2. An envelope
+# 3. A Volume scale
 
 # Now let's make our samples
-[double[]]$Samples = @(
-    # Start $t at zero
-    foreach ($t in 0..($numberOfSamples - 1)) {
-        
-        #region Polysine
-        [double]$Sample = 0.0
-        # Each successive angle will have a weighted volume
-        # starting at full volume
-        $angleWeight = 1.0
-        # Take each of our angles and Add it Up
-        foreach ($angle in $angles) {
-            # Get the sine of the times and multiply by the weight.
-            $Sample += [Math]::Sin($angle * $t) * $angleWeight
-            # Then half the weight               
-            $angleWeight/=2
-        }
-        #endregion Polysine
-        
-        #region Envelope
-        # Output the sum of all samples
-        $envelope = 1.0 - ($t / $numberOfSamples)
-        $sample * $Volume * $envelope    
-        #endregion Envelope
-    }    
+[double[]]$Samples = @(    
+    # Scale our wave.
+    [Wave.WaveLinq]::Multiply(
+        # Multiply our wave by our our envelope
+        [Wave.WaveLinq]::Multiply(
+            [Wave.WaveLinq]::SineWave(
+                [double[]](0..($numberOfSamples - 1)),
+                $angles,
+                $Weights
+            ),
+            # (which is a fade out over the number of samples)
+            [Wave.WaveLinq]::FadeOut($numberOfSamples)
+        ),
+        # Then scale by our volume
+        [double[]]@($volume)
+    )   
 )
 
 # If we have a time
