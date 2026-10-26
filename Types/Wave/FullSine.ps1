@@ -38,6 +38,13 @@ $Frequency = 440,
 # The start time.
 $Time,
 
+# The weights for each frequency.
+# If multiple frequencies are played, 
+# each wave will be scaled by the weight.
+# If fewered weights are provided than frequencies, 
+# all remaining frequencies will be half of the previous weight.
+[double[]]$Weights = @(1.0),
+
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
 # If there is no `$this` wave, will default to 44100
@@ -61,27 +68,21 @@ $numberOfSamples = [Math]::Round(
     $Duration.TotalSeconds * $SampleRate * $channelCount
 )
 
-$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
+[double[]]$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 
 $waveFormat = $wave.WaveFormat
 
 [double[]]$Samples =@(
-    foreach ($t in 0..($numberOfSamples - 1)) {
-        #region Polysine
-        [double]$Sample = 0.0
-        # Each successive angle will have a weighted volume
-        # starting at full volume
-        $angleWeight = 1.0
-        # Take each of our angles and Add it Up
-        foreach ($angle in $angles) {
-            # Get the sine of the times and multiply by the weight.
-            $Sample += [Math]::Sin($angle * $t) * $angleWeight
-            # Then half the weight               
-            $angleWeight/=2
-        }
-        $sample * $volume
-        #endregion Polysine
-    }        
+    # Scale our full sine wave by the volume
+    # (because we want to be kind to our eardrums and speakers)
+    [Wave.WaveLinq]::Multiply(
+        [Wave.WaveLinq]::SineWave(
+            [double[]](0..($numberOfSamples - 1)),
+            $angles,
+            $Weights
+        ),        
+        [double[]]@($volume)
+    )            
 )
 
 # If we have not been provided a time
