@@ -396,12 +396,24 @@ return $sharpen
         <ReferencedMemberName>Square</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
+        <Name>□⭘</Name>
+        <ReferencedMemberName>SquareCircle</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
         <Name>△</Name>
         <ReferencedMemberName>Triangle</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
         <Name>◭</Name>
         <ReferencedMemberName>Sawtooth</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>⭘</Name>
+        <ReferencedMemberName>Tone</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>⭘□</Name>
+        <ReferencedMemberName>CircleSquare</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
         <Name>🪚</Name>
@@ -418,6 +430,10 @@ return $sharpen
       <AliasProperty>
         <Name>Channels</Name>
         <ReferencedMemberName>ChannelCount</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>Chords</Name>
+        <ReferencedMemberName>Strings</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
         <Name>Cos</Name>
@@ -452,6 +468,10 @@ return $sharpen
         <ReferencedMemberName>MaximumVolume</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
+        <Name>n</Name>
+        <ReferencedMemberName>Note</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
         <Name>NyquistFrequency</Name>
         <ReferencedMemberName>FoldingFrequency</ReferencedMemberName>
       </AliasProperty>
@@ -474,6 +494,10 @@ return $sharpen
       <AliasProperty>
         <Name>Rev</Name>
         <ReferencedMemberName>ReverseMelody</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>s</Name>
+        <ReferencedMemberName>Sound</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
         <Name>Saw</Name>
