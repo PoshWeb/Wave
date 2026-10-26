@@ -27,7 +27,7 @@ foreach ($method in 'Add','Subtract','Multiply', 'Divide') {
     /// ${method}s two sets of numbers and returns the result.
     /// </summary>
     /// <param name='numbers'>The first set of numbers</param>
-    /// <param name='b'>The second of numbers</param>
+    /// <param name='operand'>The second of numbers</param>
     /// <returns>The $method of each number.</returns>    
     /// </exception>
     public static IEnumerable<double> $method (
