@@ -8748,6 +8748,37 @@ foreach ($method in 'Add','Subtract','Multiply', 'Divide') {
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
+        <Name>Envelope.cs</Name>
+        <Script>
+                        @"
+    public static IEnumerable&lt;double&gt; FadeIn (
+        this int Length
+    ) {
+        if (Length == 0) { yield break; }
+        double absLength = Math.Abs(Length);
+        for (double n = 0; n &lt; absLength; n++) {
+            yield return (
+                (n / absLength)
+            );
+        }
+        yield break;
+    }
+
+    public static IEnumerable&lt;double&gt; FadeOut (
+        this int Length
+    ) {
+        if (Length == 0) { yield break; }
+        double absLength = Math.Abs(Length);
+        for (double n = 0; n &lt; absLength; n++) {
+            double fade = (1.0 - (n / absLength));            
+            yield return fade;
+        }
+        yield break;
+    }    
+"@
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
         <Name>Trigonometry.cs</Name>
         <Script>
                         &lt;#
