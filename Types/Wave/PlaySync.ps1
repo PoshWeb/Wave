@@ -4,7 +4,9 @@
 .DESCRIPTION
     Plays a Wave file and waits for the play to complete.
 .NOTES
-    On MacOS and Linux, uses `speaker-test` to play.
+    On Linux, uses `aplay` to play.
+
+    On MacOS, used 'afplay' to play.
 
     On Windows, uses `[Media.SoundPlayer]`
 .LINK
@@ -12,6 +14,7 @@
 .LINK
     https://linux.die.net/man/1/speaker-test
 #>
+[OutputType('Wave')]
 param()
 
 $currentWave = $this
@@ -42,7 +45,9 @@ if ($IsLinux) {
     if (-not ('Media.SoundPlayer' -as [type])) {
         Add-Type -AssemblyName System.Windows.Extensions
     }    
+    $null = $currentWave.Seek('0', 'begin')
     $soundPlayer = [Media.SoundPlayer]::new($currentWave)
-    $currentWave.Position = 0
-    $soundPlayer.PlaySync()    
+    $soundPlayer.PlaySync()
 }
+
+return $this
