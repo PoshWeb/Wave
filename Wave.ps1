@@ -90,7 +90,7 @@
     # Let's hear cafe with a triangle tone
     wave note cafe sound '<triangle>'    
 #>
-[Alias('wav', '.wav','〜','🌊', '👋', '🎵', '🎶', '🎼')]
+[Alias('wav', '.wav','〜','🌊', '🎵', '🎶', '🎼')]
 [CmdletBinding(PositionalBinding=$false)]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
     'PSAvoidAssignmentToAutomaticVariable', '', Justification='We need $this to work'
