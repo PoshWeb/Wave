@@ -8,7 +8,7 @@
 #>
 
 $ClassDefinition = @(    
-    $methods = 'Trigonometry', 'Arithmetic', 'Envelope', 'WaveForm' -replace '$','.cs'
+    $methods = 'Arithmetic', 'Trigonometry', 'Encode', 'Decode', 'Envelope', 'WaveForm' -replace '$','.cs'
     foreach ($method in $methods) {
         if (-not $this.$method) { continue }
         "#region $($method -replace '\.cs$')"
