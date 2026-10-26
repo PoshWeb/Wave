@@ -432,10 +432,6 @@ return $sharpen
         <ReferencedMemberName>ChannelCount</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
-        <Name>Chords</Name>
-        <ReferencedMemberName>Strings</ReferencedMemberName>
-      </AliasProperty>
-      <AliasProperty>
         <Name>Cos</Name>
         <ReferencedMemberName>Cosine</ReferencedMemberName>
       </AliasProperty>
@@ -510,6 +506,10 @@ return $sharpen
       <AliasProperty>
         <Name>Sine</Name>
         <ReferencedMemberName>Tone</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
+        <Name>Strings</Name>
+        <ReferencedMemberName>Chords</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
         <Name>SuperSaw</Name>
