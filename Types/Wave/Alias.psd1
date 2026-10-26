@@ -10,7 +10,10 @@
     CosSquare = 'CosineSquare'
     CosTriangle = 'CosineTriangle'
     CosSawtooth = 'CosineSawtooth'
-    CosSaw = 'CosineSawtooth'    
+    CosSaw = 'CosineSawtooth'
+    
+    # Chords to Strings
+    Chords = 'Strings'
 
     # Plural property names
     Peaks = 'Peak'
@@ -18,13 +21,20 @@
     PeaksTroughs = 'PeakTrough'
     PeaksAndTroughs = 'PeakTrough'
 
+    # Strudel Compatible Short Forms
+    n = 'Note'
+    s = 'Sound'
+
     Invert = 'Negate'
     InvertPolarity = 'Negate'
     Antinoise = 'Negate'
 
     # Pictographic Aliases
     '〜' = 'Tone'
+    '⭘' = 'Tone'
     '□' = 'Square'
+    '□⭘' = 'SquareCircle'
+    '⭘□' = 'CircleSquare'
     '△' = 'Triangle'
     '◭' = 'Sawtooth'
     '🪚' = 'Sawtooth'
