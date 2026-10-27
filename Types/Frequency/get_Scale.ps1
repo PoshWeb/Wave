@@ -116,5 +116,16 @@ $scaleTable["AugmentedDescending"] = $scaleTable["Augmented"].Clone()
 $scaleTable["AugmentedDescending"].Reverse()
 #endregion Symmetric Scales
 
+# Because our descending scales are just the reverse of the originals right now,
+# they start at the top note of each scale.
+# Need to drop all descending scales down an octave to start on current note
+foreach ($scale in $scaleTable.Keys) {
+	if ($scale -match "Descending$") {
+		foreach ($i in (1..$scaleTable[$scale].Count)) {
+			$scaleTable[$scale][($i - 1)] = $scaleTable[$scale][($i - 1)].Flatten(12)
+		}
+	}
+}
+
 $this | Add-Member NoteProperty '#Scale' $scaleTable -Force
 return $scaleTable
