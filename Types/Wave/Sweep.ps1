@@ -9,7 +9,7 @@ param(
 # The frequency.
 # If no frequency is provided, it will be 440hz (A4)
 [Alias('Hz')]
-$Frequency = 0,
+$Frequency,
 
 # The distance to sweep, in semitones  
 [double]
@@ -76,14 +76,16 @@ $numberOfSamples = [Math]::Round($Duration.TotalSeconds * $SampleRate * $channel
         $angles = @(
             $angleNumber = 0 
             foreach ($angle in $fromAngles) {
-                $toAngle = $toAngles[$angleNumber]                
+                $toAngle = $toAngles[$angleNumber]
                 if ($StepCount) {
                     $stepSize = ($angle - $toAngle)/$StepCount
                     $angle + ($stepSize * [Math]::Floor($ft * $StepCount))
-                } else {                    
-                    $angle + ($angle - $toAngle) * $ft
+                } else {
+                    $moment = $angle + ($angle - $toAngle) * $ft
+                    if ($moment -lt 0) { $moment = 0 }
+                    $moment
                 }
-                $angleNumber
+                $angleNumber++
             }
         )
 
