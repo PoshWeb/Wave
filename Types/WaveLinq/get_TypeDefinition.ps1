@@ -8,7 +8,15 @@
 #>
 
 $ClassDefinition = @(    
-    $methods = 'Arithmetic', 'Trigonometry', 'Encode', 'Decode', 'Envelope', 'WaveForm' -replace '$','.cs'
+    $methods = 'Arithmetic', 
+        'Trigonometry', 
+        'Encode', 
+        'Decode', 
+        'Envelope', 
+        'Vector', 
+        'Frequency', 
+        'WaveForm' -replace '$','.cs'
+        
     foreach ($method in $methods) {
         if (-not $this.$method) { continue }
         "#region $($method -replace '\.cs$')"
@@ -20,10 +28,11 @@ $ClassDefinition = @(
 @"
 namespace Wave {
 
-    using System;
+    using System;    
     using System.Collections;
     using System.Collections.Generic;
     using System.Management.Automation;
+    using System.Numerics;
 
     public static class WaveLinq$(
         if ($DebugPreference -notin 'ignore', 'silentlyContinue') {
