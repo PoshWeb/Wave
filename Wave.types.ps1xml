@@ -8887,6 +8887,64 @@ foreach ($method in 'Asin', 'Acos', 'Atan', 'Sin', 'Cos', 'Tan') {
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
+        <Name>Vector.cs</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Wave Linq Vectoring
+.DESCRIPTION
+    Generates Wave Linq Vector methods.
+
+    These provide fast vector operations on a large number of samples.
+.NOTES
+    
+#&gt;
+
+param()
+
+$Vectors = @{
+    2 = 'Vector2 vector = new Vector2((float)c, (float)(sample - lastSample));'
+    3 = '
+            double length = Math.Sqrt(
+                (delta * delta) + 1
+            );
+
+            double direction = length/Math.Abs(length);
+            
+            Vector3 vector = new Vector3(
+                (float)c,
+                (float)delta,
+                (float)(length * direction)
+            );
+    '
+}
+
+
+foreach ($d in 2,3) {
+@"    
+    public static IEnumerable&lt;Vector$d&gt; ToVector$d(
+        this IEnumerable&lt;double&gt; samples
+    ) {
+        double lastSample = 0;
+        double c = 0;
+        foreach (double sample in samples) {
+            double delta = sample - lastSample;
+            $($Vectors[$d])
+            c++;
+            lastSample = sample;
+            yield return vector;
+        }
+
+        yield break;
+    }
+"@
+
+}
+
+return
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
         <Name>WaveForm.cs</Name>
         <Script>
                         &lt;#
@@ -8904,6 +8962,43 @@ foreach ($method in 'Asin', 'Acos', 'Atan', 'Sin', 'Cos', 'Tan') {
     * `IEnumerable&lt;double&gt; frequency`
     * `double[]` weight
 #&gt;
+
+param()
+
+@"
+    /// &lt;summary&gt;
+    /// Sweep generator.  At a small enough timeframe, everything is a sweep.
+    /// &lt;/summary&gt;
+    /// &lt;param name='frequency'&gt;
+    /// A sequence of double[] representing the frequencies to sweep
+    /// Each frequency is a single sample, or the Sin of the time.
+    /// &lt;/param&gt;
+    /// &lt;param name='phase'&gt;
+    /// The offset from a pure sine wave.    
+    /// &lt;/param&gt;
+    /// &lt;returns&gt;
+    /// An `IEnumerable&lt;double&gt;` of samples.
+    /// This is the raw unattenuated waveform.
+    /// &lt;/returns&gt;
+    /// &lt;/exception&gt;
+    public static IEnumerable&lt;double&gt; SweepWave (
+        IEnumerable&lt;double&gt; frequency,
+        double phase = 0
+    ) {
+        double c = phase;
+        // For each sample we want to generate
+        foreach (double freq in frequency) {            
+            // Yield our sample, letting iteration continue.        
+            yield return Math.Sin(c * freq);
+            c++;
+        }
+        
+        // When we have reached the end of our time
+        // take a break.
+        yield break;
+    }
+"@
+
 $waveForms = [Ordered]@{    
     "SineWave" = "Math.Sin(t * freq) * w"
     "CosineWave" = "Math.Cos(t * freq) * w"
@@ -8921,7 +9016,7 @@ else if (sine &lt; 0) {
 }
 "
     "SquareWave" = "
-double sine = Math.Sin(t * freq);        
+double sine = Math.Sin(t * freq);
 if (sine &gt; 0) {
     sample += 1.0 * w;
 }
@@ -8930,7 +9025,7 @@ else if (sine &lt; 0) {
 }
 "
     "CircleSquareWave" = "
-double sine = Math.Sin(t * freq);        
+double sine = Math.Sin(t * freq);
 if (sine &gt; 0) {
     sample += sine * w;
 }
@@ -8948,7 +9043,7 @@ else if (sine &lt; 0) {
 }
 "
     "TriangleCircleWave" = "
-double sine = Math.Sin(t * freq);        
+double sine = Math.Sin(t * freq);
 if (sine &gt; 0) {
     sample += Math.Asin(sine) * w;
 }
@@ -8957,7 +9052,7 @@ else if (sine &lt; 0) {
 }
 "
     "CircleTriangleWave" = "
-double sine = Math.Sin(t * freq);        
+double sine = Math.Sin(t * freq);
 if (sine &gt; 0) {
     sample += sine * w;
 }
