@@ -8787,6 +8787,78 @@ foreach ($encoder in $encoders.Keys) {
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
+        <Name>Frequency.cs</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Frequency Methods
+.DESCRIPTION
+    Generates Frequency Methods.
+    
+    We transform frequencies often in fairly predictable ways.
+
+    This generates the WaveLinq methods for common frequency operations, including:
+
+    * `ToCycle`
+    * `FromCycle`
+    * `ToMidi`
+    * `FromMidi`
+    * `Sharpen`
+    * `Flatten`    
+#&gt;
+
+$Conversions = [Ordered]@{
+    'ToMidi' = '69.0 + 12.0 * Math.Log(frequency / 440.0, 2)'
+    'FromMidi' = '440.0 * Math.Pow(2, (frequency - 69.0) / 12 )'
+}
+
+$Movements = [Ordered]@{
+    'Sharpen' = 'frequency / Math.Pow(2, (distance * -1.0) / 12)'
+    'Flatten' = 'frequency * Math.Pow(2, (distance * -1.0) / 12)'
+}
+
+foreach ($conversion in $conversions.Keys) {
+@"
+        public static IEnumerable&lt;double&gt; $($conversion)(this IEnumerable&lt;double&gt; frequencies) {
+            foreach (double frequency in frequencies) {
+                yield return $($conversions[$conversion]);
+            }
+        }
+"@
+}
+
+foreach ($movement in $movements.Keys) {
+@"
+        public static IEnumerable&lt;double&gt; $($movement)(this IEnumerable&lt;double&gt; frequencies, IEnumerable&lt;double&gt; distances) {
+            foreach (double frequency in frequencies) {
+                foreach (double distance in distances) {
+                    yield return $($movements[$movement]);
+                }
+            }
+        }
+"@
+}
+
+@"
+        public static IEnumerable&lt;double&gt; ToCycle(this IEnumerable&lt;double&gt; frequencies, IEnumerable&lt;double&gt; cycles) {
+            foreach (double frequency in frequencies) {
+                foreach (double cycle in cycles) {
+                    yield return (Math.PI * 2 * frequency / cycle);
+                }
+            }
+        }
+
+        public static IEnumerable&lt;double&gt; FromCycle(this IEnumerable&lt;double&gt; frequencies, IEnumerable&lt;double&gt; cycles) {
+            foreach (double frequency in frequencies) {
+                foreach (double cycle in cycles) {
+                    yield return (frequency * cycle) / (Math.PI * 2);
+                }
+            }
+        }
+"@
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
         <Name>Trigonometry.cs</Name>
         <Script>
                         &lt;#
@@ -8989,7 +9061,15 @@ $methods -join ([Environment]::NewLine * 2)
 #&gt;
 
 $ClassDefinition = @(    
-    $methods = 'Arithmetic', 'Trigonometry', 'Encode', 'Decode', 'Envelope', 'WaveForm' -replace '$','.cs'
+    $methods = 'Arithmetic', 
+        'Trigonometry', 
+        'Encode', 
+        'Decode', 
+        'Envelope', 
+        'Vector', 
+        'Frequency', 
+        'WaveForm' -replace '$','.cs'
+        
     foreach ($method in $methods) {
         if (-not $this.$method) { continue }
         "#region $($method -replace '\.cs$')"
@@ -9001,10 +9081,11 @@ $ClassDefinition = @(
 @"
 namespace Wave {
 
-    using System;
+    using System;    
     using System.Collections;
     using System.Collections.Generic;
     using System.Management.Automation;
+    using System.Numerics;
 
     public static class WaveLinq$(
         if ($DebugPreference -notin 'ignore', 'silentlyContinue') {
