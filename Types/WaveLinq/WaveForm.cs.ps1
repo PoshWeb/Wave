@@ -13,6 +13,43 @@
     * `IEnumerable<double> frequency`
     * `double[]` weight
 #>
+
+param()
+
+@"
+    /// <summary>
+    /// Sweep generator.  At a small enough timeframe, everything is a sweep.
+    /// </summary>
+    /// <param name='frequency'>
+    /// A sequence of double[] representing the frequencies to sweep
+    /// Each frequency is a single sample, or the Sin of the time.
+    /// </param>
+    /// <param name='phase'>
+    /// The offset from a pure sine wave.    
+    /// </param>
+    /// <returns>
+    /// An `IEnumerable<double>` of samples.
+    /// This is the raw unattenuated waveform.
+    /// </returns>
+    /// </exception>
+    public static IEnumerable<double> SweepWave (
+        IEnumerable<double> frequency,
+        double phase = 0
+    ) {
+        double c = phase;
+        // For each sample we want to generate
+        foreach (double freq in frequency) {            
+            // Yield our sample, letting iteration continue.        
+            yield return Math.Sin(c * freq);
+            c++;
+        }
+        
+        // When we have reached the end of our time
+        // take a break.
+        yield break;
+    }
+"@
+
 $waveForms = [Ordered]@{    
     "SineWave" = "Math.Sin(t * freq) * w"
     "CosineWave" = "Math.Cos(t * freq) * w"
@@ -30,7 +67,7 @@ else if (sine < 0) {
 }
 "
     "SquareWave" = "
-double sine = Math.Sin(t * freq);        
+double sine = Math.Sin(t * freq);
 if (sine > 0) {
     sample += 1.0 * w;
 }
@@ -39,7 +76,7 @@ else if (sine < 0) {
 }
 "
     "CircleSquareWave" = "
-double sine = Math.Sin(t * freq);        
+double sine = Math.Sin(t * freq);
 if (sine > 0) {
     sample += sine * w;
 }
@@ -57,7 +94,7 @@ else if (sine < 0) {
 }
 "
     "TriangleCircleWave" = "
-double sine = Math.Sin(t * freq);        
+double sine = Math.Sin(t * freq);
 if (sine > 0) {
     sample += Math.Asin(sine) * w;
 }
@@ -66,7 +103,7 @@ else if (sine < 0) {
 }
 "
     "CircleTriangleWave" = "
-double sine = Math.Sin(t * freq);        
+double sine = Math.Sin(t * freq);
 if (sine > 0) {
     sample += sine * w;
 }
