@@ -16,13 +16,7 @@
 
     Providing null or zero arguments will set the weight to one.
 #>
-
-
-[double[]]$weights = @(foreach ($arg in $args) {
-    if ($arg -as [double]) {
-        $arg -as [double]
-    }
-})
+param([double[]]$Weights)
 
 if ($weights) {
     $this | Add-Member NoteProperty '#Weights' $weights -Force
