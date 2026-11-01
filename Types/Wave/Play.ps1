@@ -24,11 +24,25 @@ if ($IsLinux) {
     $aplay = 
         $ExecutionContext.SessionState.InvokeCommand.GetCommand('aplay','Application')
     if ($aplay) {
+        # aplay will write to the terminal, and we do not want to see it's output.        
         $filePath = $currentWave.Save().FullName
-        $null = Start-ThreadJob -ScriptBlock {
-            param([string]$FilePath)
-            aplay $FilePath
-        } -Name $file.Name -ArgumentList $file.FullName -ThrottleLimit 1kb        
+        
+        # So we will launch it in a background command
+        $psCmd = [PowerShell]::Create().AddCommand('aplay').AddArgument($filePath)
+        # Why not a thread job?  More overhead and higher liklihood of underpowered devices.
+
+        # To make things consistently quick, we want a runspace pool
+        if (-not $global:PlayPool -or 
+            $global:PlayPool.RunspacePoolStateInfo.State -ne 'Opened'
+        ) {
+            $global:PlayPool = [runspacefactory]::CreateRunspacePool()            
+            $global:PlayPool.Open()
+        }
+        $psCmd.RunspacePool = $PlayPool
+
+        $null = $psCmd.InvokeAsync()
+        <#$aPlayProcess = 
+            Start-Process -FilePath aplay -ArgumentList "$filePath" -RedirectStandardOutput /dev/null#>
     } else {
         Write-Warning "aplay not found, cannot play sound on Linux"        
     }
@@ -37,6 +51,7 @@ if ($IsLinux) {
         $ExecutionContext.SessionState.InvokeCommand.GetCommand('afplay','Application')
     if ($afplay) {
         $file = $currentWave.Save()
+        
         $null = Start-ThreadJob -ScriptBlock {
             param([string]$FilePath)
             afplay $FilePath
