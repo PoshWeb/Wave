@@ -641,11 +641,11 @@ $melody = for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex+
         # To assist transcription,
         if ($match.State.Frequency) {
             # Decorate the frequency
-            if ($match.State.Frequency.pstypeanes -notcontains 'Frequency') {
+            if ($match.State.Frequency.pstypenames -notcontains 'Frequency') {
                 $match.State.Frequency.pstypenames.add('Frequency')
             }
             # and find the closest note and attach it to our state
-            $match.State.ClosestNote = $currentWave.State.Frequency.Letter
+            $match.State.ClosestNote = $match.State.Frequency.Letter
             if (-not $match.State.Volume) {
                 $match.State.Volume = $baseVolume
             }
@@ -692,5 +692,3 @@ $null = [Runspace]::DefaultRunspace.Events.GenerateEvent(
 $currentWave.Melody = $melody
 return $currentWave.Sound()
 #endregion Output
-
-return
