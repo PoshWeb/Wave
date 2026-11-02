@@ -194,10 +194,6 @@
     Range = [Regex]::New('\.\.')
 
     Combine = [Regex]::New(',')
-    Decimal = [Regex]::new(
-    '
--?[\d\.]+(?:E[\+\-]\d+)?
-    ', 'IgnoreCase')
-
-    
+    # Simple decimal match.
+    Decimal = [Regex]::new('-?\d+(?:\.\d+)?', 'IgnoreCase')
 }
