@@ -108,6 +108,8 @@ $noteSequence = @(foreach ($note in $Melody) {
     $noteTable
 })
 
+$NewMelody = @()
+
 # We go over each note in the sequence,
 [byte[]]$wavaData = @(for ($index = 0; $index -lt $NoteSequence.Length; $index++) {
     $note = $NoteSequence[$index]
@@ -181,20 +183,9 @@ $noteSequence = @(foreach ($note in $Melody) {
                 A frequency can be played on any number of "chords"
 
                 We can think of each vibration within a sound as a literal string, 
-                vibrating at a frequency.  
-                
-                That's what a lot of "real" music actually is.
+                vibrating at a frequency.
 
-                Each string is a harmonic vibration.
-
-                chords can be present on the note or on this wave.
-
-                If chords is a positive number, each string will vibrate at half the frequency.
-
-                If chords is a negative number, each string will vibrate at twice the frequency.
-
-                If chords can be a list of `[double[]]`, 
-                each frequency will be generated at that ratio.
+                Each chord is a ratio to the original frequency.
 
                 #>
                 
@@ -210,45 +201,14 @@ $noteSequence = @(foreach ($note in $Melody) {
                     }
 
                 # If no chords are defined,
-                if (-not $chords) { 
+                if (-not ($chords -as [double[]])) { 
                     # we are simply playing this frequency
                     $frequency
                     continue
-                }
-                # Set the number of chords on the note itself
-                # this will influence how the note is cached.
-                $note.chords = $chords
-
-                # If the chords is an integer, it's a multiple 
-                if ($chords -is [int]) {
-                    # If the number of chords is positive
-                    if ($chords -ge 1) {
-                        # we are generating that number of frequencies
-                        foreach ($noteChord in 1..$chords) {
-                            # Each string is half of the previous
-                            # so we will divide by powers of two
-                            $frequency / [Math]::Pow(2, ($noteChord - 1))
-                        }
-                    }
-                    # If the number of chords is negative 
-                    elseif ($chords -le 1) {
-                        # we are generating the absolute value of that number of frequencies
-                        # Each frequency is double the previous                        
-                        foreach ($noteChord in 1..([Math]::Abs($chords))) {
-                            # So we will multiply by powers of two.
-                            $frequency * [Math]::Pow(2, ($noteChord - 1))
-                        }
-                    }
-                    else {
-                        # If the number of chords is zero,
-                        # we obviously must be generating silence.
-                        0
-                    }
-                }
-                elseif (
-                    # If the chords is a series of doubles
-                    $chords -as [double[]]
-                ) {
+                } else {
+                    # Set the number of chords on the note itself
+                    # this will influence how the note is cached.
+                    $note.chords = $chords
                     # emit the original frequency
                     $frequency                    
                     foreach ($noteChord in ($chords -as [double[]])) {
@@ -262,7 +222,12 @@ $noteSequence = @(foreach ($note in $Melody) {
         # Now that our instruments are natively polyphonic
         # we can just pass our list of frequencies
         $note = [Ordered]@{} + $noteSequence[$index]
-        $note.Frequency = $frequencyList            
+        $note.Frequency = $frequencyList
+        if (-not $note.Weights) {
+            $note.Weights = $currentWave.Weights
+        }
+        
+        $NewMelody += @([Ordered]@{} + $note)
 
         # Collect our instrument parameters
         $instrumentParameters = [Ordered]@{}
@@ -365,6 +330,8 @@ $progress.Completed = $true
 Write-Progress @progress
 
 $newWave = wave @waveSplat -PCM $wavaData
-$newWave.Melody = $currentWave.Melody
+$newWave.Melody = $NewMelody
 $NewWave.Instrument = $Instruments
+$NewWave.Chords =  $currentWave.Chords
+$NewWave.Weights =  $currentWave.Weights
 return $newWave
