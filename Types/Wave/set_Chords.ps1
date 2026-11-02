@@ -1,42 +1,52 @@
 <#
 .SYNOPSIS
-    Sets the chords in a wave
+    Sets the chords in a Wave.
 .DESCRIPTION
-    Sets any custom chords applied to a wave.
+    Sets any custom chords applied to a wave.    
 
     A frequency can be played on any number of "chords"
 
     We can think of each vibration within a sound as a literal string, 
-    vibrating at a frequency.  
-    
-    That's what a lot of "real" music actually is.
+    vibrating at a frequency.
 
-    Each string is a harmonic vibration.
+    Each chord is a ratio to the original frequency.
+.NOTES
+    Chords are an incredibly flexible way to change the sounds we generate.
 
-    Chords can be present on the note or on the wave.
+    Most instruments play more than one frequency at a time,
+    and all stringed instruments are effectively a collection of 
+    [Monochords](https://en.wikipedia.org/wiki/Monochord).
 
-    If chords is a positive number, each string will vibrate at half the frequency.
+    Chords allow us to digitally simulate this effect.
 
-    If chords is a negative number, each string will vibrate at twice the frequency.
+    Each Chord is a multiple of the original frequency.
 
-    If chords can be a list of `[double[]]`, 
-    each frequency will be generated at that ratio.
+    Each Chord can also have a weight attached.
+.EXAMPLE
+    # Play every note with one lower octave
+    wave chords 0.5 note cafe play
+.EXAMPLE
+    # Play every note with one highter octave
+    wave chords 2 note cafe play
+.EXAMPLE
+    # Play every note with one highter and lower octave
+    wave chords 2,0.5 note cafe play
+.EXAMPLE
+    # Play every note with two highter and two lower octaves
+    wave chords 4,2,0.5,0.25 note cafe play
+.EXAMPLE
+    # Play every note with two lower octaves and two higher octaves
+    wave chords 0.25,0.5,2,4 note cafe play
+.EXAMPLE
+    # Play every note with a minor deviation, creating an ethereal echo.
+    wave chords 0.99,1.01 note cafe play
+.LINK
+    https://en.wikipedia.org/wiki/Monochord
 #>
+param([double[]]$chords)
 
-if ($args.Length -eq 1 -and $args[0] -as [int]) {
-    $this | Add-Member NoteProperty '#chords' ($args[0] -as [int]) -Force
-} else {
-    # If we have a variable number of non-integer chords
-    # unroll our list of arguments
-    $unrollArgs = $args | . { process { $_ } }    
-    # and pick out any items that are nonzero `[double]`
-    $doublechords = foreach ($arg in $unrollArgs) {
-        if ($null -ne ($arg -as [double])) {
-            $arg -as [double]
-        }
-    }
-    # these are each of the chords.    
-    $this | Add-Member NoteProperty '#chords' $doublechords -Force
-}
+# these are each of the chords.    
+$this | Add-Member NoteProperty '#chords' $chords -Force
+
 
 
