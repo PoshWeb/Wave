@@ -36,11 +36,9 @@ if ($gain -lt 0) {
     $gain = 1/[Math]::Abs($Gain)
 }
 
-# Apply the gain
-[double[]]$Gained = for ($index = 0 ; $index -lt $samples.Length; $index++) {
-    $samples[$index] * $gain
-}
-
 $waveFormat = $this.WaveFormat
-wave @waveFormat -Samples $Gained
+wave @waveFormat -Samples (
+    # Apply the gain
+    [Wave.WaveLinq]::Multiply($samples, [double[]]$gain)
+) 
 
