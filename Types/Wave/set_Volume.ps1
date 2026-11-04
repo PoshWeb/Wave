@@ -1,12 +1,13 @@
 <#
 .SYNOPSIS
-    Sets BPM
+    Sets Volume
 .DESCRIPTION
-    Sets a common BPM used by the wave.
+    Sets a common volume used to generate the wave.
 #>
 param(
-[float]
-$Volume = 0.5
+# The volume
+[double]
+$Volume = (1/([Math]::PI * 2))
 )
 
 $this | 
