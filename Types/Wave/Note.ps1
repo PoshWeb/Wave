@@ -380,8 +380,13 @@ filter switchState {
             }
         }
         '^Range$' {
-            $previous = $state.MatchNumber | lookBehind | select -First 1
-            $next = $state.MatchNumber | lookAhead | select -First 1
+
+            $previous = 
+                $state.MatchNumber | lookBehind | Select-Object -First 1
+
+            $next =
+                $state.MatchNumber | lookAhead | Select-Object -First 1
+
             $current = $state
             if (-not $next.Frequency) {
                 $next | . switchState
@@ -689,6 +694,6 @@ $null = [Runspace]::DefaultRunspace.Events.GenerateEvent(
     }
 )
 
-$currentWave.Melody = $melody
+$currentWave.Melody += $melody
 return $currentWave.Sound()
 #endregion Output
