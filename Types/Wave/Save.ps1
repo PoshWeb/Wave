@@ -24,6 +24,10 @@ $getUnresolvedPath =
 
 # Loop over all unresolved paths
 foreach ($unresolvedPath in $getUnresolvedPath.Invoke($path)) {
+    # Ensure we are saving as a .wav file.
+    if ($unresolvedPath -notmatch '\.wav$') {
+        $unresolvedPath = "$unresolvedPath.wav"
+    }
     # and create a file if they do not already exist
     $file = if (-not [IO.File]::Exists($unresolvedPath)) {
         New-Item -ItemType File -Path $unresolvedPath -Force
