@@ -225,9 +225,16 @@ $NewMelody = @()
         $note.Frequency = $frequencyList
         if (-not $note.Weights) {
             $note.Weights = $currentWave.Weights
-        }
+        }        
+        $note['Instrument'] = $Instrument
         
-        $NewMelody += @([Ordered]@{} + $note)
+        $NewMelody += @(
+            [PSCustomObject]([Ordered]@{PSTypeName='Note'} + $note)
+        )
+
+        foreach ($frequency in $NewMelody[-1].Frequency) {
+            $frequency.pstypenames.add('Frequency')
+        }
 
         # Collect our instrument parameters
         $instrumentParameters = [Ordered]@{}
@@ -243,11 +250,9 @@ $NewMelody = @()
         $noteSequence[$index].Remove('MatchNumber')
         $cacheKey = @($note | waveID) -join ' '
 
-        $noteData = [Ordered]@{} + $noteSequence[$index] + @{
-            # played with the current instrument
-            Instrument = $Instrument
-            Id = $cacheKey 
-        }
+        $noteData = [Ordered]@{} + $noteSequence[$index]
+        $noteData.Instrument = $instrument
+        $noteData.id = $cacheKey
         
         $noteData.PSTypeName = 'Note'
             
