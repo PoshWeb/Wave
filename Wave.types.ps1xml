@@ -9011,6 +9011,71 @@ foreach ($method in 'Add','Subtract','Multiply', 'Divide') {
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
+        <Name>Calculus.cs</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    WaveLinq Calculus
+.DESCRIPTION
+    Generates calculus extension methods.
+
+    * `Delta`
+    * `Angle`
+    * `AreaUnderCurve`
+#&gt;
+@"
+
+
+
+        public static IEnumerable&lt;double&gt; Delta(this IEnumerable&lt;double&gt; numbers) {
+            double last = 0;
+            foreach (double number in numbers) {
+                double delta = number - last;
+                last = number;
+                yield return delta;
+            }
+            yield break;
+        }
+
+        public static IEnumerable&lt;double&gt; Angle(this IEnumerable&lt;double&gt; numbers) {
+            double last = 0;
+            foreach (double number in numbers) {
+                double delta = number - last;
+                last = number;
+                yield return Math.Atan2(1, delta);
+            }
+            yield break;
+        }
+
+        public static IEnumerable&lt;double&gt; AreaUnderCurve(this IEnumerable&lt;double&gt; numbers) {
+            double last = 0;
+            foreach (double number in numbers) {
+                double delta = number - last;
+                last = number;
+
+                // We can determine the area under the curve by imagining
+                // our space between the samples as a rectangle and a right trangle
+
+                double area = 0;
+                
+                // The number is the height of our rectangle
+                // it's width is always one, since each sample has an X of 1.
+
+                area += number;                
+        
+                // The delta is the height of our triangle
+                // it's width is also always one, since each sample has an X of 1.
+                area += (1 * delta)/2.0;                            
+
+                yield return area;
+            }
+            yield break;
+        }
+        
+"@
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
         <Name>Decode.cs</Name>
         <Script>
                         &lt;#
@@ -9812,7 +9877,8 @@ $methods -join ([Environment]::NewLine * 2)
 #&gt;
 
 $ClassDefinition = @(        
-    $methods = 'Arithmetic', 
+    $methods = 'Arithmetic',
+        'Calculus', 
         'Geometry',
         'Trigonometry',
         'Encode', 
