@@ -5,11 +5,22 @@
     Gets the Type Definition for Wave.WaveLinq.
 .NOTES
     This uses a number of script methods to generate a C# class.
+
+    This uses the "type coalescing" technique, 
+    where a complete type is built by joining the output of 
+    several dynamic script methods.
+
+    This avoids repeating code and condenses the implementation.
+.EXAMPLE
+    Add-Type -TypeDefinition (
+        [PSCustomObject]@{PSTypename='WaveLinq'}
+    ).TypeDefinition -PassThru
 #>
 
-$ClassDefinition = @(    
+$ClassDefinition = @(        
     $methods = 'Arithmetic', 
-        'Trigonometry', 
+        'Geometry',
+        'Trigonometry',
         'Encode', 
         'Decode', 
         'Envelope', 
