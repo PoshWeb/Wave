@@ -4152,8 +4152,13 @@ filter switchState {
             }
         }
         '^Range$' {
-            $previous = $state.MatchNumber | lookBehind | select -First 1
-            $next = $state.MatchNumber | lookAhead | select -First 1
+
+            $previous = 
+                $state.MatchNumber | lookBehind | Select-Object -First 1
+
+            $next =
+                $state.MatchNumber | lookAhead | Select-Object -First 1
+
             $current = $state
             if (-not $next.Frequency) {
                 $next | . switchState
@@ -4461,7 +4466,7 @@ $null = [Runspace]::DefaultRunspace.Events.GenerateEvent(
     }
 )
 
-$currentWave.Melody = $melody
+$currentWave.Melody += $melody
 return $currentWave.Sound()
 #endregion Output
                     </Script>
@@ -4944,6 +4949,10 @@ $getUnresolvedPath =
 
 # Loop over all unresolved paths
 foreach ($unresolvedPath in $getUnresolvedPath.Invoke($path)) {
+    # Ensure we are saving as a .wav file.
+    if ($unresolvedPath -notmatch '\.wav$') {
+        $unresolvedPath = "$unresolvedPath.wav"
+    }
     # and create a file if they do not already exist
     $file = if (-not [IO.File]::Exists($unresolvedPath)) {
         New-Item -ItemType File -Path $unresolvedPath -Force
@@ -5081,6 +5090,229 @@ else {
     }
     return wave @waveFormat -Samples $Samples
 }
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>SetBPM</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Sets the beats per minute
+.DESCRIPTION
+    Sets a common BPM used to generate notes in a wave.
+#&gt;
+param(
+$BPM
+)
+
+$this.BPM = $BPM
+return $this
+
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>SetChords</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Sets the chords in a Wave.
+.DESCRIPTION
+    Sets any custom chords applied to a wave.    
+
+    A frequency can be played on any number of "chords"
+
+    We can think of each vibration within a sound as a literal string, 
+    vibrating at a frequency.
+
+    Each chord is a ratio to the original frequency.
+.NOTES
+    Chords are an incredibly flexible way to change the sounds we generate.
+
+    Most instruments play more than one frequency at a time,
+    and all stringed instruments are effectively a collection of 
+    [Monochords](https://en.wikipedia.org/wiki/Monochord).
+
+    Chords allow us to digitally simulate this effect.
+
+    Each Chord is a multiple of the original frequency.
+
+    Each Chord can also have a weight attached.
+.EXAMPLE
+    # Play every note with one lower octave
+    wave setchords 0.5 note cafe play
+.EXAMPLE
+    # Play every note with one highter octave
+    wave setchords 2 note cafe play
+.EXAMPLE
+    # Play every note with one highter and lower octave
+    wave setchords 2,0.5 note cafe play
+.EXAMPLE
+    # Play every note with two highter and two lower octaves
+    wave setchords 4,2,0.5,0.25 note cafe play
+.EXAMPLE
+    # Play every note with two lower octaves and two higher octaves
+    wave setchords 0.25,0.5,2,4 note cafe play
+.EXAMPLE
+    # Play every note with a minor deviation, creating an ethereal echo.
+    wave setchords 0.99,1.01 note cafe play
+.LINK
+    https://en.wikipedia.org/wiki/Monochord
+#&gt;
+param([double[]]$chords)
+
+$this.Chords = $chords
+return $this
+
+
+
+
+
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>SetData</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Sets Wave Data
+.DESCRIPTION
+    Sets the PCM data in a wave.
+.LINK
+    https://en.wikipedia.org/wiki/Pulse-code_modulation
+#&gt;
+param(
+# The Pulse Code Modulation wave data.
+[byte[]]$data
+)
+
+$this.Data = $data
+return $this
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>SetInstrument</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Sets Wave Instruments
+.DESCRIPTION
+    Sets the Instruments used to play a wave.
+#&gt;
+$this.Instrument = $args
+return $this
+
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>SetMelody</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Sets the Melody
+.DESCRIPTION
+    Sets the Melody of a Wave.
+
+    The melody is the sequence of instructions the wave will play.
+#&gt;
+param()
+$This.Melody = $args
+return $this
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>SetMetaData</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Sets Wave Metadata
+.DESCRIPTION
+    Sets Metadata about a Wave File.
+
+    Wave files can include metadata in a LIST chunk
+
+    Each piece of metadata is a 4-byte ASCII identifier,
+    a 4-byte length, and an ASCII string.
+.NOTES    
+    Each header must start at a WORD boundary, or two bytes.
+    
+    If the ASCII string had an odd number of characters, the next byte will be ignored.
+#&gt;
+param([Collections.IDictionary]$MetaData)
+
+$this.Metadata = $MetaData
+
+return $this
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>SetSamples</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Sets Wave Samples
+.DESCRIPTION
+    Sets the samples in the Wave.
+
+    This changes the wave.
+#&gt;
+param(
+# The new samples
+[double[]]
+$Samples
+)
+
+$this.Samples = $samples
+return $this
+
+
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>SetVolume</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Sets Volume
+.DESCRIPTION
+    Sets a common volume used to generate the wave.
+#&gt;
+param(
+# The volume
+[double]
+$Volume = (1/([Math]::PI * 2))
+)
+
+$this.Volume = $Volume
+
+return $this
+
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>SetWeights</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Sets the weights on a wave
+.DESCRIPTION
+    When we play more than one frequency at a time,
+    we can apply a weight to volume of each frequency.
+
+    By default, each additional frequency will 
+    have half of the weight of the previous frequency.
+
+    Setting a custom set of weights allows us to change this default,
+    and play different frequencies with different weights.        
+.NOTES
+    By default, each additional frequency will 
+    have half of the weight of the previous frequency.
+
+    Providing null or zero arguments will set the weight to one.
+#&gt;
+param([double[]]$Weights)
+$this.Weights = $Weights
+return $this
+
                     </Script>
       </ScriptMethod>
       <ScriptMethod>
@@ -6811,9 +7043,9 @@ if ($this.'#BPM') {
         <SetScriptBlock>
                         &lt;#
 .SYNOPSIS
-    Sets BPM
+    Sets the beats per minute
 .DESCRIPTION
-    Sets a common BPM used by the wave.
+    Sets a common BPM used to generate notes in a wave.
 #&gt;
 param(
 $BPM
@@ -7424,6 +7656,8 @@ return $This.'#Melody'
     Sets the Melody
 .DESCRIPTION
     Sets the Melody of a Wave.
+
+    The melody is the sequence of instructions the wave will play.
 #&gt;
 param()
 $This | 
@@ -8584,13 +8818,14 @@ return 0
         <SetScriptBlock>
                         &lt;#
 .SYNOPSIS
-    Sets BPM
+    Sets Volume
 .DESCRIPTION
-    Sets a common BPM used by the wave.
+    Sets a common volume used to generate the wave.
 #&gt;
 param(
-[float]
-$Volume = 0.5
+# The volume
+[double]
+$Volume = (1/([Math]::PI * 2))
 )
 
 $this | 
