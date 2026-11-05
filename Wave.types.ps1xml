@@ -9061,11 +9061,18 @@ foreach ($method in 'Add','Subtract','Multiply', 'Divide') {
                 // The number is the height of our rectangle
                 // it's width is always one, since each sample has an X of 1.
 
-                area += number;                
-        
+                area += number;
+
                 // The delta is the height of our triangle
                 // it's width is also always one, since each sample has an X of 1.
-                area += (1 * delta)/2.0;                            
+                // We need to account for direction
+
+                double direction = 1;
+                if (delta != 0) {
+                    direction = delta/Math.Abs(delta);
+                }
+
+                area += (1 * delta)/2.0 * direction;
 
                 yield return area;
             }
