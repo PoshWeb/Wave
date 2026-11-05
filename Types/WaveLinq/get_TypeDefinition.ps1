@@ -18,7 +18,8 @@
 #>
 
 $ClassDefinition = @(        
-    $methods = 'Arithmetic', 
+    $methods = 'Arithmetic',
+        'Calculus', 
         'Geometry',
         'Trigonometry',
         'Encode', 
