@@ -9406,14 +9406,30 @@ foreach ($formula in $formulas.Keys) {
 
 param()
 
-foreach ($method in 'Asin', 'Acos', 'Atan', 'Sin', 'Cos', 'Tan') {
+# The three base trigonmetric methods
+$trigMethods = @(
+    'Sin', 'Cos', 'Tan'
+)
+
+# Each has an arc method simply starts with an `A`
+$trigMethods += @( $trigMethods -replace '^', 'A' )
+# Each trig methods has a hyperbolic function as well, ending with an `h`
+$trigMethods += @( $trigMethods -replace '$', 'h')
+
+# Walk over each alphabetized method
+foreach ($method in $trigMethods | Sort-Object) {
     "
+    /// &lt;summary&gt;
+    /// Computes the Math.${method} of a sets of numbers.
+    /// &lt;/summary&gt;
+    /// &lt;param name='numbers'&gt;The set of numbers&lt;/param&gt;
+    /// &lt;returns&gt;The $method of each number.&lt;/returns&gt;
     public static IEnumerable&lt;double&gt; $method (this IEnumerable&lt;double&gt; numbers) {
         foreach (double number in numbers) {
             yield return Math.$method(number);
         }
         yield break;
-    }            
+    }
     "
 }
                     </Script>
