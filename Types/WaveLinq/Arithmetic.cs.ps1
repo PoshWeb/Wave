@@ -29,7 +29,6 @@ foreach ($method in 'Add','Subtract','Multiply', 'Divide') {
     /// <param name='numbers'>The first set of numbers</param>
     /// <param name='operand'>The second of numbers</param>
     /// <returns>The $method of each number.</returns>    
-    /// </exception>
     public static IEnumerable<double> $method (
         this IEnumerable<double> numbers, 
         double[] operand
@@ -39,8 +38,29 @@ foreach ($method in 'Add','Subtract','Multiply', 'Divide') {
             double modify = operand[n % operand.Length];
             n++;
             yield return number $operator modify;
-        }                
+        }
         yield break;
     }
     "
 }
+
+"
+/// <summary>
+/// Averages two sets of numbers and returns the result.
+/// </summary>
+/// <param name='numbers'>The first set of numbers</param>
+/// <param name='operand'>The second of numbers</param>
+/// <returns>The $method of each pair of numbers</returns>    
+public static IEnumerable<double> Average (
+    this IEnumerable<double> numbers, 
+    double[] operand
+) {
+    int n = 0;
+    foreach (double number in numbers) {
+        double modify = (number + operand[n % operand.Length])/2;
+        n++;
+        yield return modify;
+    }
+    yield break;
+}
+"
