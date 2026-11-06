@@ -11,13 +11,14 @@
 
 param()
 
-# The three base trigonmetric methods
+
 $trigMethods = @(
-    'Sin', 'Cos', 'Tan'
+    # The three base trigonmetric methods    
+    'Sin', 'Cos', 'Tan',
+    # and their arc equivalents.
+    'Asin', 'Acos', 'Atan'
 )
 
-# Each has an arc method simply starts with an `A`
-$trigMethods += @( $trigMethods -replace '^', 'A' )
 # Each trig methods has a hyperbolic function as well, ending with an `h`
 $trigMethods += @( $trigMethods -replace '$', 'h')
 
