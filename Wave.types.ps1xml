@@ -9624,11 +9624,16 @@ else if (sine &lt; 0) {
 
 For each of our waveforms we want to generate multiple overloads:
 
-* A simple monophonic generator that generates a frequency for a time at a volume.
+* A simple monophonic generator that generates a frequency over time
+  * `[double]`frequency, `[double]`time, `[double]`weight, `[uint32]`sampleRate
 * A sweeping monophonic generator that accepts a list of frequencies over time.
-* A polyphonic generator that accepts a list of times, frequencies, and weights 
+  * `[double]`time, `[double[]]`frequency, `[double[]]`weight, `[uint32]`sampleRate  
+* A simple polyphonic generator that accepts a time, list frequencies, list of weights, and sample rate
+  * `[double]time, [double[]]frequency, [double[]]weight, [uint32]sampleRate`
+* A complex polyphonic generator that accepts a list of times, frequencies, and weights
+  * `[double[]]time, [double[]]frequency, [double[]]weight`
 
-Aside from the volume scale, each wave should be unattenuated.
+Aside from the weight scale, each wave should be unattenuated.
 
 It should be put into an appropriate envelope.
 
@@ -9659,7 +9664,7 @@ $methods = foreach ($waveType in $waveForms.Keys) {
     ) {
         int sampleCount = (int)Math.Round((time * (double)sampleRate));
         double f = (Math.PI * 2 * frequency)/sampleRate;
-        double w = weight;        
+        double w = weight;
         for (int sampleNumber = 0; sampleNumber &lt; sampleCount;sampleNumber++) {
             double sample = 0;
             double t = (double)sampleNumber;
