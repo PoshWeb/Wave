@@ -11,7 +11,7 @@
 #>
 param(
 # The other wave
-$OtherWave, 
+$OtherWave,
 # The start time for the addition
 $Time = 0
 )
@@ -66,40 +66,9 @@ $ChannelCount = $this.ChannelCount
 # This can be used to compute an offset
 $Offset = [Math]::Floor($start * $SampleRate * $ChannelCount)
 
-# Collect our new samples
-[double[]]$NewSamples = @(    
-    # If the current sample is larger than the offset
-    if ($current.Length -ge $Offset) {
-        $current[0..$Offset] # get the samples until the offset
-    } else {
-        # Otherwise, include the current samples        
-        if ($current.Length) {
-            $current
-        }
-        # and pad the remainder of the time until start with silence
-        $deltaSamples = [Math]::Floor($Offset - $current.Length)
-        @(0) * $deltaSamples    
-    }
-    
-    # Add the samples
-    for ($index = 0; $index -lt $samples.Count; $index++) {
-        # If we are still within the current timeframe
-        if ($current.Length -gt ($index + $Offset)) {
-            # Add samples in at that point
-            $current[$index + $Offset] + ($samples[$index])
-        } else {
-            # Otherwise, simply include the new sample
-            $samples[$index]
-        }
-    }
-    # If we have remaining original samples
-    if (($index + $offset) -lt $current.Length) {
-        # they should still be part of the audio and be included        
-        for ($remaining = $index + $Offset; $remaining -lt $current.Length; $remaining++) {
-            $current[$remaining]
-        }
-    }
+$this.Samples = [double[]][Wave.WaveLinq]::Add(
+    $current, 
+    [int]$Offset,
+    $Samples
 )
-
-$this.Samples = $NewSamples
 return $this
