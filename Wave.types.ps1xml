@@ -9903,6 +9903,177 @@ $methods = foreach ($waveType in $waveForms.Keys) {
 $methods -join ([Environment]::NewLine * 2)
                     </Script>
       </ScriptMethod>
+      <ScriptMethod>
+        <Name>WaveOps.cs</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Wave Linq Operations
+.DESCRIPTION
+    Generates the code for each common Wave Linq operation.
+.NOTES
+
+#&gt;
+
+param()
+
+foreach ($method in 'Add','Subtract', 'Multiply', 'Divide') {
+    $operator = switch ($method) {
+        'Add' { '+' }
+        'Subtract' { '-' }
+        'Multiply' { '*' }
+        'Divide' { '/' }
+    }    
+
+@"
+    /// &lt;summary&gt;
+    /// ${method}s a set of numbers at a specific offset.
+    /// &lt;/summary&gt;
+    /// &lt;param name='current'&gt;The current set of samples&lt;/param&gt;
+    /// &lt;param name='offset'&gt;The offset&lt;/param&gt;
+    /// &lt;param name='samples'&gt;A list of samples to $Method&lt;/param&gt;
+    /// &lt;returns&gt;The $method of each number.&lt;/returns&gt;
+    public static IEnumerable&lt;double&gt; $Method(
+        IList&lt;double&gt; current, 
+        int offset,
+        IList&lt;double&gt; samples   
+    ) {
+        int index = 0;
+        if (current.Count &gt; offset) {
+            for (index = 0; index &lt; offset; index++) {
+                yield return current[index]; //get the samples until the offset
+            }
+        } else {
+            // Otherwise, include the current samples
+            foreach (double sample in current) {
+                yield return sample;
+            }
+            
+            // and pad the remainder of the time until start with silence
+            int deltaSamples = offset - current.Count;
+            for (int i = 0; i &lt; deltaSamples; i++) {
+                yield return 0;
+            }
+        }
+                    
+        for (index = 0; index &lt; samples.Count; index++) {
+            // If we are still within the current timeframe
+            if (current.Count &gt; (index + offset)) {
+                // Add samples in at that point
+                yield return current[index + offset] $operator samples[index];
+            } else {
+                // Otherwise, simply include the new sample
+                yield return samples[index]$( if ($operator -eq '-') { '* -1'});
+            }
+        }
+
+        yield break;
+    }
+"@
+
+
+}
+
+@"
+    /// &lt;summary&gt;
+    /// Averages two waves at a specific offset.
+    /// &lt;/summary&gt;
+    /// &lt;param name='current'&gt;The current set of samples&lt;/param&gt;
+    /// &lt;param name='offset'&gt;The offset&lt;/param&gt;
+    /// &lt;param name='samples'&gt;A list of samples to average&lt;/param&gt;
+    /// &lt;returns&gt;The average wave&lt;/returns&gt;
+    public static IEnumerable&lt;double&gt; Average(
+        IList&lt;double&gt; current, 
+        int offset,
+        IList&lt;double&gt; samples
+    ) {
+        int index = 0;
+        if (current.Count &gt; offset) {
+            for (index = 0; index &lt; offset; index++) {
+                yield return current[index]; //get the samples until the offset
+            }
+        } else {
+            // Otherwise, include the current samples
+            foreach (double sample in current) {
+                yield return sample;
+            }
+            
+            // and pad the remainder of the time until start with silence
+            int deltaSamples = offset - current.Count;
+            for (int i = 0; i &lt; deltaSamples; i++) {
+                yield return 0;
+            }
+        }
+                    
+        for (index = 0; index &lt; samples.Count; index++) {
+            // If we are still within the current timeframe
+            if (current.Count &gt; (index + offset)) {
+                // Add samples in at that point
+                yield return (current[index + offset] + samples[index])/2;
+            } else {
+                // Otherwise, simply include the new sample
+                yield return samples[index];
+            }
+        }
+
+        yield break;
+    }
+"@
+
+@"
+
+    /// &lt;summary&gt;
+    /// Simplified Wave Gain.
+    /// &lt;/summary&gt;
+    /// &lt;param name='samples'&gt;The current set of samples&lt;/param&gt;
+    /// &lt;param name='gain'&gt;The gain&lt;/param&gt;    
+    /// &lt;returns&gt;The wave with a gain applied&lt;/returns&gt;
+    public static IEnumerable&lt;double&gt; Gain(
+        this IEnumerable&lt;double&gt; samples,
+        double gain
+    ) {
+        foreach (double sample in samples) {
+            yield return sample * gain;
+        }
+    }
+"@
+
+@"
+    /// &lt;summary&gt;
+    /// Simplified Wave Sampler.
+    /// &lt;/summary&gt;
+    /// &lt;param name='samples'&gt;The current set of samples&lt;/param&gt;
+    /// &lt;param name='start'&gt;The start sample&lt;/param&gt;    
+    /// &lt;param name='start'&gt;The end sample&lt;/param&gt;    
+    /// &lt;returns&gt;The wave with a gain applied&lt;/returns&gt;
+    public static IEnumerable&lt;double&gt; Sample(
+        this IList&lt;double&gt; samples,
+        int start,
+        int end
+    ) {        
+        if (start == end) { yield break; }
+        if (start &lt; end) {
+            for (int index = start; index &lt;= end ; index++) {
+                if (samples.Count &gt; index) {
+                    yield return samples[index];
+                } else {
+                    yield return 0; 
+                }                
+            }    
+        } else {
+            for (int index = end; index &gt;= start ; index--) {
+                if (samples.Count &gt; index) {
+                    yield return samples[index];
+                } else {
+                    yield return 0; 
+                }
+            }
+        }
+    }    
+"@
+
+                    </Script>
+      </ScriptMethod>
       <ScriptProperty>
         <Name>TypeDefinition</Name>
         <GetScriptBlock>
