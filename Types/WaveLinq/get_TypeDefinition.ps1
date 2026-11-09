@@ -27,7 +27,8 @@ $ClassDefinition = @(
         'Envelope', 
         'Vector', 
         'Frequency', 
-        'WaveForm' -replace '$','.cs'
+        'WaveForm',
+        'WaveOps' -replace '$','.cs'
         
     foreach ($method in $methods) {
         if (-not $this.$method) { continue }
@@ -45,6 +46,8 @@ namespace Wave {
     using System.Collections.Generic;
     using System.Management.Automation;
     using System.Numerics;
+    using System.IO;
+    using System.Text;
 
     public static class WaveLinq$(
         if ($DebugPreference -notin 'ignore', 'silentlyContinue') {
