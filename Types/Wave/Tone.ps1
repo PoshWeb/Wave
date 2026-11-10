@@ -3,6 +3,19 @@
     Tone Generator
 .DESCRIPTION
     Generates a Tone of a `-Frequency`, for `-Duration`, at `-Volume`
+.NOTES
+    A tone is simply a pure sine wave, with a simple fading envelope.
+
+    We can generate an unattenuated sine wave using the formula:
+
+    ~~~PowerShell
+    [Math]::Sin(
+        $time * 
+        ([Math]::PI * 2 * $frequency)/($sampleRate * $ChannelCount)
+    )
+    ~~~
+
+    We put the wave in an envelope and fade it out over time.
 #>
 [OutputType('Wave')]
 param(
@@ -49,59 +62,39 @@ $Time,
 )
 )
 
-$currentWave = $this
-if (-not $currentWave) { $currentWave = wave }
+# This is the new wave.
+$newWave = $this
+if (-not $newWave) { $newWave = wave }
 
-# If we have not been provided a time
-if (-not $time) {
-    # add it to the end.
-    $time = $this.Duration
-}
+# If we don't have the time, add to the end.
+if (-not $time) { $time = $newWave.Duration }
 
-# Calculate the number of samples
-$numberOfSamples = [Math]::Round(
-    $Duration.TotalSeconds * $SampleRate * $channelCount
-)
+# We want to use WaveLinq for performance.
+# This output a continous stream of samples,
+# but only when we invoke the wave method.
 
-# Measure our angles
-[double[]]$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
+$WaveForm = [Wave.WaveLinq]::SineWave
 
-# Our wave will consist of three steps:
+# This means:
+# 1. We can have a _very_ fast audio object pipeline
+# 2. We can generate and add our sample in one expression chain
+# 3. We write it inline "outside in"
 
-# 1. A polysine
-# 2. An envelope
-# 3. A Volume scale
-
-# Now let's make our samples
-[double[]]$Samples = @(    
-    # Scale our wave.
-    [Wave.WaveLinq]::Multiply(
-        # Multiply our wave by our our envelope
-        [Wave.WaveLinq]::Multiply(
-            [Wave.WaveLinq]::SineWave(
-                [double[]](0..($numberOfSamples - 1)),
-                $angles,
-                $Weights
+# We're adding to the new wave;
+return $newWave.Add(
+    [double[]]@(
+        # a fading enveloping
+        [Wave.WaveLinq]::FadeOut(
+            # containing our wave
+            $WaveForm.Invoke(
+                $Duration.TotalSeconds, # for our duration,
+                ($Frequency -as [double[]]), # at our frequencies,
+                $Weights, # with our weights,                
+                [uint32](
+                    $SampleRate * $channelCount # at our samples per second.                    
+                )
             ),
-            # (which is a fade out over the number of samples)
-            [Wave.WaveLinq]::FadeOut($numberOfSamples)
-        ),
-        # Then scale by our volume
-        [double[]]@($volume)
-    )   
+        $volume # We scale the whole thing to our volume
+        )
+    ), $time # and add it at the specified time.
 )
-
-# If we have a time
-if ($Time) {
-    # add the samples at that time
-    $currentWave = $currentWave.Add($samples, $time)
-}
-else {
-    # Otherwise create a new wave
-    $waveFormat = $currentWave.WaveFormat
-    if (-not $waveFormat) {
-        $waveFormat = @{}
-    }
-    $currentWave = wave @waveFormat -Samples $Samples
-}
-return $currentWave
