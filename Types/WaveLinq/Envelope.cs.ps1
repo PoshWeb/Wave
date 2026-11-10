@@ -3,8 +3,12 @@ $envelopes = [Ordered]@{
     "FadeIn" = "n / total"
     "FadeOut" = "1.0 - (n/total)"    
     "Decay" = "1.0 - (n/total/2)"
-    "Sustain" = "0.5 + (Math.Sin(n/total * Math.PI))"
+    "Sustain" = "0.5"
     "Release" = "0.5 - (n/total/2)"
+    "SinFadeIn" = "Math.Sin(n/total * (Math.PI/2))"
+    "SinFadeOut" = "Math.Sin((1.0 - (n/total)) * (Math.PI/2))"
+    "SinhFadeIn" = "Math.Sinh(n/total * (Math.PI/4))"
+    "SinhFadeOut" = "Math.Sinh((1.0 - (n/total)) * (Math.PI/4))"    
 }
 
 foreach ($envelope in $envelopes.Keys) {

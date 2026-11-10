@@ -225,41 +225,38 @@
         }
     } play
 #>
-param($function,
+param($function)
 [double[]]$Samples = $($This.Samples)
-)
-
 $waveFormat = $this.WaveFormat
 if (-not $waveFormat) { $waveFormat = @{} }
-
 $sampleNumber = 0
 if (
     (-not $function) -or 
-    ($function -in 'hush', 'normal')
+    ($function -in 'FadeOut', 'hush', 'normal')
 ) {
-    # A Normal hush envelope
-    $hush = 1/$samples.Count    
+    # A Normal fade out envelope        
     return wave @waveFormat -Samples $(
-        foreach ($sample in $samples) {
-            $sample * (1 - ($sampleNumber * $hush))
-            $sampleNumber++
-        }
-    )    
+        [Wave.WaveLinq]::FadeOut($samples, 1)
+    )
 } 
 elseif (
     $function -as [double[]]
 ) {
     # A custom envelope of ratios
     $customEnvelope = $function -as [double[]]
-    return wave @waveFormat -Samples $(        
-        foreach ($sample in $samples) {
-            $sample * ($customEnvelope[$sampleNumber % $customEnvelope.Length])
-            $sampleNumber++
-        }
+    return wave @waveFormat -Samples $(
+        [Wave.WaveLinq]::Multiply(
+            $samples,
+            $customEnvelope
+        )        
     )
 }
 elseif ($function -is [ScriptBlock]) {
     return wave @waveFormat -Samples $(
         & $function $Samples
     )
+}
+else {
+    Write-Warning "Unrecognized function type"
+    return $this
 }
