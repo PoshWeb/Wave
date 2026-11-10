@@ -10023,7 +10023,7 @@ foreach ($method in 'Add','Subtract', 'Multiply', 'Divide') {
         double gain
     ) {
         if (gain &lt; 0) {
-            gain = 1 / Math.Abs(gain);
+            gain = -1 / gain;
         }
         
         foreach (double sample in samples) {
