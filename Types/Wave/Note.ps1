@@ -649,8 +649,7 @@ $melody = for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex+
             if ($match.State.Frequency.pstypenames -notcontains 'Frequency') {
                 $match.State.Frequency.pstypenames.add('Frequency')
             }
-            # and find the closest note and attach it to our state
-            $match.State.ClosestNote = $match.State.Frequency.Letter
+            # and find the closest note and attach it to our state            
             if (-not $match.State.Volume) {
                 $match.State.Volume = $baseVolume
             }
@@ -671,8 +670,7 @@ $melody = for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex+
                     if ($nested.Frequency.pstypeanes -notcontains 'Frequency') {
                         $nested.Frequency.pstypenames.add('Frequency')
                     }                    
-                    # find the closest note and attach it to our state.
-                    $nested.ClosestNote = $nested.Frequency.Letter
+                    # find the closest note and attach it to our state.                    
                     if (-not $nested.Volume) {
                         $nested.Volume = $baseVolume
                     }

@@ -1,0 +1,4 @@
+Frequency
+Duration
+ClosestNote
+Instrument
