@@ -124,6 +124,10 @@ foreach ($method in 'Add','Subtract', 'Multiply', 'Divide') {
         this IEnumerable<double> samples,
         double gain
     ) {
+        if (gain < 0) {
+            gain = 1 / Math.Abs(gain);
+        }
+        
         foreach (double sample in samples) {
             yield return sample * gain;
         }
