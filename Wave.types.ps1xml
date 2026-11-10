@@ -419,6 +419,44 @@ return $sharpen
     </Members>
   </Type>
   <Type>
+    <Name>Note</Name>
+    <Members>
+      <MemberSet>
+        <Name>PSStandardMembers</Name>
+        <Members>
+          <PropertySet>
+            <Name>DefaultDisplayPropertySet</Name>
+            <ReferencedProperties>
+              <Name>Frequency</Name>
+              <Name>Duration</Name>
+              <Name>ClosestNote</Name>
+              <Name>Instrument</Name>
+            </ReferencedProperties>
+          </PropertySet>
+        </Members>
+      </MemberSet>
+      <ScriptProperty>
+        <Name>ClosestNote</Name>
+        <GetScriptBlock>
+                        $frequency = @($this.Frequency)[0]
+
+if ($frequency -and $frequency.pstypenames -notcontains 'Frequency') {
+    $frequency.pstypenames.Add('Frequency')        
+}
+
+$frequency.Letter
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <NoteProperty>
+        <Name>DefaultDisplay</Name>
+        <Value>Frequency
+Duration
+ClosestNote
+Instrument</Value>
+      </NoteProperty>
+    </Members>
+  </Type>
+  <Type>
     <Name>Wave</Name>
     <Members>
       <MemberSet>
@@ -4390,8 +4428,7 @@ $melody = for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex+
             if ($match.State.Frequency.pstypenames -notcontains 'Frequency') {
                 $match.State.Frequency.pstypenames.add('Frequency')
             }
-            # and find the closest note and attach it to our state
-            $match.State.ClosestNote = $match.State.Frequency.Letter
+            # and find the closest note and attach it to our state            
             if (-not $match.State.Volume) {
                 $match.State.Volume = $baseVolume
             }
@@ -4412,8 +4449,7 @@ $melody = for ($matchIndex = 0; $matchIndex -lt $allMatches.Length; $matchIndex+
                     if ($nested.Frequency.pstypeanes -notcontains 'Frequency') {
                         $nested.Frequency.pstypenames.add('Frequency')
                     }                    
-                    # find the closest note and attach it to our state.
-                    $nested.ClosestNote = $nested.Frequency.Letter
+                    # find the closest note and attach it to our state.                    
                     if (-not $nested.Volume) {
                         $nested.Volume = $baseVolume
                     }
