@@ -7309,6 +7309,44 @@ param()
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>CreationDate</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the Wave's CreationDate 
+.DESCRIPTION
+    Gets the Wave CreationDate metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    CreationDate metadata is stored
+    with the four letter word key: `ICRD`
+#&gt;
+
+return $this.metadata.CreationDate
+
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets the Wave's CreationDate
+.DESCRIPTION
+    Sets the Wave's CreationDate metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    CreationDate metadata is stored
+    with the four letter word key: `ICRD`
+#&gt;
+param([DateTime]$CreationDate)
+
+$metadata = $this.metadata
+$metadata.CreationDate = $CreationDate
+$this.Metadata = $metadata
+
+                    </SetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Data</Name>
         <GetScriptBlock>
                         &lt;#
