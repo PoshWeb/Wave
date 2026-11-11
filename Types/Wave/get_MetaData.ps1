@@ -22,12 +22,17 @@
 [OutputType([Collections.IDictionary])]
 param()
 
+$waveModule = Get-Module Wave
 # If we have no cached list
 if (-not $this.'#list') {
     # read chunks.
     $null = $this.Chunk
     # Return if we still have no cached list
-    if (-not $this.'#list') { return }
+    if (-not $this.'#list') { 
+        return [Ordered]@{
+            Software = "$($waveModule.Name) $($waveModule.Version) $($waveModule.ProjectUri)"
+        }
+    }
 }
 
 # Almost everything in metadata is encoded in ASCII
@@ -129,7 +134,6 @@ foreach ($key in @($metadata.Keys)) {
 }
 
 if (-not $metadata.Software) {
-    $waveModule = Get-Module Wave
     $metadata.Software = "$($waveModule.Name) $($waveModule.Version) $($waveModule.ProjectUri)" 
 }
 
