@@ -8,6 +8,16 @@
 #>
 param([string]$Path)
 
+
+# Set our metadata first
+$metadata = $this.metadata
+$waveModule = Get-Module Wave
+$metadata.Software = $($waveModule.Name, $waveModule.Version, $waveModule.ProjectUri -join ' ')
+if (-not $metadata.CreationDate) {
+    $metadata.CreationDate, $null = [DateTime]::Now.ToString('o') -split 'T'
+}
+$This.Metadata = $metadata
+
 # If no path is provided
 if (-not $path) {
     # default to a subpath of local application data
