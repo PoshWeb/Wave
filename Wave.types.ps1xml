@@ -7309,6 +7309,44 @@ param()
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>Copyright</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the Wave's Copyright 
+.DESCRIPTION
+    Gets the Copyright of the wave.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Copyright metadata is stored
+    with the four letter word key: `ICOP`
+#&gt;
+
+return $this.metadata.Copyright
+
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets the Wave's Copyright
+.DESCRIPTION
+    Sets the Wave's Copyright metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Copyright metadata is stored
+    with the four letter word key: `ICOP`
+#&gt;
+param([string]$Copyright)
+
+$metadata = $this.metadata
+$metadata.Copyright = $Copyright
+$this.Metadata = $metadata
+
+                    </SetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>CreationDate</Name>
         <GetScriptBlock>
                         &lt;#
