@@ -6689,6 +6689,44 @@ return $newWave.Add(
                     </Script>
       </ScriptMethod>
       <ScriptProperty>
+        <Name>Album</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the Wave's Album 
+.DESCRIPTION
+    Gets the Wave Album metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Album (or Product) metadata is stored
+    with the four letter word key: `IPRD`
+#&gt;
+
+return $this.metadata.Album
+
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets the Wave's Album
+.DESCRIPTION
+    Sets the Wave's Album metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Album (or Product) metadata is stored
+    with the four letter word key: `IPRD`
+#&gt;
+param([string]$Album)
+
+$metadata = $this.metadata
+$metadata.Album = $Album
+$this.Metadata = $metadata
+
+                    </SetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Angle</Name>
         <GetScriptBlock>
                         &lt;#
@@ -6750,6 +6788,44 @@ Write-Progress @progress
 
 return $Angle
                     </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>Artist</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the Wave's Artist 
+.DESCRIPTION
+    Gets the Wave Artist metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Artist metadata is stored
+    with the four letter word key: `IART`
+#&gt;
+
+return $this.metadata.Artist
+
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets the Wave's Artist
+.DESCRIPTION
+    Sets the Wave's album metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Artist metadata is stored
+    with the four letter word key: `IART`
+#&gt;
+param([string]$Artist)
+
+$metadata = $this.metadata
+$metadata.Artist = $Artist
+$this.Metadata = $metadata
+
+                    </SetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
         <Name>AudioFormat</Name>
@@ -8486,6 +8562,11 @@ if ($sampleRate) {
     Gets the Wave's title 
 .DESCRIPTION
     Gets the title of the wave.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Title (or Name) metadata is stored
+    with the four letter word key: `INAM`
 #&gt;
 
 return $this.metadata.Title
@@ -8498,8 +8579,10 @@ return $this.metadata.Title
 .DESCRIPTION
     Sets the Wave's title metadata.
 .NOTES
-    Metadata is stored in an optional `LIST` chunk,
-    within an `INAM` item.    
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Title (or Name) metadata is stored
+    with the four letter word key: `INAM`
 #&gt;
 param([string]$Title)
 
