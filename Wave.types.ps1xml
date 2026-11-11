@@ -4851,6 +4851,16 @@ wave @waveFormat -Samples $NewSamples
 #&gt;
 param([string]$Path)
 
+
+# Set our metadata first
+$metadata = $this.metadata
+$waveModule = Get-Module Wave
+$metadata.Software = $($waveModule.Name, $waveModule.Version, $waveModule.ProjectUri -join ' ')
+if (-not $metadata.CreationDate) {
+    $metadata.CreationDate, $null = [DateTime]::Now.ToString('o') -split 'T'
+}
+$This.Metadata = $metadata
+
 # If no path is provided
 if (-not $path) {
     # default to a subpath of local application data
@@ -7685,7 +7695,7 @@ $LongNames = [Ordered]@{
     ISFT = "Software"
     ISRC = "Source"
     ISRF = "SourceForm"
-    ITCH = "Technician"    
+    ITCH = "Technician"
 
     # Supported ID3 tags 
     TBPM = "BPM"
@@ -7755,6 +7765,11 @@ foreach ($key in @($metadata.Keys)) {
             $metadata[$key] = $metadata[$key] -as [int]
         }
     }
+}
+
+if (-not $metadata.Software) {
+    $waveModule = Get-Module Wave
+    $metadata.Software = "$($waveModule.Name) $($waveModule.Version) $($waveModule.ProjectUri)" 
 }
 
 # Return our metadata.
