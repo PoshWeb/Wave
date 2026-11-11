@@ -8631,6 +8631,44 @@ $this.Metadata = $metadata
                     </SetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>TrackNumber</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the Wave's TrackNumber 
+.DESCRIPTION
+    Gets the Wave TrackNumber metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    TrackNumber (or Part Number) metadata is stored
+    with the four letter word key: `IPRT`
+#&gt;
+
+return $this.metadata.TrackNumber -as [int]
+
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets the Wave's TrackNumber
+.DESCRIPTION
+    Sets the Wave's TrackNumber metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    TrackNumber (or Part Number) metadata is stored
+    with the four letter word key: `IPRT`
+#&gt;
+param([int]$TrackNumber)
+
+$metadata = $this.metadata
+$metadata.TrackNumber = "$TrackNumber"
+$this.Metadata = $metadata
+
+                    </SetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Trough</Name>
         <GetScriptBlock>
                         &lt;#
