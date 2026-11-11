@@ -6812,7 +6812,7 @@ return $this.metadata.Artist
 .SYNOPSIS
     Sets the Wave's Artist
 .DESCRIPTION
-    Sets the Wave's album metadata.
+    Sets the Wave's Artist metadata.
 .NOTES
     Wave Metadata is stored in an optional `LIST` chunk.
 
@@ -7405,6 +7405,44 @@ param()
 $this.SampleRate/2
 
                     </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>Genre</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the Wave's Genre 
+.DESCRIPTION
+    Gets the Wave Genre metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Genre metadata is stored
+    with the four letter word key: `IGNR`
+#&gt;
+
+return $this.metadata.Genre
+
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets the Wave's Genre
+.DESCRIPTION
+    Sets the Wave's Genre metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Genre metadata is stored
+    with the four letter word key: `IGNR`
+#&gt;
+param([string]$Genre)
+
+$metadata = $this.metadata
+$metadata.Genre = $Genre
+$this.Metadata = $metadata
+
+                    </SetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
         <Name>HTML</Name>
