@@ -7243,6 +7243,44 @@ return $chunks
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>Comment</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the Wave's Comment 
+.DESCRIPTION
+    Gets the Wave Comment metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Comment metadata is stored
+    with the four letter word key: `ICMT`
+#&gt;
+
+return $this.metadata.Comment
+
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets the Wave's Comments
+.DESCRIPTION
+    Sets the Wave's comment metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Comment metadata is stored
+    with the four letter word key: `ICMT`
+#&gt;
+param([string]$Comment)
+
+$metadata = $this.metadata
+$metadata.Comments = $Comment
+$this.Metadata = $metadata
+
+                    </SetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>ContentType</Name>
         <GetScriptBlock>
                         &lt;#
@@ -8535,6 +8573,50 @@ return $this
 ) -replace '-'
 $null = $this.Seek('0', 'Begin')
                     </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>Software</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the Wave's Software 
+.DESCRIPTION
+    Gets the Software of the wave.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Software (or Name) metadata is stored
+    with the four letter word key: `ISFT`
+#&gt;
+
+return $this.metadata.Software
+
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets the Wave's Software
+.DESCRIPTION
+    Sets the Wave's Software metadata.
+.NOTES
+    Wave Metadata is stored in an optional `LIST` chunk.
+
+    Software metadata is stored
+    with the four letter word key: `ISFT`
+
+    The software is usually the software that last changed the wave.
+
+    When files are saved, this field should be set to:
+    
+    `Wave $Version https://github.com/PoshWeb/Wave`
+#&gt;
+param([int]$Software)
+
+$metadata = $this.metadata
+$metadata.Software = "$Software"
+$this.Metadata = $metadata
+
+                    </SetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
         <Name>SystemSound</Name>
