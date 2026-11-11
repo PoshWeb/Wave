@@ -8479,6 +8479,37 @@ if ($sampleRate) {
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>Title</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the Wave's title 
+.DESCRIPTION
+    Gets the title of the wave.
+#&gt;
+
+return $this.metadata.Title
+
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets the Wave's Title
+.DESCRIPTION
+    Sets the Wave's title metadata.
+.NOTES
+    Metadata is stored in an optional `LIST` chunk,
+    within an `INAM` item.    
+#&gt;
+param([string]$Title)
+
+$metadata = $this.metadata
+$metadata.Title = $Title
+$this.Metadata = $metadata
+
+                    </SetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>Trough</Name>
         <GetScriptBlock>
                         &lt;#
