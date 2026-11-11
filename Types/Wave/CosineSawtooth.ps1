@@ -74,57 +74,39 @@ $Time,
 )
 )
 
-$currentWave = $this
-if (-not $currentWave) { $currentWave = wave }
+# This is the new wave.
+$newWave = $this
+if (-not $newWave) { $newWave = wave }
 
-# Measure our angles
-[double[]]$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
+# If we don't have the time, add to the end.
+if (-not $time) { $time = $newWave.Duration }
 
-# Calculate the number of samples
-$numberOfSamples = [Math]::Round(    
-    $Duration.TotalSeconds * $SampleRate * $channelCount
-)
+# We want to use WaveLinq for performance.
+# This output a continous stream of samples,
+# but only when we invoke the wave method.
 
-# Our audio pipeline will consist of two steps:
+$WaveForm = [Wave.WaveLinq]::CosineSawWave
 
-# 1. A polysaw 
-# 2. An envelope
+# This means:
+# 1. We can have a _very_ fast audio object pipeline
+# 2. We can generate and add our sample in one expression chain
+# 3. We write it inline "outside in"
 
-# Saws peak sharply, so adjust volume accordingly
-$Volume /= 2
-
-# Now let's make our samples
-[double[]]$Samples = @(
-# Scale our wave.
-    [Wave.WaveLinq]::Multiply(
-        # Multiply our wave by our our envelope
-        [Wave.WaveLinq]::Multiply(
-            [Wave.WaveLinq]::CosineSawWave(
-                [double[]](0..($numberOfSamples - 1)),
-                $angles,
-                $Weights
+# We're adding to the new wave;
+return $newWave.Add(
+    [double[]]@(
+        # a fading enveloping
+        [Wave.WaveLinq]::FadeOut(
+            # containing our wave
+            $WaveForm.Invoke(
+                $Duration.TotalSeconds, # for our duration,
+                ($Frequency -as [double[]]), # at our frequencies,
+                $Weights, # with our weights,                
+                [uint32](
+                    $SampleRate * $channelCount # at our samples per second.                    
+                )
             ),
-            # (which is a fade out over the number of samples)
-            [Wave.WaveLinq]::FadeOut($numberOfSamples)
-        ),
-        # Then scale by our volume
-        [double[]]@($volume)
-    )
+        $volume # We scale the whole thing to our volume
+        )
+    ), $time # and add it at the specified time.
 )
-
-# If we have not been provided a time
-if (-not $time) {
-    # add it to the end.
-    $time = $currentWave.Duration
-}
-
-if ($Time) {
-    return $currentWave.Add($samples, $time)
-}
-else {
-    $waveFormat = $currentWave.WaveFormat
-    if (-not $waveFormat) {
-        $waveFormat = @{}
-    }
-    return wave @waveFormat -Samples $Samples
-}
