@@ -4,8 +4,8 @@
 .DESCRIPTION
     Sets the Wave's title metadata.
 .NOTES
-    Metadata is stored in an optional `LIST` chunk,
-    within an `INAM` item.    
+    Wave Metadata is stored in an optional `LIST` chunk,
+    with the four letter word key: `INAM`
 #>
 param([string]$Title)
 
