@@ -4855,7 +4855,10 @@ param([string]$Path)
 # Set our metadata first
 $metadata = $this.metadata
 $waveModule = Get-Module Wave
-$metadata.Software = $($waveModule.Name, $waveModule.Version, $waveModule.ProjectUri -join ' ')
+# Only set the software and creation date if we do not already have one.
+if (-not $metadata.Software) {
+    $metadata.Software = $($waveModule.Name, $waveModule.Version, $waveModule.ProjectUri -join ' ')
+}
 if (-not $metadata.CreationDate) {
     $metadata.CreationDate, $null = [DateTime]::Now.ToString('o') -split 'T'
 }
