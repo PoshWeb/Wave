@@ -2,7 +2,7 @@
 .SYNOPSIS
     Sets the Wave's Artist
 .DESCRIPTION
-    Sets the Wave's album metadata.
+    Sets the Wave's Artist metadata.
 .NOTES
     Wave Metadata is stored in an optional `LIST` chunk.
 
