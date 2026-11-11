@@ -56,7 +56,7 @@ $LongNames = [Ordered]@{
     ISFT = "Software"
     ISRC = "Source"
     ISRF = "SourceForm"
-    ITCH = "Technician"    
+    ITCH = "Technician"
 
     # Supported ID3 tags 
     TBPM = "BPM"
@@ -126,6 +126,11 @@ foreach ($key in @($metadata.Keys)) {
             $metadata[$key] = $metadata[$key] -as [int]
         }
     }
+}
+
+if (-not $metadata.Software) {
+    $waveModule = Get-Module Wave
+    $metadata.Software = "$($waveModule.Name) $($waveModule.Version) $($waveModule.ProjectUri)" 
 }
 
 # Return our metadata.
