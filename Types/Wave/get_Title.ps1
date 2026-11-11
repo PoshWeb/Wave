@@ -7,7 +7,7 @@
     Wave Metadata is stored in an optional `LIST` chunk.
 
     Title (or Name) metadata is stored
-    with the four letter word key: `INAM`    
+    with the four letter word key: `INAM`
 #>
 
 return $this.metadata.Title
