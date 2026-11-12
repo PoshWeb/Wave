@@ -174,13 +174,20 @@ function InvokeActionModule {
                     InstallActionModule $requiredModule.Name
                 }
             }
-            "::group::$($scriptFile.FullName.Replace($env:GITHUB_WORKSPACE, '').TrimStart('/'))" | Out-Host
+            $GroupName = $($scriptFile.FullName.Replace($env:GITHUB_WORKSPACE, '').TrimStart('/'))
+            "::group::$GroupName" | Out-Host
             Push-Location $scriptFile.Directory.Fullname
+            $scriptFileStart = [DateTime]::Now
             $scriptFileOutputs = . $scriptCmd
             $scriptFileOutputs |                
                 Out-Host
+            $scriptFileEnd = [DateTime]::Now
             Pop-Location
             "::endgroup::"
+            if ($env:GITHUB_STEP_SUMMARY) {
+                "> $($scriptFileEnd - $scriptFileStart)" | 
+                    Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+            }
         }    
     
     $MyScriptFilesTook = [Datetime]::Now - $MyScriptFilesStart
