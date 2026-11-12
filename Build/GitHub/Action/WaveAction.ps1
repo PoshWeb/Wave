@@ -185,7 +185,7 @@ function InvokeActionModule {
             Pop-Location
             "::endgroup::"
             if ($env:GITHUB_STEP_SUMMARY) {
-                "> $($scriptFileEnd - $scriptFileStart)" | 
+                "> Completed in $($scriptFileEnd - $scriptFileStart)" | 
                     Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
             }
         }    
