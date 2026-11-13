@@ -40,7 +40,11 @@ $shortNames = [Ordered]@{
     "Software" = 'ISFT'
     "Source"= 'ISRC'
     "SourceForm" =  'ISRF'
-    "Technician" = 'ITCH'    
+    "Technician" = 'ITCH'
+    'MathML' = 'MATH'
+    'MusicXML' = 'MusicXML'
+    'json' = 'json'
+    'midi' = 'MIDI'
 }
 
 # https://mediaarea.net/BWFMetaEdit/listinfo
@@ -78,6 +82,50 @@ $null = $this.Seek($listStart, 'Begin')
 # Then write the list
 $writer.Write([Text.Encoding]::ASCII.GetBytes("LIST"))
 
+filter ListItemBytes {
+    $value = $_
+    [Text.Encoding]::ASCII.GetBytes($shortKey)
+
+    [byte[]]$ValueBytes = if (
+        $shortKey -match 'xml' -or 
+        $shortKey -match 'math' -or 
+        $shortKey -match 'clix'
+    ) {
+        if ($value -is [xml]) {
+            [Text.Encoding]::UTF8.GetBytes(
+                $value.OuterXml
+            )
+        } else {
+            [Text.Encoding]::UTF8.GetBytes("$($value)")
+        }            
+    }
+    elseif ($shortKey -match 'json') {        
+        [Text.Encoding]::Utf8.GetBytes(
+            (ConvertTo-Json -InputObject $value -Depth 100)
+        )
+    }
+    else {
+        if ($value -is [DateTime]) {
+            if ($key -eq 'ICRD') {
+                [Text.Encoding]::ASCII.GetBytes("$(
+                    ($value).ToString('yyyy-MM-dd')
+                )")
+            } else {
+                [Text.Encoding]::ASCII.GetBytes($value.ToString('o'))
+            }
+        } else {
+            # Get the bytes stored in the value
+            [Text.Encoding]::ASCII.GetBytes("$($value)")
+        }
+    }
+
+    [BitConverter]::GetBytes([uint32]$valueBytes.Length)
+    $valueBytes
+    if ($valueBytes.Length % 2) {
+        [byte]0
+    }    
+}
+
 # Collect our list data
 [byte[]]$listData = @(
     # `LIST` chunks begin with the ASCII characters `INFO`.
@@ -97,33 +145,8 @@ $writer.Write([Text.Encoding]::ASCII.GetBytes("LIST"))
                 # otherwise, pad right with spaces.
                 "$key".PadRight(4, ' ')
             }
-                    
-        [Text.Encoding]::ASCII.GetBytes($shortKey)
         
-        [byte[]]$valueBytes = if ($shortKey -match 'xml') {
-            if ($MetaData[$key] -is [xml]) {
-                [Text.Encoding]::UTF8.GetBytes(
-                    $MetaData[$key].OuterXml
-                )
-            } else {
-                [Text.Encoding]::UTF8.GetBytes("$($MetaData[$key])")
-            }            
-        } else {
-            if ($MetaData[$key] -is [DateTime]) {
-                [Text.Encoding]::ASCII.GetBytes("$(
-                    ($MetaData[$key]).ToString('yyyy-MM-dd')
-                )")
-            } else {
-                # Get the bytes stored in the value
-                [Text.Encoding]::ASCII.GetBytes("$($MetaData[$key])")
-            }
-        }
-        
-        [BitConverter]::GetBytes([uint32]$valueBytes.Length)
-        $valueBytes
-        if ($valueBytes.Length % 2) {
-            [byte]0
-        }
+        $MetaData[$key] | ListItemBytes
     }
 )
 $writer.Write([uint32]$listData.Length)

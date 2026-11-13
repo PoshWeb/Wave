@@ -9,11 +9,11 @@
     Each piece of metadata is a 4-byte ASCII identifier,
     a 4-byte length, and a string.
     
-    If the identifier contains `XML`,
+    If the identifier contains `XML` (or is `MATH`),
     the string will be decoded as UTF-8 and cast to `[XML]`
 
-    If the identifier does not contain `XML`,
-    the string will be decoded as ASCII.    
+    If the identifier does not match `XML`, `html`, or `json`,
+    the string will be decoded as ASCII.
 .NOTES    
     Each header must start at a WORD boundary, or two bytes.
     
@@ -47,7 +47,7 @@ $LongNames = [Ordered]@{
     IARL = "ArchiveLocation"
     IART = "Artist"
     ICMS = "Commissioned"
-    ICMT = "Comments"
+    ICMT = "Comment"
     ICOP = "Copyright"
     ICRD = "CreationDate"
     IENG = "Engineer"
@@ -65,10 +65,31 @@ $LongNames = [Ordered]@{
 
     # Supported ID3 tags 
     TBPM = "BPM"
+
+    # Extended Information / Direct Embedding
+    json = 'json'
+    html = 'html'
+    math = 'MathML'
+    MXML = 'MusicXML'
+    MIDI = 'Midi'
 }
 
 # Get our list bytes
 $list = $this.'#list'
+
+filter bucket([string]$key, [Collections.IDictionary]$Bucket) {
+    $value =  $_
+    if ((-not $key) -or (-not $Bucket) ) { return }
+        
+    if (-not $Bucket[$key]) {
+        # put it in the dictionary
+        $Bucket[$key] = $value
+    }
+    else {
+        # otherwise make it a bucket and store the next value.
+        $Bucket[$key] = @($Bucket[$key]) + ($value)
+    }
+}
 
 # The first four bytes of a list are always `INFO`,
 # so walk over our list, starting at 4 and incrementing as we read.
@@ -93,16 +114,47 @@ for ($index = 4; $index -lt $list.Length; ) {
 
     # Rather than special case this one scenario, 
     # we will presume anything with the letters `XML` in the key is UTF-8 XML.
-    if ($fourByteId -match 'XML') {
-        $metadata[$metaDataId] = [Text.Encoding]::UTF8.GetString($list, $index, $metadataLength).Trim()
+    if (
+        $fourByteId -match 'XML' -or 
+        $fourByteId -match 'MATH'
+    ) {
+        $value = [Text.Encoding]::UTF8.GetString($list, $index, $metadataLength).Trim()
+        
         # If we can cast the value to XML
-        if ($metadata[$metaDataId] -as [xml]) {
-            # then return this metadata as XML
-            $metadata[$metaDataId] = $metadata[$metaDataId] -as [xml]
+        if ($value -as [xml]) {
+            # Then update the value to it's xml
+            $value = $value -as [xml]            
+            $value | bucket $MetaDataId $metadata
         }
-    } else {
+        # If we could not cast to XML
+        else
+        {
+            # two tears in a bucket.
+            $value | bucket $MetaDataId $metadata
+        }
+    }
+    # If the four byte id is json 
+    elseif ($fourByteID -match 'json') {
+        # read it as utf-8
+        $value = [Text.Encoding]::UTF8.GetString($list, $index, $metadataLength).Trim()
+        
+        # and try to convert it from json
+        try {
+            $value = [Microsoft.PowerShell.Commands.JsonObject]::ConvertFromJson($value, [ref]$null)    
+            $value | bucket $MetaDataId $metadata
+            
+        } catch {
+            # If we could not, warn
+            Write-Warning "Non-Json in json at $($index): $_"
+            # and bucket the metadata.
+            $value | bucket $MetaDataId $metadata
+        }        
+    }
+    else {
         # Get the string
-        $metadata[$metaDataId] = [Text.Encoding]::ASCII.GetString($list, $index, $metadataLength).Trim()
+        $value = [Text.Encoding]::ASCII.GetString($list, $index, $metadataLength).Trim()
+                
+        $value | bucket $MetaDataId $metadata
     }
     
     # and advance by the string length.
