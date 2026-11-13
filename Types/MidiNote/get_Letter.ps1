@@ -21,15 +21,16 @@ if ($abs -lt 24) {
 
 $remainder = ($abs - 12) % 12
 
+$rounded = [Math]::Round(
+    ($remainder * $letters.Length)/$letters.Length
+)
+
 $letter = 
-    if ($remainder) {
-        $letters[
-            [Math]::Floor(
-                ($remainder * $letters.Length)/$letters.Length
-            )
-        ]
+    if ($rounded -lt $letters.Length) {        
+        $letters[$rounded]
     } else {
         'C'
+        $octave += 1
     }
 
 
