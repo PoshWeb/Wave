@@ -132,6 +132,13 @@ filter ListItemBytes {
     [Text.Encoding]::ASCII.GetBytes("INFO")
     # followed by a series of key-value pairs
     foreach ($key in $MetaData.Keys) {
+        # If the metadata starts with punctuation, 
+        # we do not want to save it.
+        # This allows for temporary 
+        # metadata that will not be persisted.
+        if ($key -match '^\p{P}') {
+            continue
+        }
         # Each key can only be four ASCII characters.
         $shortKey = 
             # If the key was longer than four characters
