@@ -5174,15 +5174,10 @@ $noteSequence = @(foreach ($note in $Melody) {
 })
 
 $NewMelody = @()
-
-# We go over each note in the sequence,
-[byte[]]$wavaData = @(for ($index = 0; $index -lt $NoteSequence.Length; $index++) {
+$NewWaves = @()
+[byte[]]$NewBytes = @(for ($index = 0; $index -lt $NoteSequence.Length; $index++) {
     $note = $NoteSequence[$index]
     $friendly = $note.Name
-    # and writing progress as we go.
-    $progress.PercentComplete = $index * 100 / $NoteSequence.Length
-    $progress.Activity = "$($note.Name)@$($note.Duration) $index / $($NoteSequence.Length)"
-    Write-Progress @progress
 
     # Initialize our instrument list (we can play multiple instruments at once)
     $InstrumentList = ''
@@ -5197,6 +5192,11 @@ $NewMelody = @()
         # the instrument is `Silence`.
         $InstrumentList = 'Silence'
     }
+
+    # and writing progress as we go.
+    $progress.PercentComplete = $index * 100 / $NoteSequence.Length
+    $progress.Activity = "$($note.Name)@$($note.Duration) on $($instrumentList -join ',') $index / $($NoteSequence.Length)"
+    Write-Progress @progress
 
     # We want to be able to make multiple sounds at once.
     # Our combined wave is the sum of all of the samples.
@@ -5391,19 +5391,28 @@ $NewMelody = @()
     # Emit the cached wave data at this point
     # By emitting data instead of samples, 
     # we make it faster to concatenate the wave.
+    $NewWaves += $WaveCache[$cacheKey]
     $WaveCache[$cacheKey].Data
-})
+})    
+
+
+# Last but not least: complete our progress bars
+$progress.Activity = "Encoding"
+Write-Progress @progress
+
+$newWave = wave @waveSplat -PCM $NewBytes
+$newWave.Melody = $NewMelody
+$NewWave.Instrument = $Instruments
+$NewWave.Chords =  $currentWave.Chords
+$NewWave.Weights =  $currentWave.Weights
+$NewWave.Metadata = $currentWave.Metadata
 
 # Last but not least: complete our progress bars
 $progress.Remove('PercentComplete')
 $progress.Completed = $true
 Write-Progress @progress
 
-$newWave = wave @waveSplat -PCM $wavaData
-$newWave.Melody = $NewMelody
-$NewWave.Instrument = $Instruments
-$NewWave.Chords =  $currentWave.Chords
-$NewWave.Weights =  $currentWave.Weights
+
 return $newWave
                     </Script>
       </ScriptMethod>
