@@ -157,8 +157,10 @@ foreach ($n in 21..108) {
 $waveLinq = [PSCustomObject]@{PSTypeName='WaveLinq'}
 try {
     $addTypeSplat = [Ordered]@{
-        TypeDefinition = $waveLinq.TypeDefinition
-        ReferencedAssemblies = $waveLinq.Reference.Location
+        TypeDefinition = $waveLinq.TypeDefinition        
+    }
+    if ($PSVersionTable.PSVersion -lt 6.0) {
+        $addTypeSplat.ReferencedAssemblies = $waveLinq.Reference
     }
     Add-Type @addTypeSplat -ErrorAction SilentlyContinue -ErrorVariable compilationErrors
 } catch {
