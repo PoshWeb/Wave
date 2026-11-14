@@ -7899,9 +7899,11 @@ $writer.Write([uint32]($this.Length - 8))
 # and set our position back to the start.
 $null = $this.Seek(0, 'Begin')
 
+# Go over each of our properties.
 foreach ($prop in $this.psobject.properties) {
-    if ($prop.Name -match '^#') {
-        $prop.Value = $null
+    # If the property is a local RIFF data property 
+    if ($prop.Name -match '^#(?&gt;chunk|data|fmt|list)') {
+        $prop.Value = $null # clear it's value
     }
 }
 
