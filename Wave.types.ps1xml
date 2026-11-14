@@ -10174,6 +10174,16 @@ foreach ($method in 'Add','Subtract', 'Multiply', 'Divide') {
                     </Script>
       </ScriptMethod>
       <ScriptProperty>
+        <Name>Reference</Name>
+        <GetScriptBlock>
+                        [object].Assembly
+[PSObject].Assembly
+[Numerics.Vector2].Assembly
+[Collections.Generic.List[double]].Assembly
+
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>TypeDefinition</Name>
         <GetScriptBlock>
                         &lt;#
