@@ -54,6 +54,30 @@ foreach ($functionName in $exports) {
     )
 }
 
+
+#region Verbs
+$VerbsFolder = Get-ChildItem -Directory -Path $PSScriptRoot
+if ($VerbsFolder) {
+    foreach ($verbFile in $VerbsFolder.GetFiles()) {
+        if ($verbFile.Name -notmatch "^$StartsWithVerb\.ps1$") { continue }
+        $VerbScript = $ExecutionContext.SessionState.InvokeCommand.GetCommand(
+            $verbFile.FullName,'ExternalScript'
+        )
+
+        $verb = $VerbFile.Name -replace '\.ps1$'
+        $verb = $verb.Substring(0,1).ToUpper() + $verb.Substring(1)
+        $verbFunctionName = "$verb-$ModuleName"
+        $ExecutionContext.SessionState.PSVariable.Set(
+            "function:$verbFunctionName",
+            $VerbScript.ScriptBlock
+        )
+
+        $exports += $verbFunctionName
+    }
+}
+#endregion Verbs
+
+
 # We also want to export any aliases
 # and add support for argument completers.
 $argumentCompleter = $null
@@ -131,8 +155,91 @@ foreach ($n in 21..108) {
 }
 
 $waveLinq = [PSCustomObject]@{PSTypeName='WaveLinq'}
-Add-Type -TypeDefinition $waveLinq.TypeDefinition
+try {
+    $addTypeSplat = [Ordered]@{
+        TypeDefinition = $waveLinq.TypeDefinition
+        ReferenceAssemblies = $waveLinq.Reference.Location
+    }
+    Add-Type @addTypeSplat -ErrorAction SilentlyContinue -ErrorVariable compilationErrors
+} catch {
+    Write-Warning "$($_)"
+    foreach ($err in $compilationErrors) {
+        if ($err.Exception -and $err.Exception.GetType().FullName -ne
+            'System.Management.Automation.CmdletInvocationExcepton'
+        ) {
+            Write-Warning "$err"
+        }        
+    }
+}
 #endregion Additional Exports
+
+#region Startup
+$waveFolder = [Environment]::GetfolderPath('LocalApplicationData') | Get-ChildItem -Filter Wave
+if ($waveFolder) {
+    $waveFiles = $waveFolder.GetFiles()
+    [long]$totalSize = 0
+    foreach ($waveFile in $waveFiles) {
+        $totalSize += $waveFile.Length
+    }
+    if ($totalSize -gt 128mb) {
+        $gigs = [Math]::Round($totalSize/1gb, 4)
+        $nudge = @(
+            'Needs Clean','Clear it out',
+            'Time to clean up', 'Do you really need these?'
+            'Wave files are big', ':-('
+            'Disk space is finite'
+        ) | Get-Random
+        $fix = [Environment]::NewLine + "Get-ChildItem -Path '$($waveFolder.FullName -replace "'","''")' | Remove-Item"
+        Write-Warning "$($gigs)gb waves in $($waveFolder.FullName) $nudge $fix"
+    }
+
+    $callstack = @(Get-PSCallstack)
+
+    $myPrivateData = $MyInvocation.MyCommand.ScriptBlock.Module.PrivateData
+
+    if (
+        ($callstack.Length -le 2) -and 
+        $host.UI.RawUI.BufferSize.Width -and
+        ($PSVersionTable.PSVersion.Major -ge 6) -and
+        ($myPrivateData.Tips -or $myPrivateData.Tricks) 
+    ) {
+        # Banner
+
+        [Console]::WriteLine(
+@(
+foreach ($row in 1,0,-1) {        
+    @(foreach ($column in 0..($host.UI.RawUI.BufferSize.Width - 3)) {
+        if ([Math]::Round(
+            [Math]::Sin($column * [Math]::PI/2)
+        ) -eq $row) {
+            '*'
+        } else {
+            ' '
+        }
+    }) -join ''
+}
+) -join [Environment]::NewLine   
+
+
+         
+        )
+
+        $tipsAndTricks = @(
+            $myPrivateData.Tips
+            $myPrivateData.Tricks 
+        )
+        
+        if ($tipsAndTricks) {
+            $tipsAndTricks | 
+                Get-Random | 
+                ConvertFrom-Markdown -AsVT100EncodedString |
+                Select-OBject -ExpandProperty  VT100EncodedString | 
+                Out-host
+        }
+        
+    }
+}
+#endregion Startup
 
 # All that's left to do is explicitly export just these functions.
 Export-ModuleMember -Function $exports -Alias $aliasExports -Variable (@($moduleName) + $midi88Variables)
