@@ -158,7 +158,7 @@ $waveLinq = [PSCustomObject]@{PSTypeName='WaveLinq'}
 try {
     $addTypeSplat = [Ordered]@{
         TypeDefinition = $waveLinq.TypeDefinition
-        ReferenceAssemblies = $waveLinq.Reference.Location
+        ReferencedAssemblies = $waveLinq.Reference.Location
     }
     Add-Type @addTypeSplat -ErrorAction SilentlyContinue -ErrorVariable compilationErrors
 } catch {
@@ -218,10 +218,7 @@ foreach ($row in 1,0,-1) {
         }
     }) -join ''
 }
-) -join [Environment]::NewLine   
-
-
-         
+) -join [Environment]::NewLine            
         )
 
         $tipsAndTricks = @(
