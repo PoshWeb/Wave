@@ -51,7 +51,7 @@ $lowtones  = 697, 770, 852, 941
 $highTones = 1209, 1336, 1477, 1633
 
 $validDmtf = [Regex]::new('[0-9a-d\*\#\-\._!]')
-foreach ($match in $validDmtf.Matches(($Sequence -join ' '))) {
+$dmtfMelody = foreach ($match in $validDmtf.Matches(($Sequence -join ' '))) {
     $dmft = "$match"
     [Ordered]@{
         Name = "DMTF $dmtf"
@@ -84,3 +84,5 @@ foreach ($match in $validDmtf.Matches(($Sequence -join ' '))) {
     }    
 }
 
+$this.Melody += $dmtfMelody
+return $this.Sound()
