@@ -33,4 +33,15 @@ $ode = @(
     "D C:2 C:2"
 )
 
-wave note $ode play
+$odeToJoy = wave title @(
+    "Ode To Joy"
+) artist @(
+    "Ludwig van Beethoven"
+) volume 0.2026 chords @(
+    1, 2, 0.5, 0.25
+) weights @(
+    1,1,1,1
+) note $ode 
+
+$odeToJoy 
+$odeToJoy | wave play
