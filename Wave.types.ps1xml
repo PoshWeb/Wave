@@ -9514,6 +9514,8 @@ $trigMethods += @( $trigMethods -replace '$', 'h')
 
 # Walk over each alphabetized method
 foreach ($method in $trigMethods | Sort-Object) {
+    # Not all of these methods will exist in all .NET Framework versions
+    if (-not [Math]::$Method) { continue }
     "
     /// &lt;summary&gt;
     /// Computes the Math.${method} of a sets of numbers.
