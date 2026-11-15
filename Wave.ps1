@@ -154,12 +154,14 @@ $SampleRate = 44100,
 [uint16]
 $AudioFormat = 3,
 
-# The number of bytes per block
-[Alias('BPB')]
+# The block size.
+# This is minimum number of bytes used to store each sample in each channel.
+# If not provided, it will be computed 
+[Alias('BS','BytesPerBlock')]
 [uint16]
-$BytesPerBlock,
+$BlockSize,
 
-# The bytes per second
+# The bytes per second.
 [uint32]
 $BytesPerSecond,
 
@@ -174,6 +176,12 @@ $Path,
 # (this will be harmless, but may result in very odd looking metadata)
 [IO.Stream]
 $Stream,
+
+# One or more URLs.
+# If the URL returns an `audio/wav` object, it will load that wave
+# If the URL returns json and has a `_base` property, it will be treated as a Wave Pool.
+[uri[]]
+$Url,
 
 # A series of samples.
 # These will be converted to PCM data
@@ -301,8 +309,8 @@ if ($allInput.Length) {
         :nextInput foreach ($in in $allInput) {
             # if it is a wave
             if ($in.pstypenames -contains 'audio/wav') {
-                # just make waves `$this` to be the wave.
-                $in | makeWave                
+                # just make waves.
+                $in | makeWave
                 continue nextInput
             }        
             
@@ -345,6 +353,7 @@ if ($allInput.Length -and -not $allInput -as [double[]]) {
             continue nextInput
         }        
         
+        # If the input is a file, and it is a wave
         if ($in -is [IO.FileInfo] -and 
             $in.Extension -eq '.wav'
         ) {
@@ -403,6 +412,100 @@ if ($Path) {
     return
 }
 
+# If one or more urls have been provided
+if ($url) {
+    # Check to see if we have a cache
+    if (-not $script:UrlCache) {
+        # and create one if we do not
+        $script:UrlCache = [Ordered]@{}
+    }
+
+    # Filter urls
+    $url = @(
+        foreach ($uri in $url) {
+            # For now, we'll enforce that urls are absolute
+            if (-not $uri.IsAbsoluteUri) {
+                Write-Warning "$uri is not absolute"
+                continue
+            }
+            else {
+                $uri
+            }
+        }
+    )
+        
+    # Go over each filtered url
+    foreach ($uri in $url) {        
+        # If we have not cached the uri yet
+        if (-not $script:UrlCache[$uri]) {
+            # cache it
+            $script:UrlCache[$uri] =
+                Invoke-WebRequest -Uri $uri *>&1
+        }
+
+        # Get the response from our cache
+        $waveResponse = $script:UrlCache[$uri]
+        # If the response is already a WavePool
+        if ($waveResponse.pstypenames -contains 'WavePool') {
+            # output it
+            $waveResponse
+            continue # and continue.
+        }
+
+        # If the response
+        if (            
+            $waveResponse.Headers -and # had headers
+            # with the `Content-Type` of `audio/wav`
+            $waveResponse.Headers['Content-Type'] -eq 'audio/wav' -and
+            # and a byte response
+            $waveResponse.Content -is [byte[]]
+        ) {
+            # Create a new memory stream
+            $waveStream = [IO.MemoryStream]::new()
+            # write the stream
+            $waveStream.Write(
+                $waveResponse.Content, 0 , $waveResponse.Content.Length
+            )
+            # seek to the beginning
+            $null = $waveStream.Seek(0, 'Begin')
+            # and make waves.
+            $waveStream | makeWave
+        }
+        elseif (
+            # If the response was a string
+            $waveResponse.Content -is [string]
+        ) {
+            try {
+                # attempt to convert it from json
+                $wavePool = $waveResponse.Content | ConvertFrom-Json
+                # If that has a `_base`
+                if ($wavePool._base) {
+                    # consider it a WavePool.
+                    $wavePool.pstypenames.add('WavePool')
+                    # and replace the cache.
+                    $script:UrlCache[$uri] = $wavePool
+                } else {
+                    # Otherwise, write a warning
+                    Write-Warning "Response lacks _base, and is probably not a WavePool"
+                    # and output the object.
+                    $wavePool
+                }                
+            } catch {
+                # If we failed to convert from json
+                # warn
+                Write-Warning "$uri did not respond with json: $($_)"
+                # and output the string.
+                $waveResponse.Content
+            }
+        }
+    }
+
+    # If we had any urls after filtering
+    if ($url) {
+        return # return.
+    }    
+}
+
 # If we have gotten this far, 
 # we are going to create a wave from scratch.
 
@@ -417,14 +520,14 @@ if ($AudioFormat -eq 3 -and $BitsPerSample -lt 32) {
 }
 
 # If we have no computed the bytes per block
-if (-not $BytesPerBlock) {
+if (-not $BlockSize) {
     # It should be the channel count times the number of bytes in each sample.
-    $BytesPerBlock = $ChannelCount * $BitsPerSample/8
+    $BlockSize = $ChannelCount * $BitsPerSample/8
 }
 
 if (-not $BytesPerSecond) {
-    # Number of bytes to read per second (Frequency * BytePerBloc).
-    $BytesPerSecond = $SampleRate * $BytesPerBlock
+    # Number of bytes to read per second (Frequency * BlockSize).
+    $BytesPerSecond = $SampleRate * $BlockSize
 }
 
 # If we have been provided samples, but not PCM data
@@ -510,7 +613,7 @@ $binaryWriter.Write($BytesPerSecond)
     
 # Bytes Per Block (ChannelCount * BitsPerSample / 8)
 # > Bytes 32..33
-$binaryWriter.Write($BytesPerBlock)
+$binaryWriter.Write($BlockSize)
 # Number of bits per sample
 # > Bytes 34..35
 $binaryWriter.Write($BitsPerSample)
