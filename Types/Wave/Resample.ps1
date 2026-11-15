@@ -39,7 +39,7 @@ $waveFormat = $currentWave.WaveFormat
 $waveFormat.SampleRate = [Math]::Round([Math]::Abs($SampleRate))
 # and the bytes per second needs to change, 
 # or else things will sound fuzzy and wrong.
-$waveFormat.BlockSize = $waveFormat.SampleRate * $currentWave.ChannelCount * $currentWave.BlockSize
+$waveFormat.BytesPerSecond = $waveFormat.SampleRate * $currentWave.ChannelCount * $currentWave.BlockSize
 
 # Compute our new sample count
 $newSampleCount = [Math]::Round(
