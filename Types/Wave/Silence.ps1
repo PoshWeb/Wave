@@ -11,6 +11,10 @@ param(
     if ($this.BPM -is [TimeSpan]) {$this.BPM} 
     else { [TimeSpan]::FromSeconds(60/128) }
 ),
+
+# The start time.
+$Time,
+
 # The sample rate.
 # Will default to the `.SampleRate` of `$this` wave.
 # If there is no `$this` wave, will default to 44100
@@ -26,10 +30,25 @@ param(
 )
 )
 
+$NewWave = $this
+if (-not $newWave) { $NewWave = wave }
+
+if (-not $Time) {
+    $time = $NewWave.Duration
+}
+
 # Silence is nothing
 $silence = @(0)
 
-# An array of silence is nothing times the number of samples
-return ,[double[]]$($silence * [Math]::Round(    
-    $Duration.TotalSeconds * $SampleRate * $channelCount
-) )
+# We will add silence to the new wave.
+return $newWave.Add(
+    [double[]]@(
+        @(0) * # silence is nothing
+        [Math]::Round(
+            # and we want the `$Duration` seconds of sample
+            $Duration.TotalSeconds * $SampleRate * $channelCount
+        )
+    ), 
+    $time # and add it at the specified time.
+)
+
