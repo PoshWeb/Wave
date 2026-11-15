@@ -48,4 +48,5 @@
 
     # Technical names to colloquial names
     NyquistFrequency = 'FoldingFrequency'
+    BytesPerBlock = 'BlockSize'
 }
