@@ -39,7 +39,7 @@ $waveFormat = $currentWave.WaveFormat
 $waveFormat.SampleRate = [Math]::Round([Math]::Abs($SampleRate))
 # and the bytes per second needs to change, 
 # or else things will sound fuzzy and wrong.
-$waveFormat.BytesPerSecond = $waveFormat.SampleRate * $currentWave.ChannelCount * $currentWave.BytesPerBlock
+$waveFormat.BlockSize = $waveFormat.SampleRate * $currentWave.ChannelCount * $currentWave.BlockSize
 
 # Compute our new sample count
 $newSampleCount = [Math]::Round(
@@ -73,8 +73,8 @@ $sampleIncrement =
         $sampleNumber -ge 0 -and ($sampleNumber -lt $newSampleCount);
         # and incrementing by 1 or -1
         $sampleNumber += $sampleIncrement
-    ) {        
-        # The difference between resampling and 
+    ) {
+        # The difference between resampling and
         # speed adjustment comes down if we extrapolate.
 
         # Adjusting speed will using linear interpolation to fill in the gaps.
@@ -84,7 +84,7 @@ $sampleIncrement =
             [Math]::Round(
                 $sampleNumber/$newSampleCount * $Current.Length
             )
-        ]                
+        ]
         continue 
     }    
 )
