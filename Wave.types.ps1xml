@@ -515,6 +515,10 @@ Instrument</Value>
         <ReferencedMemberName>Reverse</ReferencedMemberName>
       </AliasProperty>
       <AliasProperty>
+        <Name>BytesPerBlock</Name>
+        <ReferencedMemberName>BlockSize</ReferencedMemberName>
+      </AliasProperty>
+      <AliasProperty>
         <Name>Channels</Name>
         <ReferencedMemberName>ChannelCount</ReferencedMemberName>
       </AliasProperty>
@@ -4452,7 +4456,7 @@ $waveFormat = $currentWave.WaveFormat
 $waveFormat.SampleRate = [Math]::Round([Math]::Abs($SampleRate))
 # and the bytes per second needs to change, 
 # or else things will sound fuzzy and wrong.
-$waveFormat.BytesPerSecond = $waveFormat.SampleRate * $currentWave.ChannelCount * $currentWave.BytesPerBlock
+$waveFormat.BlockSize = $waveFormat.SampleRate * $currentWave.ChannelCount * $currentWave.BlockSize
 
 # Compute our new sample count
 $newSampleCount = [Math]::Round(
@@ -4486,8 +4490,8 @@ $sampleIncrement =
         $sampleNumber -ge 0 -and ($sampleNumber -lt $newSampleCount);
         # and incrementing by 1 or -1
         $sampleNumber += $sampleIncrement
-    ) {        
-        # The difference between resampling and 
+    ) {
+        # The difference between resampling and
         # speed adjustment comes down if we extrapolate.
 
         # Adjusting speed will using linear interpolation to fill in the gaps.
@@ -4497,7 +4501,7 @@ $sampleIncrement =
             [Math]::Round(
                 $sampleNumber/$newSampleCount * $Current.Length
             )
-        ]                
+        ]
         continue 
     }    
 )
@@ -6758,6 +6762,34 @@ if (-not $this.'#fmt') {
                     </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
+        <Name>BlockSize</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets Wave Bytes Per Block
+.DESCRIPTION
+    Gets the Wave Bytes Per Block.
+    
+    This should be `$this.BitsPerSample/8` * `$this.ChannelCount`
+.NOTES
+    This is the second to last pair of bytes in the Format `fmt ` chunk (`12,13`)
+#&gt;
+
+# The expected range
+$range = 12,13
+# If we have no cached format
+if (-not $this.'#fmt') {
+    # read chunks.
+    $null = $this.Chunk
+    # Return if we still have no cached format
+    if (-not $this.'#fmt') { return }
+}
+
+# Otherwise, convert the range into a [uint16]
+[bitConverter]::ToUint16($this.'#fmt'[$range] -as [byte[]], 0)
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
         <Name>BPM</Name>
         <GetScriptBlock>
                         &lt;#
@@ -6808,34 +6840,6 @@ if ($bpm -is [TimeSpan]) {
 
 
                     </SetScriptBlock>
-      </ScriptProperty>
-      <ScriptProperty>
-        <Name>BytesPerBlock</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets Wave Bytes Per Block
-.DESCRIPTION
-    Gets the Wave Bytes Per Block.
-    
-    This should be `$this.BitsPerSample/8` * `$this.ChannelCount`
-.NOTES
-    This is the second to last pair of bytes in the Format `fmt ` chunk (`12,13`)
-#&gt;
-
-# The expected range
-$range = 12,13
-# If we have no cached format
-if (-not $this.'#fmt') {
-    # read chunks.
-    $null = $this.Chunk
-    # Return if we still have no cached format
-    if (-not $this.'#fmt') { return }
-}
-
-# Otherwise, convert the range into a [uint16]
-[bitConverter]::ToUint16($this.'#fmt'[$range] -as [byte[]], 0)
-                    </GetScriptBlock>
       </ScriptProperty>
       <ScriptProperty>
         <Name>BytesPerSecond</Name>
@@ -8941,7 +8945,7 @@ $waveFormat['AudioFormat'] = [BitConverter]::ToUInt16($this.'#fmt', 0)
 $waveFormat['ChannelCount'] = [BitConverter]::ToUInt16($this.'#fmt', 2)
 $waveFormat['SampleRate'] = [BitConverter]::ToUInt32($this.'#fmt', 4)
 $waveFormat['BytesPerSecond'] = [BitConverter]::ToUInt32($this.'#fmt', 8)
-$waveFormat['BytesPerBlock'] = [BitConverter]::ToUInt16($this.'#fmt', 12)
+$waveFormat['BlockSize'] = [BitConverter]::ToUInt16($this.'#fmt', 12)
 $waveFormat['BitsPerSample'] = [BitConverter]::ToUInt16($this.'#fmt', 14)
 
 return $waveFormat
