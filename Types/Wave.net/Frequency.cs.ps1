@@ -45,7 +45,7 @@ $Modifier = 'public',
 
 @"
     public Frequency(string hertz) {
-        string lowerHertz = hertz.ToLower();
+        string lowerHertz = hertz.ToLower().Replace("#", "s");
         if (Regex.IsMatch(lowerHertz,"^[a-g]")) {
             foreach (Frequency f in Frequency.Keyboard) {
                 if (lowerHertz == f.Letter.ToLower()) {
