@@ -9085,7 +9085,7 @@ $Operators = @(
 
         operator -Signature "public static $ClassName" -Operator '&lt;&lt;' -Operands @(
             "$ClassName left", "$ClassName right"
-        ) -Body "{ new $ClassName(left.Hertz * Math.Pow(2, (right.Hertz * -1.0)/12)); }"
+        ) -Body "{ return new $ClassName(left.Hertz * Math.Pow(2, (right.Hertz * -1.0)/12)); }"
 
         # ($this / [Math]::Pow(2, (($Distance * -1.0)/12)))    
 
