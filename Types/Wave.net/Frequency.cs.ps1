@@ -164,19 +164,6 @@ $Modifier = 'public',
         }
     } 
 "@
-<#
-@"
-    public static Regex LetterPattern {
-        get {
-            return new Regex(""
-            $(
-            ([PSCustomObject]@{PSTypeName='Wave'}).NoteGrammar['LetterNote'] -replace '\', '\\'
-            )
-            "", 'IgnoreCase, IgnorePatternWhitespace')
-        }
-    }
-"@
-#>
 ),
 
 # Any operators
@@ -212,25 +199,31 @@ $Operators = @(
 }
 
 
+        # Older versions of PowerShell don't support bitwise operators in this format
+        # so we can only `-shr`/`-shl` a frequency on PowerShell Core.
 
-        operator -Signature "public static $ClassName" -Operator '>>' -Operands @(
-            "$ClassName left", "double right"
-        ) -Body "{ return new $ClassName(left.Hertz / Math.Pow(2, (right * -1.0)/12)); }"
+        # (we can always use the `Sharpen` and `Flatten` methods to do this on Windows PowerShell)
+        
+        if ($psVersionTable.PSVersion.Major -ge 6) {
+            operator -Signature "public static $ClassName" -Operator '>>' -Operands @(
+                "$ClassName left", "double right"
+            ) -Body "{ return new $ClassName(left.Hertz / Math.Pow(2, (right * -1.0)/12)); }"
 
-        operator -Signature "public static $ClassName" -Operator '>>' -Operands @(
-            "$ClassName left", "$ClassName right"
-        ) -Body "{ return new $ClassName(left.Hertz / Math.Pow(2, (right.Hertz * -1.0)/12)); }"
+            operator -Signature "public static $ClassName" -Operator '>>' -Operands @(
+                "$ClassName left", "$ClassName right"
+            ) -Body "{ return new $ClassName(left.Hertz / Math.Pow(2, (right.Hertz * -1.0)/12)); }"
 
-        operator -Signature "public static $ClassName" -Operator '<<' -Operands @(
-            "$ClassName left", "double right"
-        ) -Body "{ return new $ClassName(left.Hertz * Math.Pow(2, (right * -1.0)/12)); }"
+            operator -Signature "public static $ClassName" -Operator '<<' -Operands @(
+                "$ClassName left", "double right"
+            ) -Body "{ return new $ClassName(left.Hertz * Math.Pow(2, (right * -1.0)/12)); }"
 
-        operator -Signature "public static $ClassName" -Operator '<<' -Operands @(
-            "$ClassName left", "$ClassName right"
-        ) -Body "{ return new $ClassName(left.Hertz * Math.Pow(2, (right.Hertz * -1.0)/12)); }"
-
-        # ($this / [Math]::Pow(2, (($Distance * -1.0)/12)))    
-
+            operator -Signature "public static $ClassName" -Operator '<<' -Operands @(
+                "$ClassName left", "$ClassName right"
+            ) -Body "{ return new $ClassName(left.Hertz * Math.Pow(2, (right.Hertz * -1.0)/12)); }"
+    
+        }
+        
+        # Implicit and Explicit conversions to/from double and TimeSpan
         operator -Signature "public static implicit" -Operator 'double' -Operands @(
             "$ClassName other"
         ) -Body "{ return other.Hertz; }"
