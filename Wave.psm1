@@ -8,14 +8,13 @@ $exports = [Ordered]@{
 #endregion Prepare Exports
 #region Compilation
 $waveLinq = [PSCustomObject]@{PSTypeName='WaveLinq'}
-$frequencyProtoType = [PSCustomObject]@{PSTypeName='Wave.Frequency'}
-
+$waveDotNet = [PSCustomObject]@{PSTypeName='Wave.net'}
 try {
     $addTypeSplat = [Ordered]@{
         TypeDefinition = @(
             $waveLinq.TypeDefinition        
-            if ($frequencyProtoType.'Frequency.cs'.Invoke) {
-                $frequencyProtoType.'Frequency.cs'()
+            if ($waveDotNet.'Frequency.cs'.Invoke) {
+                $waveDotNet.'Frequency.cs'()
             }
         ) -join [Environment]::NewLine
     }
@@ -171,14 +170,14 @@ ${function:MidiNote} = ${function:Get-MidiNote} = $midinote.ScriptBlock
 $exports.Function += "Get-Frequency","Frequency", "Get-MidiNote", "MidiNote"
 
 if ('Wave.Frequency' -as [type]) {
-    $A0 = [Wave.Frequency]27.5    
+    $A0 = [Wave.Frequency]27.5
     $exports.variable += @(
         foreach ($n in 0..87) {
             $f = $A0 -shr $n
             $ExecutionContext.SessionState.PSVariable.Set($f.Letter,$f)
-            $f.Letter            
+            $f.Letter
         }
-    ) 
+    )
 }
 #endregion Additional Exports
 
