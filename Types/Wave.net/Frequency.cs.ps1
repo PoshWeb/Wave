@@ -116,13 +116,13 @@ $Modifier = 'public',
 
 @"
 
-    public double Flat {
+    public Frequency Flat {
         get {
             return new Frequency(this.Hertz * Math.Pow(2, -1.0/12));
         }
     }
 
-    public double Sharp {
+    public Frequency Sharp {
         get {
             return new Frequency(this.Hertz / Math.Pow(2, -1.0/12));
         }
