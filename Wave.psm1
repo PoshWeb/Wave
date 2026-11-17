@@ -183,6 +183,7 @@ if ($waveFolder) {
     foreach ($waveFile in $waveFiles) {
         $totalSize += $waveFile.Length
     }
+    
     if ($totalSize -gt 128mb) {
         $gigs = [Math]::Round($totalSize/1gb, 4)
         $nudge = @(
@@ -200,43 +201,46 @@ if ($waveFolder) {
     $myPrivateData = $MyInvocation.MyCommand.ScriptBlock.Module.PrivateData
 
     if (
-        ($callstack.Length -le 2) -and 
-        $host.UI.RawUI.BufferSize.Width -and
-        ($PSVersionTable.PSVersion.Major -ge 6) -and
-        ($myPrivateData.Tips -or $myPrivateData.Tricks) 
+        $callstack.Length -le 2 -and
+        $host.UI.RawUI.BufferSize.Width
     ) {
-        # Banner
-
-        [Console]::WriteLine(
-@(
-foreach ($row in 1,0,-1) {        
-    @(foreach ($column in 0..($host.UI.RawUI.BufferSize.Width - 3)) {
-        if ([Math]::Round(
-            [Math]::Sin($column * [Math]::PI/2)
-        ) -eq $row) {
-            '*'
-        } else {
-            ' '
+        #region Banner
+        $waveText = '◜◝◟◞'
+        $Offset = Get-Random -Maximum $waveText.Length
+        if ($Offset) {
+            $Offset = ($Offset -as [int]) * -1
+            [Console]::Write($waveText[$Offset..-1] -join '')
         }
-    }) -join ''
-}
-) -join [Environment]::NewLine            
+                                            
+        [Console]::Write(
+            @(                    
+                $waveText * (Get-Random -Minimum 4 -Maximum 32)
+            ) -join ''            
         )
+    
+        [Console]::WriteLine()
+        #endregion Banner
 
-        $tipsAndTricks = @(
-            $myPrivateData.Tips
-            $myPrivateData.Tricks 
-        )
-        
-        if ($tipsAndTricks) {
-            $tipsAndTricks | 
-                Get-Random | 
-                ConvertFrom-Markdown -AsVT100EncodedString |
-                Select-OBject -ExpandProperty  VT100EncodedString | 
-                Out-host
+        #region Tips And Tricks
+        if (
+            ($PSVersionTable.PSVersion.Major -ge 6) -and
+            ($myPrivateData.Tips -or $myPrivateData.Tricks) 
+        ) {
+            $tipsAndTricks = @(
+                $myPrivateData.Tips
+                $myPrivateData.Tricks 
+            )
+            
+            if ($tipsAndTricks) {
+                $tipsAndTricks | 
+                    Get-Random | 
+                    ConvertFrom-Markdown -AsVT100EncodedString |
+                    Select-OBject -ExpandProperty  VT100EncodedString | 
+                    Out-host
+            }
         }
-        
-    }
+        #endregion Tips And Tricks
+    }    
 }
 #endregion Startup
 
