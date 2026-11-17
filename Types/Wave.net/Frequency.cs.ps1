@@ -193,20 +193,20 @@ $Operators = @(
     if ($operator -in '==', '!=', '>', '>=', '<', '<=') {
         operator -Signature "public static bool" -Operator $operator -Operands @(
             "$ClassName left", "$ClassName right"
-        ) -Body "=> left.Hertz $operator right.Hertz;"
+        ) -Body "{ return left.Hertz $operator right.Hertz; }"
 
         operator -Signature "public static bool" -Operator $operator -Operands @(
             "$ClassName left", "double right"
-        ) -Body "=> left.Hertz $operator right;"
+        ) -Body "{ return left.Hertz $operator right; }"
     }     
     else {
         operator -Signature "public static $className" -Operator $operator -Operands @(
             "$ClassName left", "$ClassName right"
-        ) -Body "=> new $ClassName(left.Hertz $operator right.Hertz);"
+        ) -Body "{ return new $ClassName(left.Hertz $operator right.Hertz); }"
         
         operator -Signature "public static $className" -Operator $operator -Operands @(
             "$ClassName left", "double right"
-        ) -Body "=> new $ClassName(left.Hertz $operator right);"
+        ) -Body "{ return new $ClassName(left.Hertz $operator right); }"
     }
         
 }
@@ -215,29 +215,29 @@ $Operators = @(
 
         operator -Signature "public static $ClassName" -Operator '>>' -Operands @(
             "$ClassName left", "double right"
-        ) -Body "=> new $ClassName(left.Hertz / Math.Pow(2, (right * -1.0)/12));"
+        ) -Body "{ return new $ClassName(left.Hertz / Math.Pow(2, (right * -1.0)/12)); }"
 
         operator -Signature "public static $ClassName" -Operator '>>' -Operands @(
             "$ClassName left", "$ClassName right"
-        ) -Body "=> new $ClassName(left.Hertz / Math.Pow(2, (right.Hertz * -1.0)/12));"
+        ) -Body "{ return new $ClassName(left.Hertz / Math.Pow(2, (right.Hertz * -1.0)/12)); }"
 
         operator -Signature "public static $ClassName" -Operator '<<' -Operands @(
             "$ClassName left", "double right"
-        ) -Body "=> new $ClassName(left.Hertz * Math.Pow(2, (right * -1.0)/12));"
+        ) -Body "{ return new $ClassName(left.Hertz * Math.Pow(2, (right * -1.0)/12)); }"
 
         operator -Signature "public static $ClassName" -Operator '<<' -Operands @(
             "$ClassName left", "$ClassName right"
-        ) -Body "=> new $ClassName(left.Hertz * Math.Pow(2, (right.Hertz * -1.0)/12));"
+        ) -Body "{ new $ClassName(left.Hertz * Math.Pow(2, (right.Hertz * -1.0)/12)); }"
 
         # ($this / [Math]::Pow(2, (($Distance * -1.0)/12)))    
 
         operator -Signature "public static implicit" -Operator 'double' -Operands @(
             "$ClassName other"
-        ) -Body "=> other.Hertz;"
+        ) -Body "{ return other.Hertz; }"
 
         operator -Signature "public static explicit" -Operator "$ClassName" -Operands @(
             "double other"
-        ) -Body "=> new Frequency(other);"
+        ) -Body "{ return new Frequency(other);}"
 
         operator -Signature "public static implicit" -Operator 'TimeSpan' -Operands @(
             "$ClassName other"
@@ -350,7 +350,9 @@ $Members = @(
             return this.Hertz.ToString() + "hz";
         }        
 
-        public override int GetHashCode() => HashCode.Combine(GetType(), this.Hertz);        
+        public override int GetHashCode() {
+            return HashCode.Combine(GetType(), this.Hertz);
+        }
 
         public override bool Equals(object other) {
             if (other == null) { return false; }
