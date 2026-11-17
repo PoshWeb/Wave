@@ -22,6 +22,7 @@ $Namespace = 'Wave',
 [string[]]
 $Using = @(
     'System'
+    'System.Collections.Generic'
     'System.Text.RegularExpressions'
 ),
 
@@ -39,22 +40,29 @@ $Modifier = 'public',
     public Frequency() { this.Hertz = 0; }
 "   
     "
-    public Frequency(double hertz) { this.Hertz = hertz; }
+    public Frequency(double hertz) { this.Hertz = hertz; }    
 "
+
 @"
     public Frequency(string hertz) {
-        Regex letterPattern = new Regex("-?(?<letter>[a-g])(?<octave>\\d+)");
-        Match letterOctave = letterPattern.Match(hertz);
-        if (letterOctave.Success) {
-            this.Hertz = 0; 
+        string lowerHertz = hertz.ToLower();
+        if (Regex.IsMatch(lowerHertz,"^[a-g]")) {
+            foreach (Frequency f in Frequency.Keyboard) {
+                if (lowerHertz == f.Letter.ToLower()) {
+                    this.Hertz = f.Hertz;
+                    return;
+                }
+            }
         }
-        Regex dropLetters = new Regex("\\p{L}");
-        string noLetters = dropLetters.Replace(hertz, String.Empty);
-        double parsed;
-        if (double.TryParse(noLetters, out parsed)) {
-            this.Hertz = parsed;
-            return;
-        }
+
+        if (Regex.IsMatch(lowerHertz, "hz$")) {
+            Regex dropLetters = new Regex("\\p{L}");
+            string noLetters = dropLetters.Replace(hertz, String.Empty);
+            double parsed;
+            if (double.TryParse(noLetters, out parsed)) {
+                this.Hertz = parsed;        
+            }    
+        }        
     }
 "@
 ),
@@ -67,15 +75,13 @@ $Modifier = 'public',
 
 @"
     public double MidiNumber {
-        get {
-            
+        get {            
             double direction = 1.0;
-            if (this.Hertz < -1) {
-                direction = -1.0;
-            }
-            else if (this.Hertz == 0) {
+            if (this.Hertz == 0) {
                 direction = 0;
-            }
+            } else if (this.Hertz < 1) {
+                direction = -1.0;
+            }            
             
             double midiNumber = 69.0 + 12.0 * direction * Math.Log(Math.Abs(this.Hertz) / 440,2);
             if (Math.Abs(midiNumber) >= 21) {
@@ -88,7 +94,7 @@ $Modifier = 'public',
                 this.Hertz = 440.0 * Math.Pow(2,((value - 69)/12));
             } else if (value < 0 ) {
                 this.Hertz = -440.0 * Math.Pow(2,((Math.Abs(value) - 69)/12));
-            }                
+            }
         }
     }
 "@
@@ -109,6 +115,21 @@ $Modifier = 'public',
 "@
 
 @"
+
+    public double Flat {
+        get {
+            return new Frequency(this.Hertz * Math.Pow(2, -1.0/12));
+        }
+    }
+
+    public double Sharp {
+        get {
+            return new Frequency(this.Hertz / Math.Pow(2, -1.0/12));
+        }
+    }
+"@
+
+@"
     public double Octave {
         get {                
             if (this.MidiNumber < 21) { return 0; }                
@@ -119,19 +140,43 @@ $Modifier = 'public',
 "@
 
 @"
-    public static string[] Letters {
-        get {
-            return ["C","Cs","D","Ds","E","F","Fs","G","Gs","A","As","B"];
-        }
-    }
-"@
-
-@"
     public double Circumference {
         get { return this.Hertz * Math.PI * 2; }
         set { this.Hertz = value / (Math.PI * 2); }
     }
 "@
+
+@"
+    public static string[] Letters {
+        get {
+            return ["C","Cs","D","Ds","E","F","Fs","G","Gs","A","As","B"];
+        }
+    }
+
+    public static List<Frequency> Keyboard {
+        get {
+            Frequency a0 = new Frequency(27.5);
+            List<Frequency> keyboard = new List<Frequency>();
+            for (double n = 0; n < 88; n++) {
+                keyboard.Add(a0.Sharpen(n)); 
+            }
+            return keyboard;
+        }
+    } 
+"@
+<#
+@"
+    public static Regex LetterPattern {
+        get {
+            return new Regex(""
+            $(
+            ([PSCustomObject]@{PSTypeName='Wave'}).NoteGrammar['LetterNote'] -replace '\', '\\'
+            )
+            "", 'IgnoreCase, IgnorePatternWhitespace')
+        }
+    }
+"@
+#>
 ),
 
 # Any operators
@@ -326,7 +371,7 @@ $Members = @(
 
         public Frequency Flatten(double distance) {
             return new Frequency(this.Hertz * Math.Pow(2, ((distance * -1.0)/12)));
-        }
+        }                    
 '@
 )
 )
