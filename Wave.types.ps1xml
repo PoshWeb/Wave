@@ -3,6 +3,20 @@
   <Type>
     <Name>Frequency</Name>
     <Members>
+      <MemberSet>
+        <Name>PSStandardMembers</Name>
+        <Members>
+          <PropertySet>
+            <Name>DefaultDisplayPropertySet</Name>
+            <ReferencedProperties>
+              <Name>Hertz</Name>
+              <Name>MidiNumber</Name>
+              <Name>Letter</Name>
+              <Name>Octave</Name>
+            </ReferencedProperties>
+          </PropertySet>
+        </Members>
+      </MemberSet>
       <ScriptMethod>
         <Name>Flatten</Name>
         <Script>
@@ -661,6 +675,697 @@ return $sharpen
 
                     </GetScriptBlock>
       </ScriptProperty>
+      <NoteProperty>
+        <Name>DefaultDisplay</Name>
+        <Value>Hertz
+MidiNumber
+Letter
+Octave</Value>
+      </NoteProperty>
+    </Members>
+  </Type>
+  <Type>
+    <Name>Wave.Frequency</Name>
+    <Members>
+      <MemberSet>
+        <Name>PSStandardMembers</Name>
+        <Members>
+          <PropertySet>
+            <Name>DefaultDisplayPropertySet</Name>
+            <ReferencedProperties>
+              <Name>Hertz</Name>
+              <Name>MidiNumber</Name>
+              <Name>Letter</Name>
+              <Name>Octave</Name>
+            </ReferencedProperties>
+          </PropertySet>
+        </Members>
+      </MemberSet>
+      <ScriptMethod>
+        <Name>Flatten</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Flattens a frequency
+.DESCRIPTION
+    Flattens a frequency by a distance in semitones.
+
+    This will return a lower frequency.
+
+    The distance defaults to 1, which is equivalent to `.Flat`
+#&gt;
+param(
+[double]$Distance=1
+)
+
+$Altered =  ($this * [Math]::Pow(2, (($Distance * -1.0)/12)))
+$Altered.pstypenames.add('Frequency')
+$Altered
+
+
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>Frequency.cs</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Wave Frequency Class Definition
+.DESCRIPTION
+    This defines the source code for very flexible frequency class.
+.NOTES
+    This outputs a single type definition, inside the namespace of our choosing.
+
+    It inlines each of the parameters values in the desired order,
+    and joins with double newlines.
+#&gt;
+param(
+# The name of the class
+[string]
+$ClassName = 'Frequency',
+
+# The namespace the class is in.
+[string]
+$Namespace = 'Wave',
+
+# The namespaces we will use.
+[string[]]
+$Using = @(
+    'System'
+    'System.Text.RegularExpressions'
+),
+
+# The class type (in case we suddenly want to make it a `struct` instead)
+[string]
+$ClassType = 'class',
+
+# Any modifiers on the class.  By default the class will be public
+[string[]]
+$Modifier = 'public',
+
+# Any constructors.
+[string[]]$Constructor = @(
+    "
+    public Frequency() { this.Hertz = 0; }
+"   
+    "
+    public Frequency(double hertz) { this.Hertz = hertz; }
+"
+@"
+    public Frequency(string hertz) {
+        Regex letterPattern = new Regex("-?(?&lt;letter&gt;[a-g])(?&lt;octave&gt;\\d+)");
+        Match letterOctave = letterPattern.Match(hertz);
+        if (letterOctave.Success) {
+            this.Hertz = 0; 
+        }
+        Regex dropLetters = new Regex("\\p{L}");
+        string noLetters = dropLetters.Replace(hertz, String.Empty);
+        double parsed;
+        if (double.TryParse(noLetters, out parsed)) {
+            this.Hertz = parsed;
+            return;
+        }
+    }
+"@
+),
+
+# Any properties
+[string[]]$Property = @(
+@"
+    public double Hertz { get; set; }
+"@
+
+@"
+    public double MidiNumber {
+        get {
+            
+            double direction = 1.0;
+            if (this.Hertz &lt; -1) {
+                direction = -1.0;
+            }
+            else if (this.Hertz == 0) {
+                direction = 0;
+            }
+            
+            double midiNumber = 69.0 + 12.0 * direction * Math.Log(Math.Abs(this.Hertz) / 440,2);
+            if (Math.Abs(midiNumber) &gt;= 21) {
+                return midiNumber;
+            }
+            return 0;
+        }
+        set {
+            if (value &gt; 0) {
+                this.Hertz = 440.0 * Math.Pow(2,((value - 69)/12));
+            } else if (value &lt; 0 ) {
+                this.Hertz = -440.0 * Math.Pow(2,((Math.Abs(value) - 69)/12));
+            }                
+        }
+    }
+"@
+
+@"
+    public string Letter {
+        get {                
+            double absMidi = Math.Abs(this.MidiNumber);
+            if (this.MidiNumber &lt; 21) { return String.Empty;}
+            double remainder = (absMidi - 12) % 12;                
+            return Frequency.Letters[
+                (int)Math.Round(
+                    (remainder * Frequency.Letters.Length)/Frequency.Letters.Length
+                )
+            ] + this.Octave.ToString();
+        }
+    }
+"@
+
+@"
+    public double Octave {
+        get {                
+            if (this.MidiNumber &lt; 21) { return 0; }                
+            double octave = Math.Floor((this.MidiNumber - 12) / 12);
+            return octave;
+        }                
+    }
+"@
+
+@"
+    public static string[] Letters {
+        get {
+            return ["C","Cs","D","Ds","E","F","Fs","G","Gs","A","As","B"];
+        }
+    }
+"@
+
+@"
+    public double Circumference {
+        get { return this.Hertz * Math.PI * 2; }
+        set { this.Hertz = value / (Math.PI * 2); }
+    }
+"@
+),
+
+# Any operators
+[string[]]
+$Operators = @(
+    function operator {    
+        param([string]$Signature, [string]$Operator, [string[]]$Operands, [string]$Body)
+        "$Signature operator $operator($($Operands -join ', ')) $body"
+    }
+
+    $StaticOperators = @('+','-','/','*', '==', '!=', '&gt;', '&gt;=', '&lt;', '&lt;=')
+
+    foreach ($operator in $StaticOperators) {
+    if ($operator -in '==', '!=', '&gt;', '&gt;=', '&lt;', '&lt;=') {
+        operator -Signature "public static bool" -Operator $operator -Operands @(
+            "$ClassName left", "$ClassName right"
+        ) -Body "=&gt; left.Hertz $operator right.Hertz;"
+
+        operator -Signature "public static bool" -Operator $operator -Operands @(
+            "$ClassName left", "double right"
+        ) -Body "=&gt; left.Hertz $operator right;"
+    }     
+    else {
+        operator -Signature "public static $className" -Operator $operator -Operands @(
+            "$ClassName left", "$ClassName right"
+        ) -Body "=&gt; new $ClassName(left.Hertz $operator right.Hertz);"
+        
+        operator -Signature "public static $className" -Operator $operator -Operands @(
+            "$ClassName left", "double right"
+        ) -Body "=&gt; new $ClassName(left.Hertz $operator right);"
+    }
+        
+}
+
+
+
+        operator -Signature "public static $ClassName" -Operator '&gt;&gt;' -Operands @(
+            "$ClassName left", "double right"
+        ) -Body "=&gt; new $ClassName(left.Hertz / Math.Pow(2, (right * -1.0)/12));"
+
+        operator -Signature "public static $ClassName" -Operator '&gt;&gt;' -Operands @(
+            "$ClassName left", "$ClassName right"
+        ) -Body "=&gt; new $ClassName(left.Hertz / Math.Pow(2, (right.Hertz * -1.0)/12));"
+
+        operator -Signature "public static $ClassName" -Operator '&lt;&lt;' -Operands @(
+            "$ClassName left", "double right"
+        ) -Body "=&gt; new $ClassName(left.Hertz * Math.Pow(2, (right * -1.0)/12));"
+
+        operator -Signature "public static $ClassName" -Operator '&lt;&lt;' -Operands @(
+            "$ClassName left", "$ClassName right"
+        ) -Body "=&gt; new $ClassName(left.Hertz * Math.Pow(2, (right.Hertz * -1.0)/12));"
+
+        # ($this / [Math]::Pow(2, (($Distance * -1.0)/12)))    
+
+        operator -Signature "public static implicit" -Operator 'double' -Operands @(
+            "$ClassName other"
+        ) -Body "=&gt; other.Hertz;"
+
+        operator -Signature "public static explicit" -Operator "$ClassName" -Operands @(
+            "double other"
+        ) -Body "=&gt; new Frequency(other);"
+
+        operator -Signature "public static implicit" -Operator 'TimeSpan' -Operands @(
+            "$ClassName other"
+        ) -Body "{
+            if (other.Hertz == 0) {
+                return TimeSpan.FromSeconds(0);
+            }
+            else {
+                return TimeSpan.FromSeconds(1/other.Hertz);
+            }
+        }"
+
+        operator -Signature "public static explicit" -Operator "$ClassName" -Operands @(
+            "TimeSpan other"
+        ) -Body "{
+            if (other.TotalSeconds == 0) {
+                return new Frequency(0.0);
+            }
+            else {
+                return new Frequency(1/other.TotalSeconds);
+            }
+        }"
+),
+
+[Collections.IDictionary]
+$Interfaces = [Ordered]@{
+    IComparable = "
+        #region IComparable
+        public Int32 CompareTo(object other) {
+            double a = this.Hertz;
+            double b = 0;
+            if (other is Frequency) {
+                b = ((Frequency)other).Hertz;
+            }            
+            
+            if (other is double) {
+                b = (double)other;
+            }
+            if (a &gt; b) {
+                return 1;
+            }
+            if (a &lt; b) {
+                return -1;
+            }
+            return 0;
+        }
+        #endregion IComparable    
+    "
+
+    IConvertible = @"
+        #region IConvertible
+        public TypeCode GetTypeCode () { return TypeCode.Double; }
+        public bool ToBoolean ( IFormatProvider provider = null) {
+            return this.Hertz == 0;
+        }
+        public char ToChar ( IFormatProvider provider = null) {
+            return char.MinValue;
+        }
+        public SByte ToSByte ( IFormatProvider provider = null) {
+            return 0; 
+        }
+        public byte ToByte ( IFormatProvider provider = null) {            
+            return 0;
+        }
+        public Int16 ToInt16 ( IFormatProvider provider = null) {
+            return 0;
+        }
+        public UInt16 ToUInt16 ( IFormatProvider provider = null) {
+            return 0;
+        }
+        public Int32 ToInt32 ( IFormatProvider provider = null) {
+            return 0;
+        }
+        public UInt32 ToUInt32 ( IFormatProvider provider = null) {
+            return 0;
+        }
+        public Int64 ToInt64 ( IFormatProvider provider = null) {
+            return 0;
+        }
+        public UInt64 ToUInt64 ( IFormatProvider provider = null) {
+            return 0;
+        }
+        public Single ToSingle ( IFormatProvider provider = null) {
+            return (float)this.Hertz;
+        }
+        public Double ToDouble ( IFormatProvider provider = null) {
+            return this.Hertz;
+        }
+        public Decimal ToDecimal ( IFormatProvider provider = null) {
+            return (Decimal)this.Hertz;
+        }
+        public DateTime ToDateTime ( IFormatProvider provider = null) {
+            return DateTime.MinValue.AddSeconds(1.0/this.Hertz);
+        }
+        public string ToString ( IFormatProvider provider = null) {
+            return this.Hertz.ToString() + "hz";
+        }        
+
+        public Object ToType ( Type conversionType ,  IFormatProvider provider ) {            
+            return null;
+        }
+        #endregion IConvertible
+"@
+},
+
+[string[]]
+$Members = @(
+@'
+        public override string ToString () {
+            return this.Hertz.ToString() + "hz";
+        }        
+
+        public override int GetHashCode() =&gt; HashCode.Combine(GetType(), this.Hertz);        
+
+        public override bool Equals(object other) {
+            if (other == null) { return false; }
+            if (other is Frequency) { return ((Frequency)other).Hertz == this.Hertz; }      
+            if (other is double) { return (double)other == this.Hertz; }
+            if (other is int) { return (double)(int)other == this.Hertz; }  
+            if (other is uint) { return (double)(uint)other == this.Hertz; }
+            return false;
+        }
+
+        public bool Equals(double other) {
+            return this.Hertz.Equals(other);
+        }
+
+        public Frequency Sharpen(double distance) {
+            return new Frequency(this.Hertz / Math.Pow(2, ((distance * -1.0)/12)));
+        }
+
+        public Frequency Flatten(double distance) {
+            return new Frequency(this.Hertz * Math.Pow(2, ((distance * -1.0)/12)));
+        }
+'@
+)
+)
+
+
+
+
+@(
+
+if ($namespace) {
+    "namespace $namespace {"
+}
+
+$using -replace '^', 'using ' -replace '\;?$', ';' -join [Environment]::NewLine
+
+[Environment]::NewLine
+
+"$($Modifier -join ' ') $ClassType $ClassName $(
+    if ($Interfaces.Count) { ':' +($Interfaces.Keys -join ', ')}
+) {"
+    $Constructor
+    $Property
+    $operators
+    $Interfaces.Values
+    $Members
+"}"
+
+if ($namespace) {
+    "}"
+}
+
+) -join ( [Environment]::NewLine * 2)
+
+return
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>Sharpen</Name>
+        <Script>
+                        &lt;#
+.SYNOPSIS
+    Sharpens a frequency
+.DESCRIPTION
+    Sharpens a frequency by a distance in semitones.
+
+    This will return a higher frequency.
+
+    The distance defaults to 1, which is equivalent to `.Sharp`
+#&gt;
+param(
+# The distance, in semitones.
+[double]$Distance=1
+)
+
+$Altered =  ($this / [Math]::Pow(2, (($Distance * -1.0)/12)))    
+$Altered.pstypenames.add('Frequency')
+$Altered
+
+
+                    </Script>
+      </ScriptMethod>
+      <ScriptMethod>
+        <Name>ToString</Name>
+        <Script>
+                        "$($this -as [double])hz"
+
+                    </Script>
+      </ScriptMethod>
+      <ScriptProperty>
+        <Name>Flat</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets a Frequency's Flat
+.DESCRIPTION
+    Gets the flat of a given frequency.
+#&gt;
+$flatten = $this * [Math]::Pow(2, (-1/12))
+$flatten.pstypenames.add('Frequency')
+return $flatten
+
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>Letter</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets a frequency in letter
+.DESCRIPTION
+    Gets the approximate letter note for a frequency
+#&gt;
+$this.Midi.Letter
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>Midi</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Frequency to Midi Note
+.DESCRIPTION
+    Converts a Frequency to a Midi Note
+.LINK
+    https://en.wikipedia.org/wiki/MIDI_tuning_standard
+#&gt;
+param()
+
+$midi = 69 + 12 * [Math]::Log2($this / 440)
+$midi.pstypenames.add('MidiNote')
+$midi
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>Octave</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets the Octave
+.DESCRIPTION
+    Gets the Octave for a frequency
+#&gt;
+$this.Midi.Octave
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>Scale</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets a table of the scales starting on the current note.
+.DESCRIPTION
+	Constructs a hashtable of the major and minor scales stemming from the current note.
+#&gt;
+param()
+
+if ($this.'#Scale') { return $this.'#Scale'}
+
+# Arraylists maintain underlying psuedotypes, 
+# so we can construct our scales from `$this`
+$majorScale = [Collections.ArrayList]::new()
+$null = $majorScale.Add($this)
+
+#Start with constructing the major scale
+foreach ($step in ("WWHWWWH".ToCharArray())) { #Standard major scale step pattern
+	$stepCount = if ($step -eq "W") { 2 } else { 1 }
+	$null = $majorScale.Add($majorScale[-1].Sharpen($stepCount))
+}
+
+$scaleTable = [Ordered]@{
+	Major = $majorScale.Clone()
+	MajorDescending = $majorScale.Clone()
+	Minor = $majorScale.Clone()
+	MinorDescending = $majorScale.Clone()
+	HarmonicMinor = $majorScale.Clone()
+	HarmonicMinorDescending = $majorScale.Clone()
+	MelodicMinor = $majorScale.Clone()
+	PentatonicMajor = $majorScale.Clone()
+	PentatonicMajorDescending = $majorScale.Clone()
+	# Remaining scales are NOT derived from major scale
+	PentatonicMinor = $null
+	PentatonicMinorDescending = $null
+	PentatonicBlues = $null
+	PentatonicBluesDescending = $null
+	WholeTone = [Collections.ArrayList]::new()
+	WholeToneDescending = $null
+	Octatonic = [Collections.ArrayList]::new()
+	OctatonicDescending = $null
+	Augmented = [Collections.ArrayList]::new()
+	AugmentedDescending = $null
+}
+
+#region Diatonic Scales
+# The minor scales are just the major scale with certain scale degrees flattened
+$flat3rd = $majorScale[2].Flatten(1)
+$scaleTable["Minor"][2] = $flat3rd
+$scaleTable["HarmonicMinor"][2] = $flat3rd
+$scaleTable["MelodicMinor"][2] = $flat3rd
+
+$flat6th = $majorScale[5].Flatten(1)
+$scaleTable["Minor"][5] = $flat6th
+$scaleTable["HarmonicMinor"][5] = $flat6th
+
+$scaleTable["Minor"][6] = $majorScale[6].Flatten(1)
+
+$scaleTable["MajorDescending"]= $scaleTable["Major"].Clone()
+$scaleTable["MajorDescending"].Reverse()
+
+$scaleTable["MinorDescending"]= $scaleTable["Minor"].Clone()
+$scaleTable["MinorDescending"].Reverse()
+
+$scaleTable["HarmonicMinorDescending"]= $scaleTable["HarmonicMinor"].Clone()
+$scaleTable["HarmonicMinorDescending"].Reverse()
+#endregion Diatonic Scales
+
+#region Pentatonic Scales
+# Pentatonic scales mainly derive from the major/minor scale,
+# but with certain scale degrees removed to make them 5 notes long (hence 'penta'tonic)
+$scaleTable["PentatonicMajor"].RemoveAt(3)
+$scaleTable["PentatonicMajor"].RemoveAt(5)
+$scaleTable["PentatonicMajorDescending"] = $scaleTable["PentatonicMajor"].Clone()
+$scaleTable["PentatonicMajorDescending"].Reverse()
+
+$scaleTable["PentatonicMinor"] = $scaleTable["Minor"].Clone()
+$scaleTable["PentatonicMinor"].RemoveAt(1)
+$scaleTable["PentatonicMinor"].RemoveAt(4)
+$scaleTable["PentatonicMinorDescending"] = $scaleTable["PentatonicMinor"].Clone()
+$scaleTable["PentatonicMinorDescending"].Reverse()
+
+# Blues pentatonic scale takes the minor pentatonic, adds augmented 4th
+$scaleTable["PentatonicBlues"] = $scaleTable["PentatonicMinor"].Clone()
+$aug4th = $scaleTable["PentatonicBlues"][2].Sharpen(1)
+$scaleTable["PentatonicBlues"].Insert(3,$aug4th)
+$scaleTable["PentatonicBluesDescending"] = $scaleTable["PentatonicBlues"].Clone()
+$scaleTable["PentatonicBluesDescending"].Reverse()
+#endregion Pentatonic Scales
+
+#region Symmetric Scales
+$null = $scaleTable["WholeTone"].Add($this)
+$null = $scaleTable["Octatonic"].Add($this)
+$null = $scaleTable["Augmented"].Add($this)
+
+# Whole Tone scale is all whole steps up
+1..6 | ForEach-Object {
+	$null = $scaleTable["WholeTone"].Add($scaleTable["WholeTone"][-1].Sharpen(2))
+}
+$scaleTable["WholeToneDescending"] = $scaleTable["WholeTone"].Clone()
+$scaleTable["WholeToneDescending"].Reverse()
+
+# Octatonic scale alternates b/w whole steps and half steps
+1..8 | ForEach-Object {
+	$stepCount = if ($_ % 2 -eq 0) { 1 } else { 2 }
+	$null = $scaleTable["Octatonic"].Add($scaleTable["Octatonic"][-1].Sharpen($stepCount))
+}
+$scaleTable["OctatonicDescending"] = $scaleTable["Octatonic"].Clone()
+$scaleTable["OctatonicDescending"].Reverse()
+
+# Augmented scale alternates b/w minor 3rds and half steps
+1..6 | ForEach-Object {
+	$stepCount = if ($_ % 2 -eq 0) { 1 } else { 3 }
+	$null = $scaleTable["Augmented"].Add($scaleTable["Augmented"][-1].Sharpen($stepCount))
+}
+$scaleTable["AugmentedDescending"] = $scaleTable["Augmented"].Clone()
+$scaleTable["AugmentedDescending"].Reverse()
+#endregion Symmetric Scales
+
+# Because our descending scales are just the reverse of the originals right now,
+# they start at the top note of each scale.
+# Need to drop all descending scales down an octave to start on current note
+foreach ($scale in $scaleTable.Keys) {
+	if ($scale -match "Descending$") {
+		foreach ($i in (1..$scaleTable[$scale].Count)) {
+			$scaleTable[$scale][($i - 1)] = $scaleTable[$scale][($i - 1)].Flatten(12)
+		}
+	}
+}
+
+$this | Add-Member NoteProperty '#Scale' $scaleTable -Force
+return $scaleTable
+
+                    </GetScriptBlock>
+        <SetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Sets a custom scale 
+.DESCRIPTION
+    Sets a custom scale for a frequency.
+
+    Setting an empty hashtable will reset the scales.
+#&gt;
+param(
+# One or more custom scales
+[Collections.IDictionary]$Scale
+)
+
+if ((-not $scale.Count) -and $this.'#Scale'.Clear) {
+    $this.'#Scale' = $null
+}
+
+$thisScale = $this.Scale
+foreach ($key in $scale.Keys) {
+    $thisScale[$key] = $scale[$key]
+}
+
+                    </SetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>Sharp</Name>
+        <GetScriptBlock>
+                        &lt;#
+.SYNOPSIS
+    Gets a Frequency's Sharp
+.DESCRIPTION
+    Gets the sharp of a given frequency.
+#&gt;
+$sharpen = $this / [Math]::Pow(2, (-1/12))
+$sharpen.pstypenames.add('Frequency')
+return $sharpen
+
+
+                    </GetScriptBlock>
+      </ScriptProperty>
+      <NoteProperty>
+        <Name>DefaultDisplay</Name>
+        <Value>Hertz
+MidiNumber
+Letter
+Octave</Value>
+      </NoteProperty>
     </Members>
   </Type>
   <Type>
