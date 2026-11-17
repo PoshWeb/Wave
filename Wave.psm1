@@ -130,6 +130,7 @@ $aliasExports = @(
             $ExecutionContext.SessionState.PSVariable.Set(
                 "alias:$alias", $moduleName
             )
+            $exports.Alias += $alias 
             $alias
         }
     }
