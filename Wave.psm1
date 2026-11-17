@@ -1,3 +1,40 @@
+#region Prepare Exports
+$exports = [Ordered]@{
+    Function = @()
+    Variable = @($MyInvocation.MyCommand.ScriptBlock.Module.Name)
+    Alias = @()
+}
+
+#endregion Prepare Exports
+#region Compilation
+$waveLinq = [PSCustomObject]@{PSTypeName='WaveLinq'}
+$frequencyProtoType = [PSCustomObject]@{PSTypeName='Wave.Frequency'}
+
+try {
+    $addTypeSplat = [Ordered]@{
+        TypeDefinition = @(
+            $waveLinq.TypeDefinition        
+            if ($frequencyProtoType.'Frequency.cs'.Invoke) {
+                $frequencyProtoType.'Frequency.cs'()
+            }
+        ) -join [Environment]::NewLine
+    }
+    if ($PSVersionTable.PSVersion -lt 6.0) {
+        $addTypeSplat.ReferencedAssemblies = $waveLinq.Reference
+    }
+    Add-Type @addTypeSplat -ErrorAction SilentlyContinue -ErrorVariable compilationErrors
+} catch {
+    Write-Warning "$($_)"
+    foreach ($err in $compilationErrors) {
+        if ($err.Exception -and $err.Exception.GetType().FullName -ne
+            'System.Management.Automation.CmdletInvocationExcepton'
+        ) {
+            Write-Warning "$err"
+        }        
+    }
+}
+#endregion Compilation
+
 #region Eponym
 
 # Functions and scripts are interchangeable in PowerShell
@@ -34,19 +71,18 @@ $startsWithVerb = "^(?>$(
 ))"
 
 # Our Exports are:
-$exports = 
-    $moduleName, # * The Eponym 
-    $(
-        # The `Verb-Noun` form
-        if ($moduleName -match $startsWithVerb) {
-            "$($matches.0)-$($moduleName -replace "$startsWithVerb\p{P}?")"
-        } else {
-            "Get-$($ModuleName -replace '\p{P}')"
-        }
-    )
+$exports.Function += $moduleName # * The Eponym 
+$exports.Function += $(
+    # The `Verb-Noun` form
+    if ($moduleName -match $startsWithVerb) {
+        "$($matches.0)-$($moduleName -replace "$startsWithVerb\p{P}?")"
+    } else {
+        "Get-$($ModuleName -replace '\p{P}')"
+    }
+)
 
 # We can use the function provider to create functions in this scope.
-foreach ($functionName in $exports) {
+foreach ($functionName in $exports.Function) {
     # This allows us to dynamically set each export to by the eponym
     $ExecutionContext.SessionState.PSVariable.Set(
         "function:$functionName",
@@ -72,7 +108,7 @@ if ($VerbsFolder) {
             $VerbScript.ScriptBlock
         )
 
-        $exports += $verbFunctionName
+        $exports.Function += $verbFunctionName
     }
 }
 #endregion Verbs
@@ -91,7 +127,7 @@ $aliasExports = @(
         # Then make our aliases
         foreach ($alias in $attribute.aliasNames) {
             # (unless the alias is already exported as a function)
-            if ($alias -in $exports) { continue }
+            if ($alias -in $exports.Alias) { continue }
             $ExecutionContext.SessionState.PSVariable.Set(
                 "alias:$alias", $moduleName
             )
@@ -105,19 +141,18 @@ if ($argumentCompleter.ScriptBlock) {
     # now is the time to register it.
 
     # Argument completers need to be registered for each function
-    foreach ($functionExport in $exports) {
+    foreach ($functionExport in $exports.Function) {
         Register-ArgumentCompleter -CommandName $functionExport -ScriptBlock $argumentCompleter.ScriptBlock
     }
 
     # and alias
-    foreach ($aliasExport in $aliasExports) {
+    foreach ($aliasExport in $aliasExports.Alias) {
         Register-ArgumentCompleter -CommandName $aliasExport -ScriptBlock $argumentCompleter.ScriptBlock
     }
 }
 
 # We will also be exporting our eponym as a variable
 $ExecutionContext.SessionState.PSVariable.Set($moduleName, $eponym)
-
 #region Additional Exports
 
 $frequency = 
@@ -133,45 +168,17 @@ $midinote =
 ${function:Frequency} = ${function:Get-Frequency} = $frequency.ScriptBlock
 ${function:MidiNote} = ${function:Get-MidiNote} = $midinote.ScriptBlock
 
-$exports += "Get-Frequency","Frequency", "Get-MidiNote", "MidiNote"
+$exports.Function += "Get-Frequency","Frequency", "Get-MidiNote", "MidiNote"
 
-$midi88Variables = @(
-    'A0','As0','B0',
-    'C1','Cs1','D1','Ds1','E1','F1','Fs1','G1','Gs1','A1','As1','B1',
-    'C2','Cs2','D2','Ds2','E2','F2','Fs2','G2','Gs2','A2','As2','B2',
-    'C3','Cs3','D3','Ds3','E3','F3','Fs3','G3','Gs3','A3','As3','B3',
-    'C4','Cs4','D4','Ds4','E4','F4','Fs4','G4','Gs4','A4','As4','B4',
-    'C5','Cs5','D5','Ds5','E5','F5','Fs5','G5','Gs5','A5','As5','B5',
-    'C6','Cs6','D6','Ds6','E6','F6','Fs6','G6','Gs6','A6','As6','B6',
-    'C7','Cs7','D7','Ds7','E7','F7','Fs7','G7','Gs7','A7','As7','B7',
-    'C8'    
-) # -replace '(?<octave>\d)Sharp', 's${octave}'
-
-foreach ($n in 21..108) {    
-    $n.pstypenames.add('MidiNote')
-    $nf = $n.Frequency
-    $VariableName = $midi88Variables[$n - 21]
-    $ExecutionContext.SessionState.PSVariable.Set("$VariableName", $nf)    
-}
-
-$waveLinq = [PSCustomObject]@{PSTypeName='WaveLinq'}
-try {
-    $addTypeSplat = [Ordered]@{
-        TypeDefinition = $waveLinq.TypeDefinition        
-    }
-    if ($PSVersionTable.PSVersion -lt 6.0) {
-        $addTypeSplat.ReferencedAssemblies = $waveLinq.Reference
-    }
-    Add-Type @addTypeSplat -ErrorAction SilentlyContinue -ErrorVariable compilationErrors
-} catch {
-    Write-Warning "$($_)"
-    foreach ($err in $compilationErrors) {
-        if ($err.Exception -and $err.Exception.GetType().FullName -ne
-            'System.Management.Automation.CmdletInvocationExcepton'
-        ) {
-            Write-Warning "$err"
-        }        
-    }
+if ('Wave.Frequency' -as [type]) {
+    $A0 = [Wave.Frequency]27.5    
+    $exports.variable += @(
+        foreach ($n in 0..87) {
+            $f = $A0 -shr $n
+            $ExecutionContext.SessionState.PSVariable.Set($f.Letter,$f)
+            $f.Letter            
+        }
+    ) 
 }
 #endregion Additional Exports
 
@@ -245,5 +252,5 @@ if ($waveFolder) {
 #endregion Startup
 
 # All that's left to do is explicitly export just these functions.
-Export-ModuleMember -Function $exports -Alias $aliasExports -Variable (@($moduleName) + $midi88Variables)
+Export-ModuleMember @exports
 #endregion Eponym
