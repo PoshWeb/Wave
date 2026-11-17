@@ -149,7 +149,7 @@ $Modifier = 'public',
 @"
     public static string[] Letters {
         get {
-            return ["C","Cs","D","Ds","E","F","Fs","G","Gs","A","As","B"];
+            return new string[] {"C","Cs","D","Ds","E","F","Fs","G","Gs","A","As","B"};
         }
     }
 
@@ -344,7 +344,7 @@ $Members = @(
         }        
 
         public override int GetHashCode() {
-            return HashCode.Combine(GetType(), this.Hertz);
+            return this.Hertz.GetHashCode();
         }
 
         public override bool Equals(object other) {

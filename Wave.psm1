@@ -18,7 +18,7 @@ try {
             }
         ) -join [Environment]::NewLine
     }
-    if ($PSVersionTable.PSVersion -lt 6.0) {
+    if ($PSVersionTable.PSVersion.Major -lt 6.0) {
         $addTypeSplat.ReferencedAssemblies = $waveLinq.Reference
     }
     Add-Type @addTypeSplat -ErrorAction SilentlyContinue -ErrorVariable compilationErrors
@@ -174,7 +174,7 @@ if ('Wave.Frequency' -as [type]) {
     $A0 = [Wave.Frequency]27.5
     $exports.variable += @(
         foreach ($n in 0..87) {
-            $f = $A0 -shr $n
+            $f = $A0.Sharpen($n)
             $ExecutionContext.SessionState.PSVariable.Set($f.Letter,$f)
             $f.Letter
         }
