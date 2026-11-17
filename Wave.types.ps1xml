@@ -18,118 +18,12 @@
         </Members>
       </MemberSet>
       <ScriptMethod>
-        <Name>Flatten</Name>
-        <Script>
-                        &lt;#
-.SYNOPSIS
-    Flattens a frequency
-.DESCRIPTION
-    Flattens a frequency by a distance in semitones.
-
-    This will return a lower frequency.
-
-    The distance defaults to 1, which is equivalent to `.Flat`
-#&gt;
-param(
-[double]$Distance=1
-)
-
-$Altered =  ($this * [Math]::Pow(2, (($Distance * -1.0)/12)))
-$Altered.pstypenames.add('Frequency')
-$Altered
-
-
-                    </Script>
-      </ScriptMethod>
-      <ScriptMethod>
-        <Name>Sharpen</Name>
-        <Script>
-                        &lt;#
-.SYNOPSIS
-    Sharpens a frequency
-.DESCRIPTION
-    Sharpens a frequency by a distance in semitones.
-
-    This will return a higher frequency.
-
-    The distance defaults to 1, which is equivalent to `.Sharp`
-#&gt;
-param(
-# The distance, in semitones.
-[double]$Distance=1
-)
-
-$Altered =  ($this / [Math]::Pow(2, (($Distance * -1.0)/12)))    
-$Altered.pstypenames.add('Frequency')
-$Altered
-
-
-                    </Script>
-      </ScriptMethod>
-      <ScriptMethod>
         <Name>ToString</Name>
         <Script>
                         "$($this -as [double])hz"
 
                     </Script>
       </ScriptMethod>
-      <ScriptProperty>
-        <Name>Flat</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets a Frequency's Flat
-.DESCRIPTION
-    Gets the flat of a given frequency.
-#&gt;
-$flatten = $this * [Math]::Pow(2, (-1/12))
-$flatten.pstypenames.add('Frequency')
-return $flatten
-
-                    </GetScriptBlock>
-      </ScriptProperty>
-      <ScriptProperty>
-        <Name>Letter</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets a frequency in letter
-.DESCRIPTION
-    Gets the approximate letter note for a frequency
-#&gt;
-$this.Midi.Letter
-                    </GetScriptBlock>
-      </ScriptProperty>
-      <ScriptProperty>
-        <Name>Midi</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Frequency to Midi Note
-.DESCRIPTION
-    Converts a Frequency to a Midi Note
-.LINK
-    https://en.wikipedia.org/wiki/MIDI_tuning_standard
-#&gt;
-param()
-
-$midi = 69 + 12 * [Math]::Log2($this / 440)
-$midi.pstypenames.add('MidiNote')
-$midi
-                    </GetScriptBlock>
-      </ScriptProperty>
-      <ScriptProperty>
-        <Name>Octave</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets the Octave
-.DESCRIPTION
-    Gets the Octave for a frequency
-#&gt;
-$this.Midi.Octave
-                    </GetScriptBlock>
-      </ScriptProperty>
       <ScriptProperty>
         <Name>Scale</Name>
         <GetScriptBlock>
@@ -290,22 +184,6 @@ foreach ($key in $scale.Keys) {
 }
 
                     </SetScriptBlock>
-      </ScriptProperty>
-      <ScriptProperty>
-        <Name>Sharp</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets a Frequency's Sharp
-.DESCRIPTION
-    Gets the sharp of a given frequency.
-#&gt;
-$sharpen = $this / [Math]::Pow(2, (-1/12))
-$sharpen.pstypenames.add('Frequency')
-return $sharpen
-
-
-                    </GetScriptBlock>
       </ScriptProperty>
       <NoteProperty>
         <Name>DefaultDisplay</Name>
@@ -334,118 +212,12 @@ Octave</Value>
         </Members>
       </MemberSet>
       <ScriptMethod>
-        <Name>Flatten</Name>
-        <Script>
-                        &lt;#
-.SYNOPSIS
-    Flattens a frequency
-.DESCRIPTION
-    Flattens a frequency by a distance in semitones.
-
-    This will return a lower frequency.
-
-    The distance defaults to 1, which is equivalent to `.Flat`
-#&gt;
-param(
-[double]$Distance=1
-)
-
-$Altered =  ($this * [Math]::Pow(2, (($Distance * -1.0)/12)))
-$Altered.pstypenames.add('Frequency')
-$Altered
-
-
-                    </Script>
-      </ScriptMethod>
-      <ScriptMethod>
-        <Name>Sharpen</Name>
-        <Script>
-                        &lt;#
-.SYNOPSIS
-    Sharpens a frequency
-.DESCRIPTION
-    Sharpens a frequency by a distance in semitones.
-
-    This will return a higher frequency.
-
-    The distance defaults to 1, which is equivalent to `.Sharp`
-#&gt;
-param(
-# The distance, in semitones.
-[double]$Distance=1
-)
-
-$Altered =  ($this / [Math]::Pow(2, (($Distance * -1.0)/12)))    
-$Altered.pstypenames.add('Frequency')
-$Altered
-
-
-                    </Script>
-      </ScriptMethod>
-      <ScriptMethod>
         <Name>ToString</Name>
         <Script>
                         "$($this -as [double])hz"
 
                     </Script>
       </ScriptMethod>
-      <ScriptProperty>
-        <Name>Flat</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets a Frequency's Flat
-.DESCRIPTION
-    Gets the flat of a given frequency.
-#&gt;
-$flatten = $this * [Math]::Pow(2, (-1/12))
-$flatten.pstypenames.add('Frequency')
-return $flatten
-
-                    </GetScriptBlock>
-      </ScriptProperty>
-      <ScriptProperty>
-        <Name>Letter</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets a frequency in letter
-.DESCRIPTION
-    Gets the approximate letter note for a frequency
-#&gt;
-$this.Midi.Letter
-                    </GetScriptBlock>
-      </ScriptProperty>
-      <ScriptProperty>
-        <Name>Midi</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Frequency to Midi Note
-.DESCRIPTION
-    Converts a Frequency to a Midi Note
-.LINK
-    https://en.wikipedia.org/wiki/MIDI_tuning_standard
-#&gt;
-param()
-
-$midi = 69 + 12 * [Math]::Log2($this / 440)
-$midi.pstypenames.add('MidiNote')
-$midi
-                    </GetScriptBlock>
-      </ScriptProperty>
-      <ScriptProperty>
-        <Name>Octave</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets the Octave
-.DESCRIPTION
-    Gets the Octave for a frequency
-#&gt;
-$this.Midi.Octave
-                    </GetScriptBlock>
-      </ScriptProperty>
       <ScriptProperty>
         <Name>Scale</Name>
         <GetScriptBlock>
@@ -607,22 +379,6 @@ foreach ($key in $scale.Keys) {
 
                     </SetScriptBlock>
       </ScriptProperty>
-      <ScriptProperty>
-        <Name>Sharp</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets a Frequency's Sharp
-.DESCRIPTION
-    Gets the sharp of a given frequency.
-#&gt;
-$sharpen = $this / [Math]::Pow(2, (-1/12))
-$sharpen.pstypenames.add('Frequency')
-return $sharpen
-
-
-                    </GetScriptBlock>
-      </ScriptProperty>
       <NoteProperty>
         <Name>DefaultDisplay</Name>
         <Value>Hertz
@@ -630,130 +386,6 @@ MidiNumber
 Letter
 Octave</Value>
       </NoteProperty>
-    </Members>
-  </Type>
-  <Type>
-    <Name>MidiNote</Name>
-    <Members>
-      <ScriptMethod>
-        <Name>ToString</Name>
-        <Script>
-                        "midi$($this -as [double])"
-                    </Script>
-      </ScriptMethod>
-      <ScriptProperty>
-        <Name>Flat</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets a Midi Note's Flat
-.DESCRIPTION
-    Gets the flat of a given midi note.
-#&gt;
-$flatten = $this -1
-$flatten.pstypenames.add('MidiNote')
-return $flatten
-
-
-                    </GetScriptBlock>
-      </ScriptProperty>
-      <ScriptProperty>
-        <Name>Frequency</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Midi Note Frequency
-.DESCRIPTION
-    Gets the frequency of this midi note.
-.LINK
-    https://en.wikipedia.org/wiki/MIDI_tuning_standard
-#&gt;
-$frequency = 440.0 * [Math]::Pow(
-    2,
-    (($This - 69)/12)
-)
-$frequency.pstypenames.add('Frequency')
-$frequency
-                    </GetScriptBlock>
-      </ScriptProperty>
-      <ScriptProperty>
-        <Name>Letter</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets MidiNote in Letter format
-.DESCRIPTION
-    Gets this midi note in Letter format.
-#&gt;
-param()
-
-
-$letters = 'C','Cs','D','Ds','E','F','Fs','G','Gs','A','As','B'
-
-
-$abs = [Math]::Abs($this)
-if ($abs -lt 24) {
-    $octave = 0    
-} else {    
-    $octave = [Math]::Floor(
-        ($abs - 12) / 12
-    )
-}
-
-$remainder = ($abs - 12) % 12
-
-$rounded = [Math]::Round(
-    ($remainder * $letters.Length)/$letters.Length
-)
-
-$letter = 
-    if ($rounded -lt $letters.Length) {        
-        $letters[$rounded]
-    } else {
-        'C'
-        $octave += 1
-    }
-
-
-return $letter + $octave
-                    </GetScriptBlock>
-      </ScriptProperty>
-      <ScriptProperty>
-        <Name>Octave</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets the Octave
-.DESCRIPTION
-    Gets the Octave for a midi note
-#&gt;
-$abs = [Math]::Abs($this)
-if ($abs -lt 24) {
-    0
-} else {    
-    [Math]::Floor(
-        ($abs - 12) / 12
-    )
-}
-
-                    </GetScriptBlock>
-      </ScriptProperty>
-      <ScriptProperty>
-        <Name>Sharp</Name>
-        <GetScriptBlock>
-                        &lt;#
-.SYNOPSIS
-    Gets a Midi Note's Sharp
-.DESCRIPTION
-    Gets the sharp of a given midi note.
-#&gt;
-$sharpen = $this + 1
-$sharpen.pstypenames.add('MidiNote')
-return $sharpen
-
-
-                    </GetScriptBlock>
-      </ScriptProperty>
     </Members>
   </Type>
   <Type>
