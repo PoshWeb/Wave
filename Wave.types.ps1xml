@@ -8962,11 +8962,15 @@ $Modifier = 'public',
         get {                
             double absMidi = Math.Abs(this.MidiNumber);
             if (this.MidiNumber &lt; 21) { return String.Empty;}
-            double remainder = (absMidi - 12) % 12;                
+            double remainder = (absMidi - 12) % 12;
+            int letterNumber = (int)Math.Round(
+                (remainder * Frequency.Letters.Length)/Frequency.Letters.Length
+            );
+            if (letterNumber == Frequency.Letters.Length) {
+                return "C" + this.Octave.ToString();
+            }
             return Frequency.Letters[
-                (int)Math.Round(
-                    (remainder * Frequency.Letters.Length)/Frequency.Letters.Length
-                )
+                letterNumber
             ] + this.Octave.ToString();
         }
     }
@@ -8990,7 +8994,10 @@ $Modifier = 'public',
 @"
     public double Octave {
         get {                
-            if (this.MidiNumber &lt; 21) { return 0; }                
+            if (this.MidiNumber &lt; 21) { return 0; }
+            if (Math.Round(Math.Abs(this.MidiNumber)) == 48) {
+                return 3;
+            }
             double octave = Math.Floor((this.MidiNumber - 12) / 12);
             return octave;
         }                
