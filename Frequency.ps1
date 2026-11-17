@@ -10,15 +10,9 @@ $allArgs = @($args)
 $allInput = $($input)
 
 foreach ($in in $allInput) {
-    if ($in.pstypenames -notcontains 'Frequency') {
-        $in.pstypenames.add('Frequency')
-    } 
-    $in
+    $in -as [Wave.Frequency]
 }
 
 foreach ($in in $allArgs) {
-    if ($in.pstypenames -notcontains 'Frequency') {
-        $in.pstypenames.add('Frequency')
-    } 
-    $in
+    $in -as [Wave.Frequency]
 }

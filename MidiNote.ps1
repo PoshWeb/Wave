@@ -8,16 +8,20 @@ $allArgs = @($args)
 $allInput = $($input)
 
 foreach ($in in $allInput) {
-    if ($in.pstypenames -notcontains 'MidiNote') {
-        $in.pstypenames.add('MidiNote')
-    } 
-    $in
+    
+    if ($in -as [double]) {
+        $f = [Wave.Frequency]::new()
+        $f.MidiNumber = $in
+        $f
+    }
+         
 }
 
 foreach ($in in $allArgs) {
-    if ($in.pstypenames -notcontains 'MidiNote') {
-        $in.pstypenames.add('MidiNote')
-    } 
-    $in
+    if ($in -as [double]) {
+        $f = [Wave.Frequency]::new()
+        $f.MidiNumber = $in
+        $f
+    }     
 }
 
