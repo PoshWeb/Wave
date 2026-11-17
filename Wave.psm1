@@ -168,7 +168,7 @@ $midinote =
 ${function:Frequency} = ${function:Get-Frequency} = $frequency.ScriptBlock
 ${function:MidiNote} = ${function:Get-MidiNote} = $midinote.ScriptBlock
 
-$exports.Function += "Get-Frequency","Frequency", "Get-MidiNote", "MidiNote"
+$exports.Function += "Get-Frequency","Frequency"
 
 if ('Wave.Frequency' -as [type]) {
     $A0 = [Wave.Frequency]27.5
@@ -208,6 +208,7 @@ if ($waveFolder) {
     $myPrivateData = $MyInvocation.MyCommand.ScriptBlock.Module.PrivateData
 
     if (
+        ($IsMacOS -or $IsLinux -or $env:WT_SESSION_ID) -and
         $callstack.Length -le 2 -and
         $host.UI.RawUI.BufferSize.Width
     ) {
@@ -230,7 +231,7 @@ if ($waveFolder) {
 
         #region Tips And Tricks
         if (
-            ($PSVersionTable.PSVersion.Major -ge 6) -and
+            ($PSVersionTable.PSVersion.Major -ge 6.0) -and
             ($myPrivateData.Tips -or $myPrivateData.Tricks) 
         ) {
             $tipsAndTricks = @(
