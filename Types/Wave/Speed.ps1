@@ -46,7 +46,8 @@ if (-not $newWave) {
 if ($speed -eq 1) { return $newWave }
 
 $waveFormat = $newWave.WaveFormat 
-
-return wave @waveFormat -Samples @(
+$speedChange = wave @waveFormat -Samples @(
     [Wave.WaveLinq]::Speed($newWave.Samples, $Speed)
 )
+$speedChange.Metadata = $newWave.Metadata
+return $speedChange
