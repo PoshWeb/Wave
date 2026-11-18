@@ -7455,9 +7455,14 @@ for ($index = 4; $index -lt $list.Length; ) {
         }        
     }
     else {
-        # Get the string
-        $value = [Text.Encoding]::ASCII.GetString($list, $index, $metadataLength).Trim()
-                
+        # If the last byte of the block was a null terminator
+        if ($list[$index + ($metadataLength - 1)] -eq 0) {
+            # avoid it, otherwise we'll have insidious bugs due to extra null terminators.
+            $value = [Text.Encoding]::ASCII.GetString($list, $index, ($metadataLength - 1)).Trim()
+        } else {
+            # Otherwise, get the whole block of text
+            $value = [Text.Encoding]::ASCII.GetString($list, $index, $metadataLength).Trim()
+        }        
         $value | bucket $MetaDataId $metadata
     }
     
