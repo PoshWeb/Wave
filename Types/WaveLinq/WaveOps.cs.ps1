@@ -139,13 +139,13 @@ foreach ($method in 'Add','Subtract', 'Multiply', 'Divide') {
     /// Simplified Wave Sampler.
     /// </summary>
     /// <param name='samples'>The current set of samples</param>
-    /// <param name='start'>The start sample</param>    
-    /// <param name='start'>The end sample</param>    
-    /// <returns>The wave with a gain applied</returns>
+    /// <param name='start'>The start sample index</param>    
+    /// <param name='end'>The end sample index</param>    
+    /// <returns>The samples between these portions of time</returns>
     public static IEnumerable<double> Sample(
         this IList<double> samples,
         int start,
-        int end
+        int end        
     ) {        
         if (start == end) { yield break; }
         if (start < end) {
@@ -154,8 +154,8 @@ foreach ($method in 'Add','Subtract', 'Multiply', 'Divide') {
                     yield return samples[index];
                 } else {
                     yield return 0; 
-                }                
-            }    
+                }
+            }
         } else {
             for (int index = end; index >= start ; index--) {
                 if (samples.Count > index) {
@@ -166,4 +166,67 @@ foreach ($method in 'Add','Subtract', 'Multiply', 'Divide') {
             }
         }
     }    
+"@
+
+@"   
+    /// <summary>
+    /// Wave Speed.
+    /// </summary>
+    /// <param name='samples'>The current set of samples</param>
+    /// <param name='speed'>The speed used to read samples</param>        
+    /// <returns>The samples at this speed</returns>
+    public static IEnumerable<double> Speed(
+        this IList<double> samples,
+        double speed = 1
+    ) {
+        if (samples == null) { yield break; }
+        if (speed == 0) { yield break; }
+        if (Math.Abs(speed) < 1.0/16.0) {
+            throw new Exception("Will not slow beneath 1/16");
+        }
+
+        double start;
+        double end;
+
+        double newCount = Math.Abs(samples.Count / speed);
+        double increment = Math.Abs(speed)/speed;
+
+        if (speed < 0) {
+            start = newCount - 1;
+            end = 0.0;
+        } else {
+            start = 0.0;
+            end = newCount - 1; 
+        }
+        
+        for (
+            double index = start;
+            (index >= 0) && (index < newCount);
+            index += increment
+        ) {
+            double oldTime = index/newCount * samples.Count;
+            if (oldTime < samples.Count) {            
+                double remainder = oldTime % 1;
+                double lastSample = samples[(int)Math.Floor(oldTime)];
+                double nextSample;
+                if (Math.Ceiling(oldTime) == samples.Count) {
+                    nextSample = 0;
+                } else {
+                    nextSample = samples[(int)Math.Ceiling(oldTime)];
+                }                
+                
+                double delta = (nextSample - lastSample);
+
+                if (delta == 0) {
+                    yield return lastSample;
+                } else {
+                    yield return (
+                        lastSample + (delta * remainder)
+                    );
+                }                                                        
+            } else {
+                yield return 0; 
+            }
+        }        
+    }
 "@
