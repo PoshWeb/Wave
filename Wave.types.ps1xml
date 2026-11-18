@@ -10346,13 +10346,13 @@ foreach ($method in 'Add','Subtract', 'Multiply', 'Divide') {
     /// Simplified Wave Sampler.
     /// &lt;/summary&gt;
     /// &lt;param name='samples'&gt;The current set of samples&lt;/param&gt;
-    /// &lt;param name='start'&gt;The start sample&lt;/param&gt;    
-    /// &lt;param name='start'&gt;The end sample&lt;/param&gt;    
-    /// &lt;returns&gt;The wave with a gain applied&lt;/returns&gt;
+    /// &lt;param name='start'&gt;The start sample index&lt;/param&gt;    
+    /// &lt;param name='end'&gt;The end sample index&lt;/param&gt;    
+    /// &lt;returns&gt;The samples between these portions of time&lt;/returns&gt;
     public static IEnumerable&lt;double&gt; Sample(
         this IList&lt;double&gt; samples,
         int start,
-        int end
+        int end        
     ) {        
         if (start == end) { yield break; }
         if (start &lt; end) {
@@ -10361,8 +10361,8 @@ foreach ($method in 'Add','Subtract', 'Multiply', 'Divide') {
                     yield return samples[index];
                 } else {
                     yield return 0; 
-                }                
-            }    
+                }
+            }
         } else {
             for (int index = end; index &gt;= start ; index--) {
                 if (samples.Count &gt; index) {
@@ -10375,6 +10375,68 @@ foreach ($method in 'Add','Subtract', 'Multiply', 'Divide') {
     }    
 "@
 
+@"   
+    /// &lt;summary&gt;
+    /// Wave Speed.
+    /// &lt;/summary&gt;
+    /// &lt;param name='samples'&gt;The current set of samples&lt;/param&gt;
+    /// &lt;param name='speed'&gt;The speed used to read samples&lt;/param&gt;        
+    /// &lt;returns&gt;The samples at this speed&lt;/returns&gt;
+    public static IEnumerable&lt;double&gt; Speed(
+        this IList&lt;double&gt; samples,
+        double speed = 1
+    ) {
+        if (samples == null) { yield break; }
+        if (speed == 0) { yield break; }
+        if (Math.Abs(speed) &lt; 1.0/16.0) {
+            throw new Exception("Will not slow beneath 1/16");
+        }
+
+        double start;
+        double end;
+
+        double newCount = Math.Abs(samples.Count / speed);
+        double increment = Math.Abs(speed)/speed;
+
+        if (speed &lt; 0) {
+            start = newCount - 1;
+            end = 0.0;
+        } else {
+            start = 0.0;
+            end = newCount - 1; 
+        }
+        
+        for (
+            double index = start;
+            (index &gt;= 0) &amp;&amp; (index &lt; newCount);
+            index += increment
+        ) {
+            double oldTime = index/newCount * samples.Count;
+            if (oldTime &lt; samples.Count) {            
+                double remainder = oldTime % 1;
+                double lastSample = samples[(int)Math.Floor(oldTime)];
+                double nextSample;
+                if (Math.Ceiling(oldTime) == samples.Count) {
+                    nextSample = 0;
+                } else {
+                    nextSample = samples[(int)Math.Ceiling(oldTime)];
+                }                
+                
+                double delta = (nextSample - lastSample);
+
+                if (delta == 0) {
+                    yield return lastSample;
+                } else {
+                    yield return (
+                        lastSample + (delta * remainder)
+                    );
+                }                                                        
+            } else {
+                yield return 0; 
+            }
+        }        
+    }
+"@
                     </Script>
       </ScriptMethod>
       <ScriptProperty>
