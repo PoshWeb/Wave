@@ -37,8 +37,6 @@ param()
 
 if ($this.'#Scale') { return $this.'#Scale'}
 
-# Arraylists maintain underlying psuedotypes, 
-# so we can construct our scales from `$this`
 $majorScale = [Collections.ArrayList]::new()
 $null = $majorScale.Add($this)
 
@@ -122,25 +120,26 @@ $null = $scaleTable["Octatonic"].Add($this)
 $null = $scaleTable["Augmented"].Add($this)
 
 # Whole Tone scale is all whole steps up
-1..6 | ForEach-Object {
-	$null = $scaleTable["WholeTone"].Add($scaleTable["WholeTone"][-1].Sharpen(2))
+foreach ($n in 1..6) {
+	$scaleTable["WholeTone"].Add($scaleTable["WholeTone"][-1].Sharpen(2))
 }
 $scaleTable["WholeToneDescending"] = $scaleTable["WholeTone"].Clone()
 $scaleTable["WholeToneDescending"].Reverse()
 
 # Octatonic scale alternates b/w whole steps and half steps
-1..8 | ForEach-Object {
-	$stepCount = if ($_ % 2 -eq 0) { 1 } else { 2 }
+foreach ($n in 1..8) {
+	$stepCount = if ($n % 2 -eq 0) { 1 } else { 2 }
 	$null = $scaleTable["Octatonic"].Add($scaleTable["Octatonic"][-1].Sharpen($stepCount))
 }
 $scaleTable["OctatonicDescending"] = $scaleTable["Octatonic"].Clone()
 $scaleTable["OctatonicDescending"].Reverse()
 
 # Augmented scale alternates b/w minor 3rds and half steps
-1..6 | ForEach-Object {
-	$stepCount = if ($_ % 2 -eq 0) { 1 } else { 3 }
+foreach ($n in 1..6) {
+	$stepCount = if ($n % 2 -eq 0) { 1 } else { 3 }
 	$null = $scaleTable["Augmented"].Add($scaleTable["Augmented"][-1].Sharpen($stepCount))
 }
+
 $scaleTable["AugmentedDescending"] = $scaleTable["Augmented"].Clone()
 $scaleTable["AugmentedDescending"].Reverse()
 #endregion Symmetric Scales
@@ -231,8 +230,6 @@ param()
 
 if ($this.'#Scale') { return $this.'#Scale'}
 
-# Arraylists maintain underlying psuedotypes, 
-# so we can construct our scales from `$this`
 $majorScale = [Collections.ArrayList]::new()
 $null = $majorScale.Add($this)
 
@@ -316,25 +313,26 @@ $null = $scaleTable["Octatonic"].Add($this)
 $null = $scaleTable["Augmented"].Add($this)
 
 # Whole Tone scale is all whole steps up
-1..6 | ForEach-Object {
-	$null = $scaleTable["WholeTone"].Add($scaleTable["WholeTone"][-1].Sharpen(2))
+foreach ($n in 1..6) {
+	$scaleTable["WholeTone"].Add($scaleTable["WholeTone"][-1].Sharpen(2))
 }
 $scaleTable["WholeToneDescending"] = $scaleTable["WholeTone"].Clone()
 $scaleTable["WholeToneDescending"].Reverse()
 
 # Octatonic scale alternates b/w whole steps and half steps
-1..8 | ForEach-Object {
-	$stepCount = if ($_ % 2 -eq 0) { 1 } else { 2 }
+foreach ($n in 1..8) {
+	$stepCount = if ($n % 2 -eq 0) { 1 } else { 2 }
 	$null = $scaleTable["Octatonic"].Add($scaleTable["Octatonic"][-1].Sharpen($stepCount))
 }
 $scaleTable["OctatonicDescending"] = $scaleTable["Octatonic"].Clone()
 $scaleTable["OctatonicDescending"].Reverse()
 
 # Augmented scale alternates b/w minor 3rds and half steps
-1..6 | ForEach-Object {
-	$stepCount = if ($_ % 2 -eq 0) { 1 } else { 3 }
+foreach ($n in 1..6) {
+	$stepCount = if ($n % 2 -eq 0) { 1 } else { 3 }
 	$null = $scaleTable["Augmented"].Add($scaleTable["Augmented"][-1].Sharpen($stepCount))
 }
+
 $scaleTable["AugmentedDescending"] = $scaleTable["Augmented"].Clone()
 $scaleTable["AugmentedDescending"].Reverse()
 #endregion Symmetric Scales
