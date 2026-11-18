@@ -306,7 +306,17 @@ if ($allInput.Length) {
         }
     } else {
         # Walk over each input
+        $Progress = [Ordered]@{
+            id=Get-Random;activity='Piping'
+        }
+        $counter = 0
         :nextInput foreach ($in in $allInput) {
+            if ($allInput.Length -gt 1) {
+                $Progress.PercentComplete = ($counter++ * 100)/$allInput.Length
+                $Progress.Status = "$counter / $($allInput.Length)"
+                Write-Progress @progress
+            }
+            
             # if it is a wave
             if ($in.pstypenames -contains 'audio/wav') {
                 # just make waves.
@@ -332,6 +342,11 @@ if ($allInput.Length) {
             # Pass thru unknown input
             $in
         }
+        if ($AllInput.Length -gt 1 ) {
+            $Progress.Remove('PercentComplete')
+            $Progress.Completed = $true
+            Write-Progress @Progress
+        }        
     }
 
     if (-not $samples) { return }     
@@ -433,6 +448,13 @@ if ($url) {
             }
         }
     )
+
+    $Progress = [Ordered]@{
+        ID = Get-Random
+        Activity = 'Getting Waves'
+    }
+
+    $uriCount = 0
         
     # Go over each filtered url
     foreach ($uri in $url) {        
@@ -443,6 +465,8 @@ if ($url) {
                 Invoke-WebRequest -Uri $uri *>&1
         }
 
+        $uriCount++
+
         # Get the response from our cache
         $waveResponse = $script:UrlCache[$uri]
         # If the response is already a WavePool
@@ -451,6 +475,11 @@ if ($url) {
             $waveResponse
             continue # and continue.
         }
+        
+        
+        $Progress.Status = "$uri"
+        $Progress.PercentComplete = ($uriCount * 100)/$url.Length 
+        Write-Progress @Progress                
 
         # If the response
         if (            
@@ -502,6 +531,9 @@ if ($url) {
 
     # If we had any urls after filtering
     if ($url) {
+        $Progress.Remove('PercentComplete')
+        $Progress.Completed = $true
+        Write-Progress @Progress
         return # return.
     }    
 }
@@ -532,18 +564,34 @@ if (-not $BytesPerSecond) {
 
 # If we have been provided samples, but not PCM data
 if ($samples -and -not $PCM) {
+            
+
+    if ($samples.Length -gt 256kb) {
+        $progress = [Ordered]@{
+            ID=Get-Random;
+            Status='Encoding';
+            Activity="$($samples.Length) samples"
+        }
+        Write-Progress @progress
+    }
+    
     # We will reassign our PCM data to the encoded samples
-    $PCM =
-        if ($audioFormat -eq 1) {
+    $PCM = 
+        if ($audioFormat -eq 1) {            
             switch ($BitsPerSample) {
-                8 {[Wave.WaveLinq]::EncodeByte($samples)}
-                16 {[Wave.WaveLinq]::EncodeInt16($samples)}
-                32 {[Wave.WaveLinq]::EncodeInt32($samples)}
+                8 {[Wave.WaveLinq]::EncodeByte($Samples)}
+                16 {[Wave.WaveLinq]::EncodeInt16($Samples)}
+                32 {[Wave.WaveLinq]::EncodeInt32($Samples)}
             }
         }
         elseif ($audioFormat -eq 3) {
-            [Wave.WaveLinq]::EncodeFloat($samples)
+            [Wave.WaveLinq]::EncodeFloat($Samples)
         }
+     
+    if ($samples.Length -gt 256kb) {
+        $progress.Completed = $true
+        Write-Progress @progress
+    }    
 
     $waveStream |
         Add-Member NoteProperty '#Samples' $Samples -Force
