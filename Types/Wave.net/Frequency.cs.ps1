@@ -44,9 +44,14 @@ $Modifier = 'public',
 "
 
 @"
-    public Frequency(string hertz) {
-        string lowerHertz = hertz.ToLower().Replace("#", "s");
-        if (Regex.IsMatch(lowerHertz,"^[a-g]")) {
+    public Frequency(string hertz) {        
+        string lowerHertz = hertz.ToLower();
+        Match startsWithLetter = Regex.Match(lowerHertz,"^[a-g]");        
+        if (startsWithLetter.Success) {
+            Regex sharps = new Regex("[#♯]");
+            char letter = startsWithLetter.Value[0];
+            int distanceFromA = ((int)letter - (int)'a'); 
+            lowerHertz = sharps.Replace(lowerHertz, "s");
             foreach (Frequency f in Frequency.Keyboard) {
                 if (lowerHertz == f.Letter.ToLower()) {
                     this.Hertz = f.Hertz;
@@ -68,26 +73,17 @@ $Modifier = 'public',
 ),
 
 # Any properties
-[string[]]$Property = @(
+[string[]]$Property = @(    
 @"
     public double Hertz { get; set; }
 "@
 
 @"
     public double MidiNumber {
-        get {            
-            double direction = 1.0;
-            if (this.Hertz == 0) {
-                direction = 0;
-            } else if (this.Hertz < 1) {
-                direction = -1.0;
-            }            
+        get {                        
+            double midiNumber = 69.0 + 12.0 * Math.Log(Math.Abs(this.Hertz) / 440,2);
             
-            double midiNumber = 69.0 + 12.0 * direction * Math.Log(Math.Abs(this.Hertz) / 440,2);
-            if (Math.Abs(midiNumber) >= 21) {
-                return midiNumber;
-            }
-            return 0;
+            return midiNumber;            
         }
         set {
             if (value > 0) {
@@ -101,21 +97,39 @@ $Modifier = 'public',
 
 @"
     public string Letter {
-        get {                
-            double absMidi = Math.Abs(this.MidiNumber);
-            if (this.MidiNumber < 21) { return String.Empty;}
-            double remainder = (absMidi - 12) % 12;
-            int letterNumber = (int)Math.Round(
-                (remainder * Frequency.Letters.Length)/Frequency.Letters.Length
-            );
+        get {
+            double midiNumber = this.MidiNumber;
+            double remainder = (midiNumber - 12) % 12;
+            if (midiNumber < 12 && midiNumber >= 0) {
+                return Frequency.Letters[
+                    (int)Math.Round(midiNumber)
+                ] + this.Octave.ToString();                                        
+            }                            
+                
+            // C-1 is MIDI 0, so we wrap at this point
+            if (midiNumber < 0) {
+                remainder = (midiNumber % 12);
+            }
+                
+            // If our remainder was negative, wrap
+            if (remainder < 0) {
+                remainder = 12 + remainder;
+            }
+
+            // At this point we should have an accurate remainder
+            // and all we need to do is make it an index
+            int letterNumber = (int)Math.Round(remainder);
+            
+            // If the index is our total
             if (letterNumber == Frequency.Letters.Length) {
+                // congratulations, it's a `C`
                 return "C" + this.Octave.ToString();
             }
-            return Frequency.Letters[
-                letterNumber
-            ] + this.Octave.ToString();
+            
+            // Otherwise get the letter at that index.
+            return Frequency.Letters[letterNumber] + this.Octave.ToString();
         }
-    }
+    }            
 "@
 
 @"
@@ -135,19 +149,20 @@ $Modifier = 'public',
 
 @"
     public double Octave {
-        get {                
-            if (this.MidiNumber < 21) { return 0; }
-            if (Math.Round(Math.Abs(this.MidiNumber)) == 48) {
-                return 3;
-            }
-            double octave = Math.Floor((this.MidiNumber - 12) / 12);
-            return octave;
-        }                
+        get {
+            return Math.Floor(
+                Math.Log(
+                    Math.Abs(this.Hertz), 2
+                ) - 4.0
+            );            
+        } set {            
+            this.Hertz = Math.Pow(2, value + 4);
+        }
     }
 "@
 
 @"
-    public double Circumference {
+    public double ArcLength {
         get { return this.Hertz * Math.PI * 2; }
         set { this.Hertz = value / (Math.PI * 2); }
     }
@@ -164,46 +179,51 @@ $Modifier = 'public',
         get {
             Frequency a0 = new Frequency(27.5);
             List<Frequency> keyboard = new List<Frequency>();
-            for (double n = 0; n < 88; n++) {
-                keyboard.Add(a0.Sharpen(n)); 
-            }
+            for (double n = 0; n < 88; n++) { keyboard.Add(a0.Sharpen(n)); }
             return keyboard;
         }
-    } 
+    }
 "@
 ),
 
 # Any operators
 [string[]]
 $Operators = @(
-    function operator {    
+    function operator {
         param([string]$Signature, [string]$Operator, [string[]]$Operands, [string]$Body)
         "$Signature operator $operator($($Operands -join ', ')) $body"
     }
 
     $StaticOperators = @('+','-','/','*', '==', '!=', '>', '>=', '<', '<=')
 
-    foreach ($operator in $StaticOperators) {
-    if ($operator -in '==', '!=', '>', '>=', '<', '<=') {
-        operator -Signature "public static bool" -Operator $operator -Operands @(
-            "$ClassName left", "$ClassName right"
-        ) -Body "{ return left.Hertz $operator right.Hertz; }"
+    foreach ($operator in $StaticOperators) {        
+        $operatorFormat = @{Operator=$operator}
+        if ($operator -in '==', '!=', '>', '>=', '<', '<=') {            
+            
+            $operatorFormat.Signature="public static bool"
 
-        operator -Signature "public static bool" -Operator $operator -Operands @(
-            "$ClassName left", "double right"
-        ) -Body "{ return left.Hertz $operator right; }"
-    }     
-    else {
-        operator -Signature "public static $className" -Operator $operator -Operands @(
-            "$ClassName left", "$ClassName right"
-        ) -Body "{ return new $ClassName(left.Hertz $operator right.Hertz); }"
-        
-        operator -Signature "public static $className" -Operator $operator -Operands @(
-            "$ClassName left", "double right"
-        ) -Body "{ return new $ClassName(left.Hertz $operator right); }"
+            operator @operatorFormat -Operands @(
+                "$ClassName left", "$ClassName right"
+            ) -Body "{ return left.Hertz $operator right.Hertz; }"
+
+            operator @operatorFormat -Operands @(
+                "$ClassName left", "double right"
+            ) -Body "{ return left.Hertz $operator right; }"
+        }
+        else {
+
+            $operatorFormat.Signature = "public static $className"
+
+            operator @operatorFormat -Operands @(
+                "$ClassName left", "$ClassName right"
+            ) -Body "{ return new $ClassName(left.Hertz $operator right.Hertz); }"
+            
+            operator @operatorFormat -Operands @(
+                "$ClassName left", "double right"
+            ) -Body "{ return new $ClassName(left.Hertz $operator right); }"
+
+        }            
     }
-        
-}
 
 
         # Older versions of PowerShell don't support bitwise operators in this format
@@ -212,34 +232,39 @@ $Operators = @(
         # (we can always use the `Sharpen` and `Flatten` methods to do this on Windows PowerShell)
         
         if ($psVersionTable.PSVersion.Major -ge 6) {
-            operator -Signature "public static $ClassName" -Operator '>>' -Operands @(
+            $operatorFormat = @{Signature="public static $ClassName"}
+
+            operator @operatorFormat -Operator '>>' -Operands @(
                 "$ClassName left", "double right"
             ) -Body "{ return new $ClassName(left.Hertz / Math.Pow(2, (right * -1.0)/12)); }"
 
-            operator -Signature "public static $ClassName" -Operator '>>' -Operands @(
+            operator @operatorFormat -Operator '>>' -Operands @(
                 "$ClassName left", "$ClassName right"
             ) -Body "{ return new $ClassName(left.Hertz / Math.Pow(2, (right.Hertz * -1.0)/12)); }"
 
-            operator -Signature "public static $ClassName" -Operator '<<' -Operands @(
+            operator @operatorFormat -Operator '<<' -Operands @(
                 "$ClassName left", "double right"
             ) -Body "{ return new $ClassName(left.Hertz * Math.Pow(2, (right * -1.0)/12)); }"
 
-            operator -Signature "public static $ClassName" -Operator '<<' -Operands @(
+            operator @operatorFormat -Operator '<<' -Operands @(
                 "$ClassName left", "$ClassName right"
             ) -Body "{ return new $ClassName(left.Hertz * Math.Pow(2, (right.Hertz * -1.0)/12)); }"
     
         }
         
-        # Implicit and Explicit conversions to/from double and TimeSpan
-        operator -Signature "public static implicit" -Operator 'double' -Operands @(
+        $implicit = @{Signature = "public static implicit"}
+        $explicit = @{Signature = "public static explicit"}
+        
+        # Implicit and Explicit conversions to/from double and TimeSpan                
+        operator @implicit -Operator "double" -Operands @(
             "$ClassName other"
         ) -Body "{ return other.Hertz; }"
 
-        operator -Signature "public static explicit" -Operator "$ClassName" -Operands @(
+        operator @explicit -Operator "$ClassName" -Operands @(
             "double other"
         ) -Body "{ return new Frequency(other);}"
 
-        operator -Signature "public static implicit" -Operator 'TimeSpan' -Operands @(
+        operator @implicit -Operator 'TimeSpan' -Operands @(
             "$ClassName other"
         ) -Body "{
             if (other.Hertz == 0) {
@@ -250,7 +275,7 @@ $Operators = @(
             }
         }"
 
-        operator -Signature "public static explicit" -Operator "$ClassName" -Operands @(
+        operator @explicit -Operator "$ClassName" -Operands @(
             "TimeSpan other"
         ) -Body "{
             if (other.TotalSeconds == 0) {
@@ -284,75 +309,16 @@ $Interfaces = [Ordered]@{
             }
             return 0;
         }
-        #endregion IComparable    
-    "
-
-    IConvertible = @"
-        #region IConvertible
-        public TypeCode GetTypeCode () { return TypeCode.Double; }
-        public bool ToBoolean ( IFormatProvider provider = null) {
-            return this.Hertz == 0;
-        }
-        public char ToChar ( IFormatProvider provider = null) {
-            return char.MinValue;
-        }
-        public SByte ToSByte ( IFormatProvider provider = null) {
-            return 0; 
-        }
-        public byte ToByte ( IFormatProvider provider = null) {            
-            return 0;
-        }
-        public Int16 ToInt16 ( IFormatProvider provider = null) {
-            return 0;
-        }
-        public UInt16 ToUInt16 ( IFormatProvider provider = null) {
-            return 0;
-        }
-        public Int32 ToInt32 ( IFormatProvider provider = null) {
-            return 0;
-        }
-        public UInt32 ToUInt32 ( IFormatProvider provider = null) {
-            return 0;
-        }
-        public Int64 ToInt64 ( IFormatProvider provider = null) {
-            return 0;
-        }
-        public UInt64 ToUInt64 ( IFormatProvider provider = null) {
-            return 0;
-        }
-        public Single ToSingle ( IFormatProvider provider = null) {
-            return (float)this.Hertz;
-        }
-        public Double ToDouble ( IFormatProvider provider = null) {
-            return this.Hertz;
-        }
-        public Decimal ToDecimal ( IFormatProvider provider = null) {
-            return (Decimal)this.Hertz;
-        }
-        public DateTime ToDateTime ( IFormatProvider provider = null) {
-            return DateTime.MinValue.AddSeconds(1.0/this.Hertz);
-        }
-        public string ToString ( IFormatProvider provider = null) {
-            return this.Hertz.ToString() + "hz";
-        }        
-
-        public Object ToType ( Type conversionType ,  IFormatProvider provider ) {            
-            return null;
-        }
-        #endregion IConvertible
-"@
+        #endregion IComparable
+    "    
 },
 
 [string[]]
 $Members = @(
-@'
-        public override string ToString () {
-            return this.Hertz.ToString() + "hz";
-        }        
 
-        public override int GetHashCode() {
-            return this.Hertz.GetHashCode();
-        }
+        # Overriding Equals
+@'
+        public bool Equals(double other) { return this.Hertz.Equals(other); }
 
         public override bool Equals(object other) {
             if (other == null) { return false; }
@@ -362,19 +328,57 @@ $Members = @(
             if (other is uint) { return (double)(uint)other == this.Hertz; }
             return false;
         }
+'@
 
-        public bool Equals(double other) {
-            return this.Hertz.Equals(other);
-        }
+        # Custom stringification
+@'
+        public override string ToString () { return this.Hertz.ToString() + "hz"; }
+'@
 
+
+
+@'                
+        public override int GetHashCode() { return this.Hertz.GetHashCode(); }        
+'@
+
+        # Frequency Movement
+@'    
         public Frequency Sharpen(double distance) {
             return new Frequency(this.Hertz / Math.Pow(2, ((distance * -1.0)/12)));
         }
 
         public Frequency Flatten(double distance) {
             return new Frequency(this.Hertz * Math.Pow(2, ((distance * -1.0)/12)));
-        }                    
+        }
+            
+        public Frequency Shift(double octave = 0, double semitone = 0, double cent = 0) {
+            double shifted = this.Hertz / Math.Pow(2, octave * -1.0);
+            shifted /= Math.Pow(2, semitone * -1.0/12);
+            shifted /= Math.Pow(2, cent * -1.0/1200);            
+            return new Frequency(shifted);
+        }
+
+        public Frequency ShiftOctave(double distance) {
+            return new Frequency(this.Hertz / Math.Pow(2, distance * -1.0));
+        }
+
+        public Frequency ShiftSemitone(double distance) {
+            return new Frequency(this.Hertz / Math.Pow(2, ((distance * -1.0)/12)));
+        }
+            
+        public Frequency ShiftCent(double distance) {
+            return new Frequency(this.Hertz / Math.Pow(2, ((distance * -1.0)/1200)));
+        }
 '@
+
+
+@"
+    public IEnumerable<Frequency> Chords(IEnumerable<double> chords) {
+        foreach (double chord in chords) {
+            yield return new Frequency(this.Hertz * chord);
+        }
+    }
+"@
 )
 )
 
