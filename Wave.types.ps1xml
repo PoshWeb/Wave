@@ -2409,25 +2409,21 @@ $currentWave = $this
 if (-not $currentWave) { $currentWave = wave }
 
 # Calculate the number of samples
-$numberOfSamples = [Math]::Round(
-    $Duration.TotalSeconds * $SampleRate * $channelCount
-)
-
-[double[]]$angles = $currentWave.MeasureAngle($Frequency, $SampleRate, $channelCount)
 
 $waveFormat = $wave.WaveFormat
 
 [double[]]$Samples =@(
     # Scale our full sine wave by the volume
     # (because we want to be kind to our eardrums and speakers)
-    [Wave.WaveLinq]::Multiply(
+    [Wave.WaveMath]::Multiply(
         [Wave.WaveLinq]::SineWave(
-            [double[]](0..($numberOfSamples - 1)),
-            $angles,
-            $Weights
+            $duration.TotalSeconds,
+            [double[]]@($Frequency),
+            $weights,
+            ($SampleRate * $channelCount)
         ),        
         [double[]]@($volume)
-    )            
+    )
 )
 
 # If we have not been provided a time
