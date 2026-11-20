@@ -155,8 +155,6 @@ $Modifier = 'public',
                     Math.Abs(this.Hertz), 2
                 ) - 4.0
             );            
-        } set {            
-            this.Hertz = Math.Pow(2, value + 4);
         }
     }
 "@
