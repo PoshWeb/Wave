@@ -21,7 +21,7 @@ if ($this.'#Vector2') { return ,$this.'#Vector2' }
 
 [double[]]$Samples = $this.Samples
 
-[Numerics.Vector2[]]$vector2 = [Wave.WaveLinq]::ToVector2($samples)
+[Numerics.Vector2[]]$vector2 = [Wave.WaveMath]::ToVector2($samples)
 
 if ($vector2) {
     $this | Add-Member NoteProperty '#Vector2' $vector2 -Force
