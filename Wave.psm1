@@ -173,8 +173,8 @@ ${function:MidiNote} = ${function:Get-MidiNote} = $midinote.ScriptBlock
 
 $exports.Function += "Get-Frequency","Frequency"
 
-if ('Wave.Frequency' -as [type]) {
-    $A0 = [Wave.Frequency]27.5
+if ('Wave.WaveFrequency' -as [type]) {
+    $A0 = [Wave.WaveFrequency]27.5
     $exports.variable += @(
         foreach ($n in 0..87) {
             $f = $A0.Sharpen($n)

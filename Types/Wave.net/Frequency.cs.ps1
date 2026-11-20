@@ -12,7 +12,7 @@
 param(
 # The name of the class
 [string]
-$ClassName = 'Frequency',
+$ClassName = 'WaveFrequency',
 
 # The namespace the class is in.
 [string]
@@ -37,14 +37,14 @@ $Modifier = 'public',
 # Any constructors.
 [string[]]$Constructor = @(
     "
-    public Frequency() { this.Hertz = 0; }
+    public $ClassName() { this.Hertz = 0; }
 "   
     "
-    public Frequency(double hertz) { this.Hertz = hertz; }    
+    public $ClassName(double hertz) { this.Hertz = hertz; }    
 "
 
 @"
-    public Frequency(string hertz) {        
+    public $ClassName(string hertz) {        
         string lowerHertz = hertz.ToLower();
         Match startsWithLetter = Regex.Match(lowerHertz,"^[a-g]");        
         if (startsWithLetter.Success) {
@@ -52,7 +52,7 @@ $Modifier = 'public',
             char letter = startsWithLetter.Value[0];
             int distanceFromA = ((int)letter - (int)'a'); 
             lowerHertz = sharps.Replace(lowerHertz, "s");
-            foreach (Frequency f in Frequency.Keyboard) {
+            foreach ($ClassName f in $ClassName.Keyboard) {
                 if (lowerHertz == f.Letter.ToLower()) {
                     this.Hertz = f.Hertz;
                     return;
@@ -101,7 +101,7 @@ $Modifier = 'public',
             double midiNumber = this.MidiNumber;
             double remainder = (midiNumber - 12) % 12;
             if (midiNumber < 12 && midiNumber >= 0) {
-                return Frequency.Letters[
+                return $ClassName.Letters[
                     (int)Math.Round(midiNumber)
                 ] + this.Octave.ToString();                                        
             }                            
@@ -121,28 +121,28 @@ $Modifier = 'public',
             int letterNumber = (int)Math.Round(remainder);
             
             // If the index is our total
-            if (letterNumber == Frequency.Letters.Length) {
+            if (letterNumber == $ClassName.Letters.Length) {
                 // congratulations, it's a `C`
                 return "C" + this.Octave.ToString();
             }
             
             // Otherwise get the letter at that index.
-            return Frequency.Letters[letterNumber] + this.Octave.ToString();
+            return $ClassName.Letters[letterNumber] + this.Octave.ToString();
         }
     }            
 "@
 
 @"
 
-    public Frequency Flat {
+    public $ClassName Flat {
         get {
-            return new Frequency(this.Hertz * Math.Pow(2, -1.0/12));
+            return new $ClassName(this.Hertz * Math.Pow(2, -1.0/12));
         }
     }
 
-    public Frequency Sharp {
+    public $ClassName Sharp {
         get {
-            return new Frequency(this.Hertz / Math.Pow(2, -1.0/12));
+            return new $ClassName(this.Hertz / Math.Pow(2, -1.0/12));
         }
     }
 "@
@@ -173,10 +173,10 @@ $Modifier = 'public',
         }
     }
 
-    public static List<Frequency> Keyboard {
+    public static List<$ClassName> Keyboard {
         get {
-            Frequency a0 = new Frequency(27.5);
-            List<Frequency> keyboard = new List<Frequency>();
+            $ClassName a0 = new $ClassName(27.5);
+            List<$ClassName> keyboard = new List<$ClassName>();
             for (double n = 0; n < 88; n++) { keyboard.Add(a0.Sharpen(n)); }
             return keyboard;
         }
@@ -260,7 +260,7 @@ $Operators = @(
 
         operator @explicit -Operator "$ClassName" -Operands @(
             "double other"
-        ) -Body "{ return new Frequency(other);}"
+        ) -Body "{ return new $ClassName(other);}"
 
         operator @implicit -Operator 'TimeSpan' -Operands @(
             "$ClassName other"
@@ -277,10 +277,10 @@ $Operators = @(
             "TimeSpan other"
         ) -Body "{
             if (other.TotalSeconds == 0) {
-                return new Frequency(0.0);
+                return new $ClassName(0.0);
             }
             else {
-                return new Frequency(1/other.TotalSeconds);
+                return new $ClassName(1/other.TotalSeconds);
             }
         }"
 ),
@@ -292,8 +292,8 @@ $Interfaces = [Ordered]@{
         public Int32 CompareTo(object other) {
             double a = this.Hertz;
             double b = 0;
-            if (other is Frequency) {
-                b = ((Frequency)other).Hertz;
+            if (other is $ClassName) {
+                b = (($ClassName)other).Hertz;
             }            
             
             if (other is double) {
@@ -315,18 +315,18 @@ $Interfaces = [Ordered]@{
 $Members = @(
 
         # Overriding Equals
-@'
+@"
         public bool Equals(double other) { return this.Hertz.Equals(other); }
 
         public override bool Equals(object other) {
             if (other == null) { return false; }
-            if (other is Frequency) { return ((Frequency)other).Hertz == this.Hertz; }      
+            if (other is $ClassName) { return (($ClassName)other).Hertz == this.Hertz; }      
             if (other is double) { return (double)other == this.Hertz; }
             if (other is int) { return (double)(int)other == this.Hertz; }  
             if (other is uint) { return (double)(uint)other == this.Hertz; }
             return false;
         }
-'@
+"@
 
         # Custom stringification
 @'
@@ -340,40 +340,41 @@ $Members = @(
 '@
 
         # Frequency Movement
-@'    
-        public Frequency Sharpen(double distance) {
-            return new Frequency(this.Hertz / Math.Pow(2, ((distance * -1.0)/12)));
+@"
+    
+        public $ClassName Sharpen(double distance) {
+            return new $ClassName(this.Hertz / Math.Pow(2, ((distance * -1.0)/12)));
         }
 
-        public Frequency Flatten(double distance) {
-            return new Frequency(this.Hertz * Math.Pow(2, ((distance * -1.0)/12)));
+        public $ClassName Flatten(double distance) {
+            return new $ClassName(this.Hertz * Math.Pow(2, ((distance * -1.0)/12)));
         }
             
-        public Frequency Shift(double octave = 0, double semitone = 0, double cent = 0) {
+        public $ClassName Shift(double octave = 0, double semitone = 0, double cent = 0) {
             double shifted = this.Hertz / Math.Pow(2, octave * -1.0);
             shifted /= Math.Pow(2, semitone * -1.0/12);
             shifted /= Math.Pow(2, cent * -1.0/1200);            
-            return new Frequency(shifted);
+            return new $ClassName(shifted);
         }
 
-        public Frequency ShiftOctave(double distance) {
-            return new Frequency(this.Hertz / Math.Pow(2, distance * -1.0));
+        public $ClassName ShiftOctave(double distance) {
+            return new $ClassName(this.Hertz / Math.Pow(2, distance * -1.0));
         }
 
-        public Frequency ShiftSemitone(double distance) {
-            return new Frequency(this.Hertz / Math.Pow(2, ((distance * -1.0)/12)));
+        public $ClassName ShiftSemitone(double distance) {
+            return new $ClassName(this.Hertz / Math.Pow(2, ((distance * -1.0)/12)));
         }
             
-        public Frequency ShiftCent(double distance) {
-            return new Frequency(this.Hertz / Math.Pow(2, ((distance * -1.0)/1200)));
+        public $ClassName ShiftCent(double distance) {
+            return new $ClassName(this.Hertz / Math.Pow(2, ((distance * -1.0)/1200)));
         }
-'@
+"@
 
 
 @"
-    public IEnumerable<Frequency> Chords(IEnumerable<double> chords) {
+    public IEnumerable<$ClassName> Chords(IEnumerable<double> chords) {
         foreach (double chord in chords) {
-            yield return new Frequency(this.Hertz * chord);
+            yield return new $ClassName(this.Hertz * chord);
         }
     }
 "@
