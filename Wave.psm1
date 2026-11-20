@@ -12,10 +12,13 @@ $waveDotNet = [PSCustomObject]@{PSTypeName='Wave.net'}
 try {
     $addTypeSplat = [Ordered]@{
         TypeDefinition = @(
-            $waveLinq.TypeDefinition        
-            if ($waveDotNet.'Frequency.cs'.Invoke) {
-                $waveDotNet.'Frequency.cs'()
+            foreach ($include in $waveDotNet.Include) {
+                if ($waveDotNet.$include.Invoke) {
+                    $waveDotNet.$include()
+                }
             }
+            $waveLinq.TypeDefinition
+                        
         ) -join [Environment]::NewLine
     }
     if ($PSVersionTable.PSVersion.Major -lt 6.0) {
