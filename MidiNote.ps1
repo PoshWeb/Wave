@@ -10,7 +10,7 @@ $allInput = $($input)
 foreach ($in in $allInput) {
     
     if ($in -as [double]) {
-        $f = [Wave.Frequency]::new()
+        $f = [Wave.WaveFrequency]::new()
         $f.MidiNumber = $in
         $f
     }
@@ -19,7 +19,7 @@ foreach ($in in $allInput) {
 
 foreach ($in in $allArgs) {
     if ($in -as [double]) {
-        $f = [Wave.Frequency]::new()
+        $f = [Wave.WaveFrequency]::new()
         $f.MidiNumber = $in
         $f
     }     

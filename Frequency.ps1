@@ -10,9 +10,9 @@ $allArgs = @($args)
 $allInput = $($input)
 
 foreach ($in in $allInput) {
-    $in -as [Wave.Frequency]
+    $in -as [Wave.WaveFrequency]
 }
 
 foreach ($in in $allArgs) {
-    $in -as [Wave.Frequency]
+    $in -as [Wave.WaveFrequency]
 }
