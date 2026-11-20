@@ -12,7 +12,7 @@
     Most notes are "attenuated", 
     which is a fancy way of saying they are softened over time.
 
-    The default of this function, and of most envelopes, is a "hush".
+    The default of this function, and of most envelopes, is a "fade out".
 
     This gradually decreases the volume over time.
 .LINK
@@ -51,23 +51,25 @@
         }
     ) play
 .EXAMPLE
-    # A decay is a decrease in magnitude over a short time
+    # A release or decay is a decrease in magnitude over a short time
     wave note a4 envelope @(
         foreach ($n in 1..50) {
             1 - $n/50
         }
     ) play
 .EXAMPLE
-    # Attack and decay
+    # Let's add a normal sound in between
     wave note a4 envelope @(
-        foreach ($n in 1..50) {
-            $n/50
+        foreach ($n in 1..25) {
+            $n/25
         }
+
+        @(1) * 50
         
-        foreach ($n in 1..50) {
-            1 - $n/50
+        foreach ($n in 1..25) {
+            1 - $n/25
         }
-    ) play
+    ) play    
 .EXAMPLE
     # An attack, decay, sustain, release (ADSR)
     wave note a4 envelope @(
@@ -226,10 +228,15 @@
     } play
 #>
 param($function)
+
 [double[]]$Samples = $($This.Samples)
+
 $waveFormat = $this.WaveFormat
+
 if (-not $waveFormat) { $waveFormat = @{} }
+
 $sampleNumber = 0
+
 if (
     (-not $function) -or 
     ($function -in 'FadeOut', 'hush', 'normal')
@@ -238,14 +245,24 @@ if (
     return wave @waveFormat -Samples $(
         [Wave.WaveLinq]::FadeOut($samples, 1)
     )
-} 
+}
+elseif (
+    $function -is [Collections.Generic.IEnumerable[double]]
+) {
+    return wave @waveFormat -Samples $(
+        [Wave.WaveMath]::Multiply(
+            $samples,
+            $function
+        )
+    )
+}
 elseif (
     $function -as [double[]]
 ) {
     # A custom envelope of ratios
     $customEnvelope = $function -as [double[]]
     return wave @waveFormat -Samples $(
-        [Wave.WaveLinq]::Multiply(
+        [Wave.WaveMath]::Multiply(
             $samples,
             $customEnvelope
         )        
@@ -257,6 +274,6 @@ elseif ($function -is [ScriptBlock]) {
     )
 }
 else {
-    Write-Warning "Unrecognized function type"
+    Write-Warning "Unrecognized function type : $function"
     return $this
 }
