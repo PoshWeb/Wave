@@ -39,6 +39,6 @@ if ($gain -lt 0) {
 $waveFormat = $this.WaveFormat
 wave @waveFormat -Samples (
     # Apply the gain
-    [Wave.WaveLinq]::Multiply($samples, [double[]]$gain)
+    [Wave.WaveMath]::Multiply($samples, $gain)
 ) 
 
