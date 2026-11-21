@@ -66,7 +66,7 @@ $ChannelCount = $this.ChannelCount
 # This can be used to compute an offset
 $Offset = [Math]::Floor($start * $SampleRate * $ChannelCount)
 
-$this.Samples = [double[]][Wave.WaveMath]::Add(
+$this.Samples = [double[]][Wave.WaveLinq]::Add(
     $current, 
     [int]$Offset,
     $Samples
