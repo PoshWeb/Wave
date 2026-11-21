@@ -1,0 +1,1 @@
+Write-FormatView -TypeName Wave.Frequency -Property Letter, Octave, MidiNumber, Hertz

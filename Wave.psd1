@@ -63,7 +63,7 @@ Description = 'Make Waves with PowerShell'
 TypesToProcess = @('Wave.types.ps1xml')
 
 # Format files (.ps1xml) to be loaded when importing this module
-# FormatsToProcess = @()
+FormatsToProcess = @('Wave.format.ps1xml')
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 # NestedModules = @()
@@ -157,6 +157,80 @@ We can make waves in PowerShell, using nothing but notes.
 wave note cafe play
 ~~~
 
+By default, we play in octave 3.
+
+We can be more specific by using letters and octaves:
+
+~~~PowerShell
+wave note c3a3f3e3 play
+~~~
+
+We can use uppercase to play in octave 4
+
+~~~PowerShell
+wave note CAFE play
+~~~
+
+We can take a rest with a `~`
+
+~~~PowerShell
+wave note c~a~f~e~ play
+~~~
+
+We can easily belt out pretty recognizable tunes:
+
+~~~PowerShell
+wave note D4E4C4C3G3 play
+~~~
+
+By default we play at a pretty low volume.
+
+Let's make it louder:
+
+~~~PowerShell
+wave volume 0.5 note D4E4C4C3G3 play
+~~~
+
+Let's play it backwards:
+
+~~~PowerShell
+wave volume 0.5 note D4E4C4C3G3 backmask play
+~~~
+
+We can play with different instruments
+
+~~~PowerShell
+wave volume 0.5 instrument @('supersaw') note D4E4C4C3G3 play
+~~~
+
+We can alternate instruments by providing more than one
+
+~~~PowerShell
+wave volume 0.5 instrument @(
+    'saw', 'saw', 'saw'
+    'supersaw', 'supersaw'
+) note D4E4C4C3G3 play
+~~~
+
+PowerShell can repeat lists and strings by multiplying, 
+and combine them with addition
+
+So we can repeat the phrase with a response:
+
+~~~PowerShell
+wave volume 0.5 instrument @(
+    @('saw') * 3
+    @('supersaw') * 2
+    'silence'
+
+    @('square') * 3
+    @('supersquare') * 2
+    'silence'
+) note @(
+    ('D4E4C4C3G3' + '~') * 2
+) play
+~~~
+
 ### Wave Basics
 
 You might have heard that sound is just waves.  That's true!
@@ -177,7 +251,41 @@ We collect samples at a given rate per second.  This is called the `SampleRate`.
 CD quality audio has 44100 samples per second, or 44100 variations in amplitude
 
 '@
-    } # End of PSData hashtable
+    } # End of PSData hashtable    
+
+    Tips = @(
+        'Sweeps are sweet'
+        'Chords are cool'
+        'Chords have weights'
+        'Wave can play any note'
+        'All waves are sine waves'
+        'Saws and squares are sharp'        
+        'Wave is cross platform'
+        'Wave is open source - https://github.com/PoshWeb/Wave'
+        'Wave has a wiki - https://github.com/PoshWeb/Wave/wiki'
+        'We Can Make Waves!'
+        'Envelopes shape a sound'
+        'You can run Wave on Raspberry Pi!'
+        'So many sound effects are sweeps'
+        'Wave has a lot of /Examples'        
+    )
+
+    Tricks = @(
+        'Wave can play DECPS terminal tunes'
+        'Wave include letter note variables: `$a4`'
+        'Backmask any audio: `wave note cafe backmask play`'        
+        'Wave can play a range of notes `wave note c3..c4 play`'
+        'Wave can make sweeping sound effects `wave sweep 440 12 play`'
+        'WaveLinq is very helpful'
+        'Wave can make morse code `wave morsecode "sos" play`'
+        'We can `.Sharpen()` or `.Flatten()` any frequency'
+        'We can make waves with events:  `Register-EngineEvent -SourceIdentifier uhoh -Action { wave note ae play }; New-Event uhoh`'
+        'We can get a Wave''s `.Samples`'
+        'Post-process output with RoughDraft and ffmpeg - https://github.com/StartAutomating/RoughDraft'
+        'Envelopes multiply the samples in a wave over time'
+        'We can add two sounds together by summing their samples'
+        'We can play a scale `wave note $c3.Scale.Major`'        
+    )
 
     Recommends = @(
         'https://github.com/StartAutomating/RoughDraft'
