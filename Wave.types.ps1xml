@@ -4798,23 +4798,40 @@ return $newWave.Add(
       <ScriptMethod>
         <Name>Say</Name>
         <Script>
-                        param(
+                        &lt;#
+.SYNOPSIS
+    Wave Say 
+.DESCRIPTION
+    Wave Text to Speech.
+
+    Uses the operating system's text-to-speech functionality to say a phrase.
+.NOTES
+    This will always generate a new wave.
+
+    Additionally, most programs encode speech at a 22050 sample rate.
+
+    To mix it with audio without distortions, you may need to resample.
+.EXAMPLE
+    wave say "whatever"
+#&gt;
+param(
+# The phrase to say.  By default `hello world`
 [string]
 $Phrase = 'Hello World',
 
-[Collections.IDictionary]
-[Alias('Options')]
-$Option = [Ordered]@{},
-
+# The voice to speak in.  
+# If none is provided, the default voice will be used.
 [string]
 $Voice,
 
-[double]
-$Volume = 0.42,
-
+# A pitch adjustment, between -1 (half pitch) and 1 (double pitch)
 [ValidateRange(-1.0,1.0)]
 [double]
-$Pitch = 0.0
+$Pitch = 0.0,
+
+# The volume used to speak.
+[double]
+$Volume = 0.42
 )
 
 $phraseHash = ([BitConverter]::ToString(
@@ -4837,6 +4854,11 @@ $phraseFile = if ($voice) {
 }
 
 if ($isLinux) {
+    $espeak = $ExecutionContext.SessionState.InvokeCommand.GetCommand('espeak','Application')
+    if (-not $espeak) {
+        Write-Warning "espeak required for text to speech on Linux"
+        return
+    }
     # If we are on linux, we will use `espeak` to speak the phrase
     $espeakParameters = @(
         '-v', $Voice,
@@ -4845,15 +4867,34 @@ if ($isLinux) {
         '-w', $phraseFile,
         $phrase
     )
+
+    $espoke = &amp; $espeak @espeakParameters
+
+    if (-not $?) {
+        return 
+    }    
 }
 elseif ($isMacOS) {
     # If we are on macOS, we will use `say` to speak the phrase
-    $sayParameters = @(
+    $iSay = @(
         '-v', $Voice
         '-r', [int](($Pitch + 1) * 200)
         '-o', $phraseFile
         "[[volm $Volume]]$phrase"
     )
+
+    $say = $ExecutionContext.SessionState.InvokeCommand.GetCommand('say','Application')
+    if (-not $say) {
+        Write-Warning "say required for text to speech on Linux"
+        return
+    }
+
+    $iSaid = &amp; $say @iSay
+
+    if (-not $?) {
+        return 
+    }
+
 }
 else {
     # If we are on Windows,
@@ -4862,11 +4903,16 @@ else {
     $realRate = $Pitch * 10
     $sapi.Rate = [int]$realRate 
     $sapiVoice = 
-        $sapi.GetVoices() | 
-            Where-Object { 
-                ([Globalization.CultureInfo][int]"0x$($_.Getattribute("Language"))").DisplayName -like "$language*"
-            }  | 
-            Select-Object -First 1
+        @(foreach ($sapiVoiceInfo in $sapi.GetVoices()) {
+            $sapiVoiceLanguage =
+                [Globalization.CultureInfo][int]"0x$(
+                    $sapiVoiceInfo.Getattribute("Language")
+                )"
+            
+            if ($sapiVoiceLanguage -like "$([CultureInfo]::CurrentUICulture)") {
+                $sapiVoiceInfo
+            }
+        })[0]
 
     $sapi.Volume = [int]($Volume * 100)
     $sapi.Voice  = $SapiVoice
@@ -4885,11 +4931,23 @@ else {
     $sapi.AudioOutputStream = $sapiFileStream
     $worked = $sapi.Speak($phrase)
     $sapiFileStream.Close()
+    if (-not $worked) { return }
 }
 
 
 if (Test-Path $phraseFile) {
-    return wave -Path $phraseFile
+    $waveSay = wave -Path $phraseFile
+    if (-not $waveSay.Title) {
+        $waveSay.Title = $Phrase
+    }
+
+    if ($voice -and -not $waveSay.Artist) {
+        $waveSay.Artist = $voice
+    }
+
+    $waveSaved = $waveSay.Save($phraseFile)        
+
+    return wave -Path $waveSaved
 }
 
                     </Script>
