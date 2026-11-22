@@ -4880,6 +4880,8 @@ elseif ($isMacOS) {
         '-v', $Voice
         '-r', [int](($Pitch + 1) * 200)
         '-o', $phraseFile
+        '--file-format=WAVE'
+        '--data-format=LEI16@22050'
         "[[volm $Volume]]$phrase"
     )
 
