@@ -166,8 +166,35 @@ $Modifier = 'public',
     }
 "@
 
+@"
+    public IEnumerable<object> this[string input] {
+        get {            
+            foreach (var prop in this.GetType().GetProperties()) {
+                if (! prop.CanRead) { continue; }
+                if (String.Compare(prop.Name,"Item",true) == 0) { continue; }
+                if (String.Compare(prop.Name, input, true) != 0) { continue; }
 
-@"      
+                object propertyValue = null;
+                Exception exception = null;
+                try {
+                    propertyValue = prop.GetValue(this);
+                } catch (Exception ex) {
+                    exception = ex;
+                }
+                if (exception != null) {
+                    yield return exception;
+                }
+                else if (propertyValue != null) {
+                    yield return propertyValue;
+                }            
+            }
+        }        
+    }
+"@
+
+@"  
+    
+             
     public double this[double time, double rate] {
         get {   
             if (time == 0 || rate == 0) { return 0; }                     
