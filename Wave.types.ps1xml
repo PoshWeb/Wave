@@ -8879,7 +8879,7 @@ $Modifier = 'public',
 
 # Any properties
 [string[]]$Property = @(    
-@"
+@"    
     public double Hertz { get; set; }
 "@
 
@@ -8971,6 +8971,67 @@ $Modifier = 'public',
     }
 "@
 
+
+@"      
+    public double this[double time, double rate] {
+        get {   
+            if (time == 0 || rate == 0) { return 0; }                     
+            return Math.Sin(time * ((this.Hertz * Math.PI * 2)/rate));
+        }
+    }    
+        
+    public double this[double time, double rate, double volume] {
+        get {                                    
+            return this[time, rate] * volume;
+        }
+    }
+
+        
+    public IEnumerable&lt;double&gt; this[TimeSpan duration, double rate] {
+        get {            
+            if (duration.TotalSeconds == 0) { yield break; }
+            if (rate == 0) { yield break; }
+
+            double sampleCount = Math.Round(duration.TotalSeconds * rate);
+
+            double increment = Math.Abs(sampleCount)/sampleCount;            
+            
+            double f = (Math.PI * 2 * this.Hertz) / rate;            
+            for (double sampleNumber = 0;
+                Math.Abs(sampleNumber) &lt;= Math.Abs(sampleCount);
+                sampleNumber+=increment
+            ) {    
+                yield return Math.Sin(sampleNumber * f);
+            }
+        }
+    }
+
+    public IEnumerable&lt;double&gt; this[TimeSpan duration, double rate, double volume] {
+        get {            
+            foreach (double sample in this[duration, rate]) {
+                yield return sample * volume;
+            }
+        }
+    }
+
+    public IEnumerable&lt;double&gt; this[TimeSpan duration, double rate, double volume, double velocity = 1] {
+        get {
+            List&lt;double&gt; samples = new List&lt;double&gt;(this[duration, rate]);
+            double ft = 1/samples.Count;
+            double c = 0;
+            foreach (double sample in samples) {
+                double envelope = 1.0 - (ft * c * velocity);
+                if (envelope &lt; 0) {
+                    envelope = 0;
+                }
+                c++;
+                yield return sample * volume * (1 - ft) * envelope;
+            }
+        }
+    }
+    
+"@
+
 @"
     public static string[] Letters {
         get {
@@ -9051,8 +9112,7 @@ $Operators = @(
 
             operator @operatorFormat -Operator '&lt;&lt;' -Operands @(
                 "$ClassName left", "$ClassName right"
-            ) -Body "{ return new $ClassName(left.Hertz * Math.Pow(2, (right.Hertz * -1.0)/12)); }"
-    
+            ) -Body "{ return new $ClassName(left.Hertz * Math.Pow(2, (right.Hertz * -1.0)/12)); }"    
         }
         
         $implicit = @{Signature = "public static implicit"}
@@ -9138,8 +9198,6 @@ $Members = @(
         public override string ToString () { return this.Hertz.ToString() + "hz"; }
 '@
 
-
-
 @'                
         public override int GetHashCode() { return this.Hertz.GetHashCode(); }        
 '@
@@ -9173,8 +9231,52 @@ $Members = @(
         public $ClassName ShiftCent(double distance) {
             return new $ClassName(this.Hertz / Math.Pow(2, ((distance * -1.0)/1200)));
         }
+
+
 "@
 
+
+@"
+    public IEnumerable&lt;$ClassName&gt; Run(int steps = 0) {
+        yield return this;
+        if (steps &gt; 0) {
+            for (int step = 1; step &lt;= steps; step++) {
+                yield return this.Sharpen((double)step);
+            }
+        } else if (steps &lt; 0) {
+            for (int step = -1; step &gt;= steps; step--) {
+                yield return this.Sharpen((double)step);
+            }
+        }
+    }
+"@
+
+
+@"
+
+    public IEnumerable&lt;$ClassName&gt; StepComplex(int steps = 1, double octave = 0, double semitone = 2, double cent = 0) {
+        $ClassName current = this;
+        if (steps &gt; 0) {            
+            for (int step = 0; step &lt;= steps; step++) {
+                yield return current;
+                current = current.Shift(octave, semitone, cent);
+            }
+        } else if (steps &lt; 0) {
+            for (int step = 0; step &gt;= steps; step--) {
+                yield return current;
+                current = current.Shift(octave * -1, semitone * -1, cent * -1);
+            }
+        }
+    }
+"@
+
+@"    
+    public IEnumerable&lt;$ClassName&gt; Transpose(IEnumerable&lt;double&gt; distance) {                
+        foreach (double d in distance) {
+            yield return this.Sharpen(d);
+        }
+    }
+"@
 
 @"
     public IEnumerable&lt;$ClassName&gt; Chords(IEnumerable&lt;double&gt; chords) {
