@@ -9029,8 +9029,52 @@ $Modifier = 'public',
             }
         }
     }
-    
 "@
+
+$Scales = [Ordered]@{
+    'Major' = 0, 2, 4, 5, 7, 9, 11, 12
+    'Minor' = 0, 2, 3, 5, 7, 8, 10, 12
+    'Augmented' = 0, 3, 4, 7, 8, 11, 12
+    'HarmonicMinor' = 0, 2, 3, 5, 7, 8, 11, 12
+    'MelodicMinor' = 0, 2, 3, 5, 7, 9, 11, 12
+    'PentatonicMajor' = 0, 2, 4, 7, 9, 12
+    'PentatonicMinor' = 0, 3, 5, 7, 10, 12    
+    'PentatonicBlues' = 0, 3, 5, 6, 7, 10, 12
+    'Octatonic' = 0, 2, 3, 5, 6, 8, 9, 11, 12
+    'WholeTone' = 0, 2, 4, 6, 8, 10, 12
+}
+
+foreach ($scale in $scales.Keys) {
+@"
+    /// &lt;summary&gt;
+    /// $scale scale generator
+    /// &lt;/summary&gt;    
+    /// &lt;returns&gt;
+    /// The $Scale scale of this frequency.    
+    /// &lt;/returns&gt; 
+    public IList&lt;$ClassName&gt; $Scale {
+        get {
+            double[] distances = new double[] { $($scales[$scale] -join ', ')};
+            return this.Transpose(distances);            
+        }
+    }
+
+    /// &lt;summary&gt;
+    /// $scale descending scale generator
+    /// &lt;/summary&gt;    
+    /// &lt;returns&gt;
+    /// The $Scale descending scale of this frequency.    
+    /// &lt;/returns&gt; 
+    public IList&lt;$ClassName&gt; ${Scale}Descending {
+        get {
+            double[] distances = new double[] { $(
+                @(foreach ($d in $scales[$scale]) { $d * -1}) -join ', '
+            )};
+            return this.Transpose(distances);            
+        }
+    }
+"@
+}
 
 @"
     public static string[] Letters {
@@ -9253,7 +9297,6 @@ $Members = @(
 
 
 @"
-
     public IEnumerable&lt;$ClassName&gt; StepComplex(int steps = 1, double octave = 0, double semitone = 2, double cent = 0) {
         $ClassName current = this;
         if (steps &gt; 0) {            
@@ -9271,10 +9314,12 @@ $Members = @(
 "@
 
 @"    
-    public IEnumerable&lt;$ClassName&gt; Transpose(IEnumerable&lt;double&gt; distance) {                
+    public IList&lt;$ClassName&gt; Transpose(IEnumerable&lt;double&gt; distance) {
+        List&lt;$ClassName&gt; transposed = new List&lt;$ClassName&gt;();
         foreach (double d in distance) {
-            yield return this.Sharpen(d);
+            transposed.Add(this.Sharpen(d));
         }
+        return transposed;
     }
 "@
 
