@@ -1,2 +1,1 @@
-Frequency
-Wave.Frequency
+Wave.WaveFrequency
