@@ -238,16 +238,14 @@ $Modifier = 'public',
 
     public IEnumerable<double> this[TimeSpan duration, double rate, double volume, double velocity = 1] {
         get {
-            List<double> samples = new List<double>(this[duration, rate]);
-            double ft = 1/samples.Count;
-            double c = 0;
+            List<double> samples = new List<double>(this[duration, rate]);            
+            double c = 0;                        
             foreach (double sample in samples) {
-                double envelope = 1.0 - (ft * c * velocity);
-                if (envelope < 0) {
-                    envelope = 0;
-                }
+                double envelope = 1.0 - (c * velocity/samples.Count);
+                if (envelope < 0) { envelope = 0; }
+                if (envelope > 2) { envelope = 2; }
                 c++;
-                yield return sample * volume * (1 - ft) * envelope;
+                yield return sample * volume * envelope;
             }
         }
     }
