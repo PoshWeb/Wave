@@ -255,15 +255,24 @@ $Modifier = 'public',
 
 $Scales = [Ordered]@{
     'Major' = 0, 2, 4, 5, 7, 9, 11, 12
+	'MajorDescending' = 0, -1, -3, -5, -7, -8, -10, -12
     'Minor' = 0, 2, 3, 5, 7, 8, 10, 12
+	'MinorDescending' = 0, -2, -4, -5, -7, -9, -10, -12
     'Augmented' = 0, 3, 4, 7, 8, 11, 12
+	'AugmentedDescending' = 0, -1, -4, -5, -8, -9, -12
     'HarmonicMinor' = 0, 2, 3, 5, 7, 8, 11, 12
+	'HarmonicMinorDescending' = 0, -1, -4, -5, -7, -9, -10, -12
     'MelodicMinor' = 0, 2, 3, 5, 7, 9, 11, 12
     'PentatonicMajor' = 0, 2, 4, 7, 9, 12
+    'PentatonicMajorDescending' = 0, -3, -5, -8, -10, -12
     'PentatonicMinor' = 0, 3, 5, 7, 10, 12    
+    'PentatonicMinorDescending' = 0, -2, -5, -7, -9, -12
     'PentatonicBlues' = 0, 3, 5, 6, 7, 10, 12
+    'PentatonicBluesDescending' = 0, -2, -5, -6, -7, -9, -12
     'Octatonic' = 0, 2, 3, 5, 6, 8, 9, 11, 12
+    'OctatonicDescending' = 0, -1, -3, -4, -6, -7, -9, -10, -12
     'WholeTone' = 0, 2, 4, 6, 8, 10, 12
+    'WholeToneDescending' = 0, -2, -4, -6, -8, -10, -12
 }
 
 foreach ($scale in $scales.Keys) {
@@ -277,21 +286,6 @@ foreach ($scale in $scales.Keys) {
     public IList<$ClassName> $Scale {
         get {
             double[] distances = new double[] { $($scales[$scale] -join ', ')};
-            return this.Transpose(distances);            
-        }
-    }
-
-    /// <summary>
-    /// $scale descending scale generator
-    /// </summary>    
-    /// <returns>
-    /// The $Scale descending scale of this frequency.    
-    /// </returns> 
-    public IList<$ClassName> ${Scale}Descending {
-        get {
-            double[] distances = new double[] { $(
-                @(foreach ($d in $scales[$scale]) { $d * -1}) -join ', '
-            )};
             return this.Transpose(distances);            
         }
     }
