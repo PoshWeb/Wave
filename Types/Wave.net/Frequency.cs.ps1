@@ -192,8 +192,15 @@ $Modifier = 'public',
     }
 "@
 
-@"  
-    
+
+# Indexers
+@"      
+    public double this[double time] {
+        get {   
+            if (time == 0 || this.Hertz == 0) { return 0; }
+            return Math.Sin(time * (Math.PI * 2)/this.Hertz);
+        }
+    }
              
     public double this[double time, double rate] {
         get {   
@@ -207,7 +214,6 @@ $Modifier = 'public',
             return this[time, rate] * volume;
         }
     }
-
         
     public IEnumerable<double> this[TimeSpan duration, double rate] {
         get {            
@@ -238,17 +244,34 @@ $Modifier = 'public',
 
     public IEnumerable<double> this[TimeSpan duration, double rate, double volume, double velocity = 1] {
         get {
-            List<double> samples = new List<double>(this[duration, rate]);            
-            double c = 0;                        
-            foreach (double sample in samples) {
-                double envelope = 1.0 - (c * velocity/samples.Count);
+            double total = Math.Abs(duration.TotalSeconds * rate);
+            if (total == 0) { yield break; }
+            double c = 0;
+            foreach (double sample in this[duration, rate]) {
+                double envelope = 1.0 - (c * velocity/total);
                 if (envelope < 0) { envelope = 0; }
-                if (envelope > 2) { envelope = 2; }
+                if (envelope > 1) { envelope = 1; }
                 c++;
                 yield return sample * volume * envelope;
             }
         }
     }
+
+    public IEnumerable<double> this[TimeSpan duration, double rate, double volume, double[] envelope] {
+        get {
+            double total = Math.Abs(duration.TotalSeconds * rate);
+            if (total == 0) { yield break; }
+            int c = 0;        
+            foreach (double sample in this[duration, rate]) {
+                double e = 1;
+                if (envelope != null && envelope.Length > 0) {
+                    e = envelope[c % envelope.Length];
+                }
+                c++;
+                yield return sample * volume * e;
+            }
+        }        
+    }        
 "@
 
 $Scales = [Ordered]@{
@@ -296,7 +319,7 @@ foreach ($scale in $scales.Keys) {
             return new string[] {"C","Cs","D","Ds","E","F","Fs","G","Gs","A","As","B"};
         }
     }
-
+            
     public static List<$ClassName> Keyboard {
         get {
             $ClassName a0 = new $ClassName(27.5);
@@ -306,6 +329,7 @@ foreach ($scale in $scales.Keys) {
         }
     }
 "@
+
 ),
 
 # Any operators
@@ -490,7 +514,9 @@ $Members = @(
             return new $ClassName(this.Hertz / Math.Pow(2, ((distance * -1.0)/1200)));
         }
 
-
+        public $ClassName Detune(double distance) {
+            return new $ClassName(this.Hertz / Math.Pow(2, ((distance * -1.0)/1200)));
+        }
 "@
 
 
@@ -544,6 +570,68 @@ $Members = @(
         }
     }
 "@
+
+$waveTypes = [Ordered]@{
+    'Sine' = 'Math.Sin(t * f)'
+    'Triangle' = 'Math.Asin(Math.Sin(t * f))'
+    'Square' = 'Math.Sign(Math.Sin(t * f))'
+    'Sawtooth' = 'Math.Atan(Math.Tan(t/2 * f))'
+}
+
+foreach ($waveType in $waveTypes.Keys) {
+@"
+    public IEnumerable<double> $waveType(TimeSpan duration, double rate) {
+        if (duration.TotalSeconds == 0) { yield break; }
+        if (rate == 0) { yield break; }
+
+        double sampleCount = Math.Round(duration.TotalSeconds * rate);
+
+        double increment = Math.Abs(sampleCount)/sampleCount;            
+        
+        double f = (Math.PI * 2 * this.Hertz) / rate;            
+        for (double t = 0;
+            Math.Abs(t) <= Math.Abs(sampleCount);
+            t+=increment
+        ) {
+            yield return $($waveTypes[$waveType]);
+        }
+    }
+        
+    public IEnumerable<double> $waveType(TimeSpan duration, double rate, double volume) {
+        foreach (double sample in this.$WaveType(duration, rate)) {
+            yield return sample * volume;
+        }        
+    }
+
+    public IEnumerable<double> $waveType(TimeSpan duration, double rate, double volume, double velocity) {
+        double total = Math.Abs(duration.TotalSeconds * rate);
+        if (total == 0) { yield break; }
+        double c = 0;
+        foreach (double sample in this.$WaveType(duration, rate)) {
+            double envelope = 1.0 - (c * velocity/total);
+            if (envelope < 0) { envelope = 0; }
+            if (envelope > 1) { envelope = 1; }
+            c++;
+            yield return sample * volume * envelope;
+        }
+    }
+
+    public IEnumerable<double> $waveType(TimeSpan duration, double rate, double volume, double[] envelope) {
+        double total = Math.Abs(duration.TotalSeconds * rate);
+        if (total == 0) { yield break; }
+        int c = 0;        
+        foreach (double sample in this.$WaveType(duration, rate)) {
+            double e = 1;
+            if (envelope != null && envelope.Length > 0) {
+                e = envelope[c % envelope.Length];
+            }
+            c++;
+            yield return sample * volume * e;
+        }
+    }
+"@    
+}
+
 )
 )
 
