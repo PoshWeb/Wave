@@ -632,6 +632,34 @@ foreach ($waveType in $waveTypes.Keys) {
 "@    
 }
 
+$Envelopes = [Ordered]@{
+    "Attack" = "t / total"
+    "AttackSquared" = "2.0 - Math.Pow( 2, (1.0 - t/total) )"
+    "AttackCubed" = "(Math.Pow( 3, (t/total) ) - 1.0) / 2"
+    "Release" = "1.0 - (t/total)"
+    "ReleaseSquared" = "2.0 - Math.Pow( 2, (t/total) )"
+    "ReleaseCubed" = "(Math.Pow( 3, (1.0 - t/total) ) - 1.0) / 2"    
+}
+
+foreach ($envelope in $Envelopes.Keys) {
+@"
+    public IList<double> $envelope(double rate) {
+        double total = Math.Round(Math.Abs(1/this.Hertz * rate));
+        List<double> envelope = new List<double>();
+        if (total == 0) { return envelope; }        
+        double increment = Math.Abs(total)/total;        
+        for (double t = 0;
+            Math.Abs(t) < Math.Abs(total);
+            t+=increment
+        ) {
+            double e = $($envelopes[$envelope]);
+            envelope.Add(e);
+        }
+        return envelope;
+    }                    
+"@        
+}
+
 )
 )
 
