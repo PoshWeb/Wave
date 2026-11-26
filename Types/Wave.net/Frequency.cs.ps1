@@ -83,7 +83,7 @@ $Modifier = 'public',
         get {                        
             double midiNumber = 69.0 + 12.0 * Math.Log(Math.Abs(this.Hertz) / 440,2);
             
-            return midiNumber;            
+            return midiNumber;
         }
         set {
             if (value > 0) {
@@ -512,13 +512,16 @@ $Members = @(
             
         public $ClassName ShiftCent(double distance) {
             return new $ClassName(this.Hertz / Math.Pow(2, ((distance * -1.0)/1200)));
-        }
+        }        
 
         public $ClassName Detune(double distance) {
             return new $ClassName(this.Hertz / Math.Pow(2, ((distance * -1.0)/1200)));
-        }
+        }        
 "@
 
+
+@"
+"@
 
 @"
     public IEnumerable<$ClassName> Run(int steps = 0) {
@@ -564,7 +567,42 @@ $Members = @(
 "@
 
 @"
-    public IEnumerable<$ClassName> Chords(IEnumerable<double> chords) {
+
+    public IList<$ClassName> Turn(double distance = 1) {
+        List<$ClassName> steps = new List<$ClassName>();
+        steps.Add(this.Sharpen(distance));
+        steps.Add(this);
+        steps.Add(this.Sharpen(distance * -1));
+        steps.Add(this);
+        return steps;
+    }
+
+"@
+
+@"
+    public IList<$ClassName> Glide(double distance = 1, int steps = 4) {
+        if (steps == 0) { return null; }        
+        int absSteps = (int)Math.Abs(steps);        
+        int increment = absSteps/steps;
+        double stepDistance = distance;
+        if (absSteps > 1) {
+            stepDistance /= ( absSteps - 1);
+        }
+        
+        List<$ClassName> glide = new List<$ClassName>();
+        for (int step = 0; Math.Abs(step) < absSteps; step+=increment) {
+            glide.Add(this.Sharpen(step * stepDistance));
+        }
+        return glide;
+    }
+"@
+
+@"    
+"@
+
+
+@"
+    public IEnumerable<$ClassName> Harmonize(IEnumerable<double> chords) {
         foreach (double chord in chords) {
             yield return new $ClassName(this.Hertz * chord);
         }
@@ -579,6 +617,15 @@ $waveTypes = [Ordered]@{
 }
 
 foreach ($waveType in $waveTypes.Keys) {
+@"
+    public double $WaveType(double time, double rate) {        
+        if (rate == 0) { return 0; }
+        double t = time;
+        double f = (Math.PI * 2 * this.Hertz) / rate;
+        return $($waveTypes[$waveType]);
+    }    
+"@
+
 @"
     public IEnumerable<double> $waveType(TimeSpan duration, double rate) {
         if (duration.TotalSeconds == 0) { yield break; }
@@ -596,13 +643,17 @@ foreach ($waveType in $waveTypes.Keys) {
             yield return $($waveTypes[$waveType]);
         }
     }
-        
+"@
+  
+@"
     public IEnumerable<double> $waveType(TimeSpan duration, double rate, double volume) {
         foreach (double sample in this.$WaveType(duration, rate)) {
             yield return sample * volume;
-        }        
+        }
     }
+"@
 
+@"
     public IEnumerable<double> $waveType(TimeSpan duration, double rate, double volume, double velocity) {
         double total = Math.Abs(duration.TotalSeconds * rate);
         if (total == 0) { yield break; }
@@ -628,8 +679,82 @@ foreach ($waveType in $waveTypes.Keys) {
             c++;
             yield return sample * volume * e;
         }
-    }
+    }    
 "@    
+
+@"
+    public IEnumerable<double> $waveType(TimeSpan duration, double rate, double[] chords) {
+        if (duration.TotalSeconds == 0) { yield break; }
+        if (rate == 0) { yield break; }
+        double sampleCount = Math.Round(duration.TotalSeconds * rate);
+
+        double increment = Math.Abs(sampleCount)/sampleCount;
+        
+        double fundemantal = this.Hertz;
+        double f = (Math.PI * 2 * this.Hertz) / rate;
+        
+        for (double t = 0;
+            Math.Abs(t) <= Math.Abs(sampleCount);
+            t+=increment
+        ) {
+            double sample = $($waveTypes[$waveType]);            
+            
+            foreach (double chord in chords) {                
+                f = (Math.PI * 2 * this.Hertz * chord) / rate;                
+                sample += $($waveTypes[$waveType]);                
+            }
+            if (chords != null && chords.Length > 0) {            
+                yield return sample / ( (1 + chords.Length) * 2);
+            } else {
+                yield return sample; 
+            }
+            
+        }
+    }
+"@
+
+@"
+    public IEnumerable<double> $waveType(TimeSpan duration, double rate, double[] chords, double[] weights) {
+        if (duration.TotalSeconds == 0) { yield break; }
+        if (rate == 0) { yield break; }
+
+        if (weights == null || weights.Length == 0) {
+            weights = new double[] { 1 };
+        }
+
+        double sampleCount = Math.Round(duration.TotalSeconds * rate);
+
+        double increment = Math.Abs(sampleCount)/sampleCount;
+        
+        double fundemantal = this.Hertz;
+        double f = (Math.PI * 2 * this.Hertz) / rate;
+        
+        for (double t = 0;
+            Math.Abs(t) <= Math.Abs(sampleCount);
+            t+=increment
+        ) {
+            double sample = $($waveTypes[$waveType]);
+            int chordNumber = 0;
+            double totalWeight = 1;
+            double w = weights[0];
+            foreach (double chord in chords) {                
+                f = (Math.PI * 2 * this.Hertz * chord) / rate;
+                totalWeight += w;
+                // If we have any more weights
+                if (chordNumber < weights.Length) {
+                    // Make the next frequency that weight.
+                    w = weights[chordNumber];
+                } else {
+                    // Otherwise, half the weight
+                    w /= 2; 
+                }
+                sample += $($waveTypes[$waveType]);                
+                chordNumber++;                
+            }
+            yield return sample / (totalWeight * 2);
+        }
+    }
+"@
 }
 
 $Envelopes = [Ordered]@{
